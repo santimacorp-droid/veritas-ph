@@ -1,0 +1,23 @@
+Status: 200
+Total links: 38
+Notice/Splash links: 31
+  /GEPSNONPILOT/SiteAdministration/SplashPage/GovrntListUI_Splash.aspx?menuIndex=6
+  /GEPSNONPILOT/Tender/SplashOpenOpportunitiesUI.aspx?ClickFrom=OpenOpp&menuIndex=3
+  /GEPSNONPILOT/Tender/RecentAwardNoticeUI.aspx?menuIndex=3
+  javascript:void(window.open('/GEPSNONPILOT/helppages/public/help_RecentAwardNoticePopUI.htm', 'helpWin', 'resizable=yes,toolbar=no,menubar=no,directories=no,status=no,width=480,height=480,scrollbars=yes'));
+  SplashOpportunitiesDetailedSearchUI.aspx?menuIndex=3&ClickFrom=RecentAward
+  javascript:__doPostBack('pgCtrlAwardNoticeSearch$numberPage_2','')
+  javascript:__doPostBack('pgCtrlAwardNoticeSearch$numberPage_3','')
+  javascript:__doPostBack('pgCtrlAwardNoticeSearch$numberPage_4','')
+  javascript:__doPostBack('pgCtrlAwardNoticeSearch$numberPage_5','')
+  javascript:__doPostBack('pgCtrlAwardNoticeSearch$nextLB','')
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12636144&LineItemID=1&OrgID=172781&AwardID=5953364
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12664960&LineItemID=1&OrgID=370554&AwardID=5968192
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12701308&LineItemID=1&OrgID=89562&AwardID=5927549
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12582190&LineItemID=1&OrgID=329377&AwardID=5956452
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12683337&LineItemID=1&OrgID=299261&AwardID=5987592
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12537628&LineItemID=1&OrgID=84584&AwardID=5966336
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12689014&LineItemID=1&OrgID=201890&AwardID=6010884
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12698451&LineItemID=1&OrgID=418722&AwardID=5918822
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12621778&LineItemID=1&OrgID=194521&AwardID=5939259
+  ../R4/R3_AwardNotice_AwardAbstract.html?RefID=12608595&LineItemID=1&OrgID=62935&AwardID=5917423

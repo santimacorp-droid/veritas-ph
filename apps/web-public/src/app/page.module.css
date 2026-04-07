@@ -1,0 +1,159 @@
+/* page.module.css — Public Portal Homepage */
+
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 var(--space-6, 24px) var(--space-16, 64px);
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 32px 0 20px;
+  border-bottom: 2px solid var(--color-ink, #1A1814);
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.wordmark { display: flex; flex-direction: column; gap: 4px; }
+
+.wordmarkTitle {
+  font-size: 28px;
+  letter-spacing: 0.12em;
+  margin: 0;
+  color: var(--color-ink, #1A1814);
+}
+
+.wordmarkSub {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted, #7A7670);
+  margin: 0;
+}
+
+.nav { display: flex; gap: 24px; align-items: center; }
+
+.navLink {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary, #4A4740);
+  text-decoration: none;
+  transition: color 100ms;
+}
+.navLink:hover { color: var(--color-ink, #1A1814); }
+
+/* ── Stats Bar ──────────────────────────────────────────── */
+.statsBar {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--color-rule, #C8C4BB);
+  margin-top: 28px;
+  background: var(--color-paper-dark, #EDEAE3);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 24px;
+  border-right: 1px solid var(--color-rule, #C8C4BB);
+  flex: 1;
+}
+.stat:last-child { border-right: none; }
+
+.statValue {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-ink, #1A1814);
+  line-height: 1;
+}
+.statFlag { color: var(--color-flag, #C0392B); }
+
+.statLabel {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted, #7A7670);
+}
+
+/* ── Section ────────────────────────────────────────────── */
+.section { margin-top: 40px; }
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-rule, #C8C4BB);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  margin: 0;
+  color: var(--color-ink, #1A1814);
+}
+
+.sectionNote {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted, #7A7670);
+}
+
+/* ── Discrepancy List ───────────────────────────────────── */
+.discrepancyList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.discrepancyBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.discrepancyMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted, #7A7670);
+}
+
+.discrepancyMetaLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.discrepancyMetaRight {
+  text-align: right;
+}
+
+.metaLink {
+  color: var(--color-data-blue, #2F5D8A);
+  text-decoration: none;
+}
+
+.metaLink:hover {
+  color: var(--color-ink, #1A1814);
+}
+
+.emptyState {
+  padding: 24px 0;
+  color: var(--color-ink-secondary, #4A4740);
+  line-height: 1.7;
+}

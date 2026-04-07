@@ -1,0 +1,239 @@
+/* ProcurementTimeline.module.css — Forensic Authority aesthetic */
+
+.container {
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  padding: 28px 24px;
+  overflow-x: auto;
+}
+
+.header {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin-bottom: 28px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+/* ── Track ────────────────────────────────────────────────── */
+.track {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+  position: relative;
+  min-width: 560px;
+}
+
+/* Horizontal connector line */
+.track::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: calc(100% / 12);
+  right: calc(100% / 12);
+  height: 2px;
+  background: var(--color-rule);
+  z-index: 0;
+}
+
+/* ── Stage Column ─────────────────────────────────────────── */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Node ─────────────────────────────────────────────────── */
+.stageNode {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-paper);
+  flex-shrink: 0;
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.stageNode.present {
+  background: var(--color-ink);
+  border: 2px solid var(--color-ink);
+}
+
+.stageNode.missing {
+  background: var(--color-paper);
+  border: 2px dashed var(--color-rule-strong);
+}
+
+.stageNode.flagged {
+  background: var(--color-flag);
+  border: 2px solid var(--color-flag);
+  box-shadow: 0 0 0 4px var(--color-flag-light);
+}
+
+.stageRiskIcon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 10px;
+  color: var(--color-medium);
+  line-height: 1;
+  cursor: help;
+}
+
+/* ── Stage Label ─────────────────────────────────────────── */
+.stageLabel {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.stage.present .stageLabel { color: var(--color-ink-secondary); }
+.stage.flagged .stageLabel { color: var(--color-flag); }
+.stage.missing .stageLabel { color: var(--color-rule-strong); font-style: italic; }
+
+/* ── Event Card ───────────────────────────────────────────── */
+.eventCard {
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-rule);
+  border-top: 2px solid var(--color-ink);
+  padding: 10px 10px;
+  width: 100%;
+  min-height: 80px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stage.flagged .eventCard {
+  border-top-color: var(--color-flag);
+  background: var(--color-flag-light);
+}
+
+.stage.missing .eventCard {
+  border-style: dashed;
+  border-color: var(--color-rule);
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Event Content ────────────────────────────────────────── */
+.eventTitle {
+  font-size: 12px;
+  color: var(--color-ink);
+  line-height: 1.3;
+}
+
+.eventRef {
+  font-size: 10px;
+  color: var(--color-data-blue);
+  display: block;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eventRef:hover { text-decoration: underline; }
+
+.eventDate {
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  display: block;
+}
+
+.eventAmount {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+
+.eventRiskNote {
+  font-size: 10px;
+  color: var(--color-medium);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.missingLabel {
+  font-size: 10px;
+  color: var(--color-rule-strong);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Completeness Bar ─────────────────────────────────────── */
+.completenessBar {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-rule);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 560px;
+}
+
+.completenessLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.completenessTrack {
+  flex: 1;
+  height: 5px;
+  background: var(--color-rule);
+  position: relative;
+}
+
+.completenessFill {
+  height: 100%;
+  background: var(--color-data-blue);
+  transition: width 600ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.completenessPct {
+  font-size: 11px;
+  color: var(--color-ink-secondary);
+  white-space: nowrap;
+}
+
+/* ── Stage Pills ─────────────────────────────────────────── */
+.stagePills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 560px;
+  margin-top: 10px;
+}
+
+.stagePill {
+  font-size: 10px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.pillCheck { color: var(--color-confirm); }
+.pillCross { color: var(--color-flag); }
+.pillName  { color: var(--color-ink-muted); }

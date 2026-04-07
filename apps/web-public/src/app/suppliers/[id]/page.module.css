@@ -1,0 +1,53 @@
+/* Supplier Detail Page */
+
+.siteHeader { background: var(--color-paper); border-bottom: 1px solid var(--color-rule-strong); position: sticky; top: 0; z-index: 100; }
+.topbar { display: flex; align-items: center; padding: 0 32px; height: 56px; border-bottom: 1px solid var(--color-rule); }
+.siteLogo { display: flex; flex-direction: column; gap: 1px; text-decoration: none; }
+.logoName { font-size: 22px; font-weight: 700; color: var(--color-ink); letter-spacing: -0.01em; line-height: 1; }
+.logoTagline { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-ink-muted); }
+.navStrip { display: flex; align-items: center; padding: 0 32px; height: 40px; }
+.navLink { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-ink-secondary); padding: 0 16px; height: 40px; display: flex; align-items: center; text-decoration: none; border-bottom: 2px solid transparent; transition: color 150ms, border-color 150ms; }
+.navLink:hover { color: var(--color-ink); }
+.navActive { color: var(--color-ink); border-bottom-color: var(--color-flag); }
+
+.pageContent { max-width: 1100px; margin: 0 auto; padding: 0 32px 80px; }
+.breadcrumb { font-size: 11px; color: var(--color-ink-muted); padding: 16px 0; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--color-rule); }
+.breadcrumb a { color: var(--color-ink-muted); text-decoration: none; }
+.breadcrumb a:hover { color: var(--color-data-blue); }
+.breadcrumbSep { color: var(--color-rule-strong); }
+.breadcrumbCurrent { color: var(--color-ink-secondary); }
+
+.agencyHero { padding: 28px 0 20px; border-bottom: 1px solid var(--color-rule); display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.heroLeft { display: flex; flex-direction: column; gap: 8px; }
+.agencyName { font-size: 28px; font-weight: 700; color: var(--color-ink); margin: 0; line-height: 1.2; }
+.agencyMeta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.metaChip { font-size: 11px; color: var(--color-ink-secondary); }
+.metaSep { color: var(--color-rule-strong); }
+
+.statsPanel { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 1px solid var(--color-rule); margin: 24px 0; }
+.statBlock { padding: 18px 20px; border-right: 1px solid var(--color-rule); display: flex; flex-direction: column; gap: 8px; }
+.statBlock:last-child { border-right: none; }
+.statLabel { font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-ink-muted); }
+.statValue { font-size: 22px; font-weight: 600; color: var(--color-ink); line-height: 1; font-variant-numeric: tabular-nums; }
+
+.sectionHeader { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-ink-muted); padding: 24px 0 12px; border-bottom: 2px solid var(--color-rule-strong); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+.sectionCount { font-size: 11px; color: var(--color-ink-muted); font-weight: 400; }
+.tableWrap { overflow-x: auto; border: 1px solid var(--color-rule); }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.th { font-size: 9.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-ink-muted); padding: 11px 16px; text-align: left; background: var(--color-paper-dark); border-bottom: 2px solid var(--color-rule-strong); white-space: nowrap; }
+.thNum { text-align: right; }
+.tr { border-bottom: 1px solid var(--color-rule); transition: background 80ms; }
+.tr:last-child { border-bottom: none; }
+.tr:hover { background: var(--color-paper-dark); }
+.td { padding: 13px 16px; vertical-align: middle; }
+.tdNum { text-align: right; font-variant-numeric: tabular-nums; }
+.caseLink { font-size: 13.5px; font-weight: 600; color: var(--color-ink); text-decoration: none; }
+.caseLink:hover { color: var(--color-data-blue); }
+
+.riskPip { font-size: 11px; font-weight: 600; padding: 2px 8px; border: 1px solid currentColor; }
+.riskHigh { color: var(--color-flag); background: var(--color-flag-light); }
+.riskMed { color: var(--color-medium); background: var(--color-medium-light); }
+.riskLow { color: var(--color-low); background: var(--color-paper-dark); }
+
+.emptyCell { padding: 40px 16px; text-align: center; color: var(--color-ink-muted); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.disclaimer { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--color-rule); font-size: 10.5px; color: var(--color-ink-muted); font-style: italic; line-height: 1.6; }

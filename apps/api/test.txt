@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\santi\AppData\Local\Programs\Python\Python311\Scripts\alembic.exe\__main__.py", line 7, in <module>
+  File "C:\Users\santi\AppData\Local\Programs\Python\Python311\Lib\site-packages\alembic\config.py", line 641, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "C:\Users\santi\AppData\Local\Programs\Python\Python311\Lib\site-packages\alembic\config.py", line 631, in main
+    self.run_cmd(cfg, options)
+  File "C:\Users\santi\AppData\Local\Programs\Python\Python311\Lib\site-packages\alembic\config.py", line 608, in run_cmd
+    fn(
+  File "C:\Users\santi\AppData\Local\Programs\Python\Python311\Lib\site-packages\alembic\command.py", line 690, in stamp
+    script.run_env()
+  File "C:\Users\santi\AppData\Local\Programs\Python\Python311\Lib\site-packages\alembic\script\base.py", line 583, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "C:\Users\santi\AppData\Local\Programs\Python\Python311\Lib\site-packages\alembic\util\pyfiles.py", line 95, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\santi\AppData\Local\Programs\Python\Python311\Lib\site-packages\alembic\util\pyfiles.py", line 113, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "C:\Users\santi\Desktop\gov\apps\api\alembic\env.py", line 15, in <module>
+    from veritas_schema import Base
+ImportError: cannot import name 'Base' from 'veritas_schema' (C:\Users\santi\Desktop\gov\packages\common-schema\veritas_schema.py)

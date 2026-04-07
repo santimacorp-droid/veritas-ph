@@ -1,0 +1,253 @@
+/* DiscrepancyCard.module.css — Forensic Authority aesthetic */
+
+.card {
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Top severity accent bar */
+.card::before {
+  content: '';
+  display: block;
+  height: 3px;
+  width: 100%;
+}
+.card[data-severity="critical"]::before { background: var(--color-critical); }
+.card[data-severity="high"]::before     { background: var(--color-high); }
+.card[data-severity="medium"]::before   { background: var(--color-medium); }
+.card[data-severity="low"]::before      { background: var(--color-low); }
+
+/* ── Header ──────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-rule);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.severityBadge {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px 3px 6px;
+  border: 1px solid currentColor;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.severityBadge::before {
+  content: '●';
+  font-size: 7px;
+}
+.severityBadge[data-severity="critical"] { color: var(--color-critical); background: var(--color-flag-light); }
+.severityBadge[data-severity="high"]     { color: var(--color-high);     background: var(--color-flag-light); }
+.severityBadge[data-severity="medium"]   { color: var(--color-medium);   background: var(--color-medium-light); }
+.severityBadge[data-severity="low"]      { color: var(--color-low);       background: var(--color-paper-dark); }
+
+.discrepancyType {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.ruleVersion {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+/* ── Body ────────────────────────────────────────────────── */
+.body {
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.explanation {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+/* ── Meta Grid ───────────────────────────────────────────── */
+.meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.metaSection {
+  padding: 16px 20px;
+}
+
+.metaSection + .metaSection {
+  border-left: 1px solid var(--color-rule);
+}
+
+.metaLabel {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.metaContent {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-ink-secondary);
+  line-height: 1.7;
+}
+
+.metaKey  { color: var(--color-ink-muted); }
+.metaValue { color: var(--color-ink); font-weight: 500; }
+
+/* ── Evidence ────────────────────────────────────────────── */
+.evidence {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.evidenceRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.evidenceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--color-paper-dark);
+  border-left: 2px solid var(--color-rule);
+  cursor: pointer;
+  transition: background 100ms ease, border-left-color 100ms ease;
+  text-decoration: none;
+}
+
+.evidenceRow:hover {
+  background: var(--color-paper-darker, #E2DED6);
+  border-left-color: var(--color-data-blue);
+}
+
+.docTypeBadge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 5px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  color: var(--color-ink-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.docRef {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-data-blue);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.docMeta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  flex: 1;
+}
+
+.docHash {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  cursor: help;
+}
+
+/* ── Disclaimer ──────────────────────────────────────────── */
+.disclaimer {
+  padding: 10px 20px;
+  background: var(--color-paper-dark);
+  border-bottom: 1px solid var(--color-rule);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disclaimerIcon {
+  color: var(--color-medium);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.disclaimerText {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-ink-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ── Actions ─────────────────────────────────────────────── */
+.actions {
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.actionBtn {
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+  transition: background 100ms ease, color 100ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btnConfirm          { color: var(--color-confirm); }
+.btnConfirm:hover    { background: var(--color-confirm-light); }
+.btnReject           { color: var(--color-low); border-color: var(--color-rule); }
+.btnReject:hover     { background: var(--color-paper-dark); }
+.btnEvidence         { color: var(--color-medium); }
+.btnEvidence:hover   { background: var(--color-medium-light); }
+.btnPublish          { color: var(--color-flag); }
+.btnPublish:hover    { background: var(--color-flag-light); }

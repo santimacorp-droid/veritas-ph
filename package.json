@@ -1,0 +1,14 @@
+{
+  "name": "veritas",
+  "version": "1.0.0",
+  "description": "Philippines Procurement Transparency Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:public": "npm --workspace=apps/web-public run dev",
+    "dev:analyst": "npm --workspace=apps/web-analyst run dev"
+  }
+}

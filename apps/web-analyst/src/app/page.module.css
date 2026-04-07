@@ -1,0 +1,469 @@
+/* Analyst Console Dashboard — page.module.css
+   Dark mode only. Full shell layout with sidebar. */
+
+/* ── Shell ───────────────────────────────────────────────── */
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-surface);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--color-surface-2);
+  border-right: 1px solid var(--color-rule);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebarLogo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--color-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.logoName {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.logoSub {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+/* ── Sidebar Nav ─────────────────────────────────────────── */
+.sidebarNav {
+  flex: 1;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 100ms, color 100ms;
+}
+
+.navItem:hover {
+  background: var(--color-surface-3);
+  color: var(--color-ink);
+}
+
+.navItemActive {
+  background: var(--color-surface-3);
+  color: var(--color-ink);
+  border-left: 2px solid var(--color-flag);
+}
+
+.navBadge {
+  background: var(--color-flag);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ── Sidebar Footer ──────────────────────────────────────── */
+.sidebarFooter {
+  padding: 16px 20px;
+  border-top: 1px solid var(--color-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footerLink {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  transition: color 100ms;
+}
+.footerLink:hover { color: var(--color-data-blue); }
+
+.sessionInfo {
+  font-size: 10px;
+  color: var(--color-ink-faint);
+  padding-top: 6px;
+  border-top: 1px solid var(--color-rule);
+  margin-top: 4px;
+}
+
+/* ── Main ────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top Bar ─────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 56px;
+  border-bottom: 1px solid var(--color-rule);
+  background: var(--color-surface-2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.topbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbarTitle {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.topbarMeta {
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}
+
+.topbarRight { display: flex; align-items: center; gap: 12px; }
+
+.roleBadge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-confirm);
+}
+
+/* ── Disclaimer ──────────────────────────────────────────── */
+.disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 28px;
+  background: var(--color-surface-3);
+  border-bottom: 1px solid var(--color-rule);
+  font-size: 11px;
+  color: var(--color-ink-muted);
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+.disclaimerIcon {
+  color: var(--color-medium);
+  flex-shrink: 0;
+}
+
+/* ── Queue Content ───────────────────────────────────────── */
+.queueContent {
+  flex: 1;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+/* ── Case Block ──────────────────────────────────────────── */
+.caseBlock {
+  border: 1px solid var(--color-rule);
+  background: var(--color-surface-2);
+  overflow: hidden;
+}
+
+.caseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--color-surface-3);
+  border-bottom: 1px solid var(--color-rule);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  gap: 16px;
+  border: none;
+  transition: background 100ms;
+}
+.caseHeader:hover { background: var(--color-surface-4); }
+
+.caseHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.caseRef {
+  font-size: 11px;
+  color: var(--color-data-blue);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.caseTitle {
+  font-size: 14px;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.caseHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.agencyPill {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  padding: 2px 8px;
+  border: 1px solid var(--color-rule-strong);
+}
+
+.riskPip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+}
+.riskHigh { color: var(--color-high); background: var(--color-flag-light); }
+.riskMed  { color: var(--color-medium); background: var(--color-medium-light); }
+.riskLow  { color: var(--color-low); background: transparent; }
+
+.expandChevron {
+  font-size: 10px;
+  color: var(--color-ink-muted);
+}
+
+/* ── Discrepancy List ────────────────────────────────────── */
+.discList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Discrepancy Row ─────────────────────────────────────── */
+.discRow {
+  position: relative;
+  padding: 18px 20px 16px 24px;
+  border-bottom: 1px solid var(--color-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 400ms;
+}
+.discRow:last-child { border-bottom: none; }
+.discRowDone { opacity: 0.45; }
+
+/* Left accent bar */
+.discAccent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+.accent_critical { background: var(--color-critical); }
+.accent_high     { background: var(--color-high); }
+.accent_medium   { background: var(--color-medium); }
+.accent_low      { background: var(--color-low); }
+
+.discHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.severityBadge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  padding: 2px 8px 2px 6px;
+  border: 1px solid currentColor;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.severityBadge::before { content: '●'; font-size: 7px; }
+
+.sev_critical { color: var(--color-critical); background: var(--color-flag-light); }
+.sev_high     { color: var(--color-high);     background: var(--color-flag-light); }
+.sev_medium   { color: var(--color-medium);   background: var(--color-medium-light); }
+.sev_low      { color: var(--color-low);       background: transparent; }
+
+.discType {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.discRule {
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  margin-left: auto;
+}
+
+.reviewedTag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-confirm);
+  padding: 2px 8px;
+  border: 1px solid var(--color-confirm);
+}
+
+.discBody {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--color-ink-secondary);
+}
+
+.discMeta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.metaChip {
+  font-size: 11px;
+  color: var(--color-ink-muted);
+  display: flex;
+  gap: 5px;
+}
+
+.metaKey {
+  color: var(--color-ink-faint);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+/* ── Notes Input ─────────────────────────────────────────── */
+.evidenceLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.evidenceLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 10px;
+  color: var(--color-data-blue);
+  text-decoration: none;
+  border: 1px solid var(--color-rule-strong);
+  background: var(--color-surface-3);
+}
+
+.evidenceLink:hover {
+  border-color: var(--color-data-blue);
+  background: var(--color-surface-4);
+}
+
+.notesInput {
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-rule-strong);
+  color: var(--color-ink-secondary);
+  font-size: 12px;
+  padding: 8px 10px;
+  resize: vertical;
+  width: 100%;
+  max-width: 560px;
+  outline: none;
+  transition: border-color 100ms;
+}
+.notesInput:focus { border-color: var(--color-ink-muted); }
+
+/* ── Action Buttons ──────────────────────────────────────── */
+.discActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+  transition: background 100ms, color 100ms;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.actionBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn_confirm  { color: var(--color-confirm); }
+.btn_confirm:hover:not(:disabled)  { background: var(--color-confirm-light); }
+.btn_reject   { color: var(--color-low); border-color: var(--color-rule-strong); }
+.btn_reject:hover:not(:disabled)   { background: var(--color-surface-4); }
+.btn_evidence { color: var(--color-medium); }
+.btn_evidence:hover:not(:disabled) { background: var(--color-medium-light); }
+.btn_publish  { color: var(--color-flag); }
+.btn_publish:hover:not(:disabled)  { background: var(--color-flag-light); }
+
+/* ── Empty State ─────────────────────────────────────────── */
+.emptyState {
+  padding: 60px 28px;
+  font-size: 15px;
+  color: var(--color-ink-muted);
+  font-style: italic;
+  text-align: center;
+}

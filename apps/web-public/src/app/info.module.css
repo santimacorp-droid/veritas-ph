@@ -1,0 +1,98 @@
+.siteHeader {
+  background: var(--color-paper);
+  border-bottom: 1px solid var(--color-rule-strong);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  height: 56px;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.siteLogo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-decoration: none;
+}
+
+.logoName {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.logoTagline {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.navStrip {
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  height: 40px;
+}
+
+.navLink {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  padding: 0 16px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 150ms, border-color 150ms;
+}
+
+.navLink:hover { color: var(--color-ink); }
+.navActive { color: var(--color-ink); border-bottom-color: var(--color-flag); }
+
+.pageContent {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+.pageHead {
+  padding: 36px 0 20px;
+  border-bottom: 1px solid var(--color-rule);
+  margin-bottom: 28px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 0 0 6px;
+}
+
+.pageSubtitle {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin: 0;
+}
+
+.prose {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: var(--color-ink-secondary);
+  line-height: 1.8;
+  font-size: 15px;
+}
