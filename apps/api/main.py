@@ -68,16 +68,13 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 import traceback
 
-@app.middleware("http")
-async def db_debug_middleware(request: Request, call_next):
-    try:
-        return await call_next(request)
-    except Exception as e:
-        tb = traceback.format_exc()
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e), "traceback": tb}
-        )
+@app.exception_handler(Exception)
+async def custom_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc), "traceback": tb}
+    )
 
 
 @app.post("/auth/login", tags=["Auth"])
