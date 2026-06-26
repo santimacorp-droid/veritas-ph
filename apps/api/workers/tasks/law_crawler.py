@@ -142,7 +142,7 @@ async def fetch_laws() -> dict:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
             # 1a. Official Gazette
             url = "https://www.officialgazette.gov.ph/section/laws/republic-acts/"
             try:
