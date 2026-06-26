@@ -137,46 +137,90 @@ async def fetch_laws() -> dict:
     discovered_count = 0
     scraped_laws = []
 
-    # 1. Attempt to crawl Official Gazette online
+    # 1. Attempt to crawl Official Gazette and Judiciary E-Library online
     try:
-        url = "https://www.officialgazette.gov.ph/section/laws/republic-acts/"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
-        async with httpx.AsyncClient(timeout=12.0) as client:
-            logger.info("Crawling Official Gazette Republic Acts...", url=url)
-            response = await client.get(url, headers=headers, follow_redirects=True)
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, "html.parser")
-                # Look for headings representing legislation titles
-                headings = soup.find_all(["h2", "h3", "a"])
-                for heading in headings:
-                    text_val = heading.get_text().strip()
-                    # Check if text contains Republic Act patterns
-                    match = re.search(r"(Republic Act No\.\s*(\d+))", text_val, re.IGNORECASE)
-                    if match:
-                        ra_short = match.group(1)
-                        ra_num = match.group(2)
-                        
-                        # Build a basic scraped item
-                        scraped_laws.append({
-                            "title": text_val,
-                            "short_title": ra_short,
-                            "description": f"Scraped from the Official Gazette index. Republic Act Number: {ra_num}.",
-                            "date_passed": "2024-01-01",  # Scrapers use standard placeholder for newly fetched acts
-                            "status": "active",
-                            "provisions": [
-                                {
-                                    "section_number": "Section 1",
-                                    "title": "Short Title",
-                                    "content": f"This Act shall be known and cited as '{text_val}'."
-                                }
-                            ],
-                            "controversies": []
-                        })
-                logger.info(f"Scraped {len(scraped_laws)} raw acts from Official Gazette page.")
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # 1a. Official Gazette
+            url = "https://www.officialgazette.gov.ph/section/laws/republic-acts/"
+            try:
+                logger.info("Crawling Official Gazette Republic Acts...", url=url)
+                response = await client.get(url, headers=headers, follow_redirects=True)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, "html.parser")
+                    headings = soup.find_all(["h2", "h3", "a"])
+                    gazette_count = 0
+                    for heading in headings:
+                        text_val = heading.get_text().strip()
+                        match = re.search(r"(Republic Act No\.\s*(\d+))", text_val, re.IGNORECASE)
+                        if match:
+                            ra_short = match.group(1)
+                            ra_num = match.group(2)
+                            
+                            if not any(x["short_title"] == ra_short for x in scraped_laws):
+                                scraped_laws.append({
+                                    "title": text_val,
+                                    "short_title": ra_short,
+                                    "description": f"Scraped from the Official Gazette index. Republic Act Number: {ra_num}.",
+                                    "date_passed": "2024-01-01",
+                                    "status": "active",
+                                    "provisions": [
+                                        {
+                                            "section_number": "Section 1",
+                                            "title": "Short Title",
+                                            "content": f"This Act shall be known and cited as '{text_val}'."
+                                        }
+                                    ],
+                                    "controversies": []
+                                })
+                                gazette_count += 1
+                    logger.info(f"Scraped {gazette_count} raw acts from Official Gazette page.")
+            except Exception as e:
+                logger.warning(f"Official Gazette crawling failed: {e}")
+
+            # 1b. Judiciary E-Library
+            url_elib = "https://elibrary.judiciary.gov.ph/republic_acts"
+            try:
+                logger.info("Crawling Judiciary E-Library Republic Acts...", url=url_elib)
+                response = await client.get(url_elib, headers=headers, follow_redirects=True)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, "html.parser")
+                    links = soup.find_all("a", href=True)
+                    elib_count = 0
+                    for link in links:
+                        text_val = link.get_text().strip()
+                        match = re.search(r"((?:Republic Act|R\.A\.)\s*No\.\s*(\d+))", text_val, re.IGNORECASE)
+                        if match:
+                            # Normalize R.A. to Republic Act
+                            ra_short = match.group(1).replace("R.A.", "Republic Act").replace("R.A ", "Republic Act ")
+                            # Clean up multiple spaces
+                            ra_short = re.sub(r"\s+", " ", ra_short)
+                            ra_num = match.group(2)
+                            
+                            if not any(x["short_title"] == ra_short for x in scraped_laws):
+                                scraped_laws.append({
+                                    "title": text_val if len(text_val) > 20 else f"Republic Act No. {ra_num}: {text_val}",
+                                    "short_title": ra_short,
+                                    "description": f"Scraped from the Judiciary E-Library index. Republic Act Number: {ra_num}.",
+                                    "date_passed": "2024-01-01",
+                                    "status": "active",
+                                    "provisions": [
+                                        {
+                                            "section_number": "Section 1",
+                                            "title": "Short Title",
+                                            "content": f"This Act shall be known and cited as '{text_val}'."
+                                        }
+                                    ],
+                                    "controversies": []
+                                })
+                                elib_count += 1
+                    logger.info(f"Scraped {elib_count} raw acts from Judiciary E-Library page.")
+            except Exception as e:
+                logger.warning(f"Judiciary E-Library crawling failed: {e}")
     except Exception as e:
-        logger.warn("Official Gazette crawling failed. Using local real curated fallbacks.", error=str(e))
+        logger.warning(f"Legislative crawling failed: {e}")
 
     # 2. Fall back to real curated legislation list to ensure robust DB seeding
     if not scraped_laws:
