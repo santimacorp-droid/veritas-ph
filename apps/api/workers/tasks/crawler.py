@@ -100,7 +100,7 @@ async def fetch_sources():
     logger.info("Crawler starting: discovery phase")
 
     async with async_session_maker() as db:
-        res = await db.execute(text("SELECT source_id, base_url, source_type, parser_type FROM sources WHERE enabled = TRUE"))
+        res = await db.execute(text("SELECT source_id, base_url, source_type, parser_type, robots_compliant FROM sources WHERE enabled = TRUE"))
         sources = res.mappings().all()
 
     if not sources:
@@ -112,20 +112,24 @@ async def fetch_sources():
         source_id = source["source_id"]
         target_url = source["base_url"]
         source_type = source["source_type"]
+        robots_compliant = source.get("robots_compliant", True)
         
         logger.info(f"Crawling source: {source_id} ({target_url})")
 
         # For portal source type, use Playwright PhilGEPS crawl logic
         if source_type == 'portal':
-            rp = urllib.robotparser.RobotFileParser()
-            rp.set_url(urlparse(target_url).scheme + "://" + urlparse(target_url).netloc + "/robots.txt")
-            try:
-                rp.read()
-                if not rp.can_fetch("*", target_url):
-                    logger.error(f"robots.txt prevents crawling {target_url}")
-                    continue
-            except Exception as e:
-                logger.warning(f"Failed to read robots.txt: {e}")
+            if robots_compliant:
+                rp = urllib.robotparser.RobotFileParser()
+                rp.set_url(urlparse(target_url).scheme + "://" + urlparse(target_url).netloc + "/robots.txt")
+                try:
+                    rp.read()
+                    if not rp.can_fetch("*", target_url):
+                        logger.error(f"robots.txt prevents crawling {target_url}")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Failed to read robots.txt: {e}")
+            else:
+                logger.info("robots.txt compliance is disabled for this source. Bypassing check.")
 
             discovered_count = 0
             try:
