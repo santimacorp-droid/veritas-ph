@@ -184,39 +184,73 @@ async def fetch_laws() -> dict:
             url_elib = "https://elibrary.judiciary.gov.ph/republic_acts"
             try:
                 logger.info("Crawling Judiciary E-Library Republic Acts...", url=url_elib)
-                response = await client.get(url_elib, headers=headers, follow_redirects=True)
+                elib_headers = headers.copy()
+                elib_headers["Referer"] = url_elib
+                
+                # Fetch landing page to get CSRF token
+                response = await client.get(url_elib, headers=elib_headers, follow_redirects=True)
                 if response.status_code == 200:
-                    soup = BeautifulSoup(response.text, "html.parser")
-                    links = soup.find_all("a", href=True)
-                    elib_count = 0
-                    for link in links:
-                        text_val = link.get_text().strip()
-                        match = re.search(r"((?:Republic Act|R\.A\.)\s*No\.\s*(\d+))", text_val, re.IGNORECASE)
-                        if match:
-                            # Normalize R.A. to Republic Act
-                            ra_short = match.group(1).replace("R.A.", "Republic Act").replace("R.A ", "Republic Act ")
-                            # Clean up multiple spaces
-                            ra_short = re.sub(r"\s+", " ", ra_short)
-                            ra_num = match.group(2)
-                            
-                            if not any(x["short_title"] == ra_short for x in scraped_laws):
-                                scraped_laws.append({
-                                    "title": text_val if len(text_val) > 20 else f"Republic Act No. {ra_num}: {text_val}",
-                                    "short_title": ra_short,
-                                    "description": f"Scraped from the Judiciary E-Library index. Republic Act Number: {ra_num}.",
-                                    "date_passed": "2024-01-01",
-                                    "status": "active",
-                                    "provisions": [
-                                        {
-                                            "section_number": "Section 1",
-                                            "title": "Short Title",
-                                            "content": f"This Act shall be known and cited as '{text_val}'."
-                                        }
-                                    ],
-                                    "controversies": []
-                                })
-                                elib_count += 1
-                    logger.info(f"Scraped {elib_count} raw acts from Judiciary E-Library page.")
+                    csrf_match = re.search(r"'csrf_test_name'\s*:\s*'([a-f0-9]+)'", response.text)
+                    csrf_token = csrf_match.group(1) if csrf_match else None
+                    if not csrf_token:
+                        logger.warning("CSRF token not found in Judiciary E-Library landing page. Trying default.")
+                        csrf_token = "911e9a80775d8254cef336694db85299"
+                    
+                    ajax_url = "https://elibrary.judiciary.gov.ph/republic_acts/fetch_ra"
+                    data = {
+                        "csrf_test_name": csrf_token,
+                        "draw": "1",
+                        "start": "0",
+                        "length": "50",
+                        "search[value]": "",
+                        "search[regex]": "false"
+                    }
+                    
+                    logger.info("Making POST request to Judiciary E-Library AJAX endpoint...", url=ajax_url)
+                    response_post = await client.post(ajax_url, data=data, headers=elib_headers)
+                    if response_post.status_code == 200:
+                        res_data = response_post.json()
+                        elib_count = 0
+                        for row in res_data.get("data", []):
+                            if len(row) >= 3:
+                                raw_short_title = row[0]
+                                date_passed = row[1]
+                                link_html = row[2]
+                                
+                                a_soup = BeautifulSoup(link_html, "html.parser")
+                                a_tag = a_soup.find("a")
+                                if a_tag:
+                                    title_val = a_tag.get_text().strip()
+                                    bookshelf_url = a_tag.get("href", "")
+                                    
+                                    # Normalize short title
+                                    ra_short = raw_short_title.replace("R.A.", "Republic Act").replace("R.A ", "Republic Act ").strip()
+                                    ra_short = re.sub(r"\s+", " ", ra_short)
+                                    ra_short_match = re.search(r"republic\s+act\s+no\.\s*(\d+)", ra_short, re.IGNORECASE)
+                                    if ra_short_match:
+                                        ra_short = f"Republic Act No. {ra_short_match.group(1)}"
+                                    
+                                    ra_num_match = re.search(r"\d+", ra_short)
+                                    ra_num = ra_num_match.group(0) if ra_num_match else "Unknown"
+                                    
+                                    if not any(x["short_title"] == ra_short for x in scraped_laws):
+                                        scraped_laws.append({
+                                            "title": title_val,
+                                            "short_title": ra_short,
+                                            "description": f"Scraped from the Judiciary E-Library. Bookshelf URL: {bookshelf_url}. Republic Act Number: {ra_num}.",
+                                            "date_passed": date_passed if date_passed else "2026-01-01",
+                                            "status": "active",
+                                            "provisions": [
+                                                {
+                                                    "section_number": "Section 1",
+                                                    "title": "Short Title",
+                                                    "content": f"This Act shall be known and cited as '{title_val}'."
+                                                }
+                                            ],
+                                            "controversies": []
+                                        })
+                                        elib_count += 1
+                        logger.info(f"Scraped {elib_count} raw acts from Judiciary E-Library AJAX response.")
             except Exception as e:
                 logger.warning(f"Judiciary E-Library crawling failed: {e}")
     except Exception as e:
