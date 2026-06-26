@@ -1189,6 +1189,47 @@ async def submit_document(
 # ─── Health ──────────────────────────────────────────────────────────────────
 
 
+@app.get("/health/db", tags=["System"], include_in_schema=False)
+async def health_db():
+    import socket
+    from database import engine
+    from urllib.parse import urlparse
+    
+    db_url = str(engine.url)
+    parsed = urlparse(db_url)
+    host = parsed.hostname
+    port = parsed.port
+    scheme = parsed.scheme
+    
+    resolved_ips = []
+    resolve_error = None
+    if host:
+        try:
+            infos = socket.getaddrinfo(host, port or 5432)
+            resolved_ips = list(set([info[4][0] for info in infos]))
+        except Exception as e:
+            resolve_error = str(e)
+            
+    query_success = False
+    query_error = None
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+            query_success = True
+    except Exception as e:
+        query_error = str(e)
+        
+    return {
+        "configured_scheme": scheme,
+        "configured_host": host,
+        "configured_port": port,
+        "dns_resolved_ips": resolved_ips,
+        "dns_resolve_error": resolve_error,
+        "query_success": query_success,
+        "query_error": query_error,
+    }
+
+
 @app.get("/health", tags=["System"], include_in_schema=False)
 async def health():
     return {"status": "ok", "service": "veritas-api"}
