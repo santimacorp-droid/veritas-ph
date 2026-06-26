@@ -1200,6 +1200,12 @@ async def health_db():
     host = parsed.hostname
     port = parsed.port
     scheme = parsed.scheme
+    username = parsed.username
+    
+    # Redact password in the URL
+    redacted_url = db_url
+    if parsed.password:
+        redacted_url = db_url.replace(parsed.password, "********")
     
     resolved_ips = []
     resolve_error = None
@@ -1220,9 +1226,11 @@ async def health_db():
         query_error = str(e)
         
     return {
+        "redacted_url": redacted_url,
         "configured_scheme": scheme,
         "configured_host": host,
         "configured_port": port,
+        "configured_username": username,
         "dns_resolved_ips": resolved_ips,
         "dns_resolve_error": resolve_error,
         "query_success": query_success,
