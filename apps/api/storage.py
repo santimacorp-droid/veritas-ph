@@ -1,80 +1,76 @@
 """
 apps/api/storage.py
 
-MinIO client for the FastAPI layer.
-Used by document download / proxy endpoints.
-
-Same config as workers/crawler/storage.py — reads from environment.
+Local filesystem storage client replacing MinIO.
 """
 
-from __future__ import annotations
-
-import io
 import logging
 import os
-from datetime import timedelta
-from typing import Optional
-
-from minio import Minio
-from minio.error import S3Error
 
 logger = logging.getLogger(__name__)
 
-MINIO_ENDPOINT   = os.getenv("MINIO_ENDPOINT",   "localhost:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY",  "veritas")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY",  "veritas_dev_secret")
-MINIO_BUCKET     = os.getenv("MINIO_BUCKET",       "veritas-docs")
-MINIO_SECURE     = os.getenv("MINIO_SECURE", "0") == "1"
+# Base directory for local file storage (inside pb_data/storage)
+STORAGE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../pb_data/storage"))
 
 
 class APIDocumentStore:
     def __init__(self):
-        self._client = Minio(
-            MINIO_ENDPOINT,
-            access_key=MINIO_ACCESS_KEY,
-            secret_key=MINIO_SECRET_KEY,
-            secure=MINIO_SECURE,
-        )
-        self._bucket = MINIO_BUCKET
+        self._base_dir = STORAGE_DIR
+        os.makedirs(self._base_dir, exist_ok=True)
 
-    def presign_url(self, storage_path: str, expires_hours: int = 1) -> Optional[str]:
+    def presign_url(self, storage_path: str, expires_hours: int = 1) -> str | None:
+        # Return local download proxy endpoint URL
+        return f"http://localhost:8000/documents/download_path?path={storage_path}"
+
+    def get_bytes(self, storage_path: str) -> bytes | None:
+        full_path = os.path.join(self._base_dir, storage_path)
+        if not os.path.exists(full_path):
+            logger.warning(f"File not found: {full_path}")
+            return None
         try:
-            return self._client.presigned_get_object(
-                self._bucket,
-                storage_path,
-                expires=timedelta(hours=expires_hours),
-            )
-        except S3Error as e:
-            logger.warning(f"presign_url failed for {storage_path}: {e}")
+            with open(full_path, "rb") as f:
+                return f.read()
+        except Exception as e:
+            logger.warning(f"Failed to read file {full_path}: {e}")
             return None
 
-    def get_bytes(self, storage_path: str) -> Optional[bytes]:
-        response = None
+    def put_bytes(self, storage_path: str, data: bytes, content_type: str = None) -> bool:
+        full_path = os.path.join(self._base_dir, storage_path)
+        if os.path.exists(full_path):
+            logger.warning(f"Immutability violation: File already exists and cannot be overwritten: {full_path}")
+            return False
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
         try:
-            response = self._client.get_object(self._bucket, storage_path)
-            return response.read()
-        except S3Error as e:
-            logger.warning(f"MinIO get failed for {storage_path}: {e}")
-            return None
-        finally:
-            if response:
-                response.close()
-                response.release_conn()
+            with open(full_path, "wb") as f:
+                f.write(data)
+            try:
+                os.chmod(full_path, 0o444)
+            except Exception as e:
+                logger.warning(f"Failed to make file read-only {full_path}: {e}")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to write file {full_path}: {e}")
+            return False
 
-    def stat(self, storage_path: str) -> Optional[dict]:
+    def stat(self, storage_path: str) -> dict | None:
+        full_path = os.path.join(self._base_dir, storage_path)
+        if not os.path.exists(full_path):
+            return None
         try:
-            info = self._client.stat_object(self._bucket, storage_path)
+            stat_info = os.stat(full_path)
             return {
-                "size":          info.size,
-                "content_type":  info.content_type,
-                "last_modified": info.last_modified.isoformat() if info.last_modified else None,
-                "etag":          info.etag,
+                "size": stat_info.st_size,
+                "content_type": "application/pdf"
+                if storage_path.endswith(".pdf")
+                else "application/octet-stream",
+                "last_modified": stat_info.st_mtime,
+                "etag": str(stat_info.st_mtime),
             }
-        except S3Error:
+        except Exception:
             return None
 
 
-_store: Optional[APIDocumentStore] = None
+_store: APIDocumentStore | None = None
 
 
 def get_api_store() -> APIDocumentStore:

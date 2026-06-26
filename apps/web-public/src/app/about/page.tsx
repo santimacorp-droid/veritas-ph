@@ -14,7 +14,7 @@ export default function AboutPage() {
           </Link>
         </div>
         <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Methodology'].map((item) => (
+          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
             <Link key={item} href={`/${item.toLowerCase()}`} className={`${styles.navLink} font-ui`}>
               {item}
             </Link>

@@ -1,0 +1,40 @@
+[tool.ruff]
+# Target Python version
+target-version = "py311"
+
+# Line length
+line-length = 100
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    ".venv_linux",
+    "node_modules",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# Select rules (E: Error, F: Pyflakes, I: Isort, B: Bugbear, UP: Pyupgrade)
+select = ["E", "F", "I", "B", "UP", "N"]
+ignore = ["B008", "E501"]
+
+# Allow fix for all enabled rules (when `--fix` is passed)
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+# Use spaces for indentation
+indent-style = "space"
+# Newline at end of file
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["apps/api/tests"]
+pythonpath = ["apps/api"]

@@ -157,3 +157,17 @@
   color: var(--color-ink-secondary, #4A4740);
   line-height: 1.7;
 }
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 28px;
+}
+
+@media (max-width: 768px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+

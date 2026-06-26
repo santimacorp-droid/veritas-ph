@@ -63,7 +63,7 @@ export default async function AgenciesPage() {
           </Link>
         </div>
         <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Methodology'].map((item) => (
+          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
             <Link
               key={item}
               href={`/${item.toLowerCase()}`}

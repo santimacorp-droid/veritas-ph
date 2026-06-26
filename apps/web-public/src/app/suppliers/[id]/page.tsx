@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import styles from './page.module.css';
+import { SupplierAgencyConcentrationChart, SupplierAwardTrendChart } from '@/components/AnalyticsCharts';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
@@ -37,6 +38,23 @@ async function getSupplier(id: string): Promise<SupplierProfile | null> {
   return res.json();
 }
 
+interface SupplierDuplicate {
+  supplier_id: string;
+  canonical_name: string;
+  similarity: number;
+}
+
+async function getSupplierDuplicates(id: string): Promise<SupplierDuplicate[]> {
+  try {
+    const res = await fetch(`${API_URL}/suppliers/${id}/duplicates`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.duplicates || [];
+  } catch {
+    return [];
+  }
+}
+
 async function getSupplierAwards(id: string): Promise<{ total: number; awards: SupplierAward[] }> {
   const res = await fetch(`${API_URL}/suppliers/${id}/awards?limit=20`, { cache: 'no-store' });
   if (!res.ok) return { total: 0, awards: [] };
@@ -55,10 +73,12 @@ function RiskPip({ score }: { score?: number }) {
   return <span className={`${styles.riskPip} ${cls} font-mono`}>{score.toFixed(2)}</span>;
 }
 
-export default async function SupplierDetailPage({ params }: { params: { id: string } }) {
-  const [supplier, awardsData] = await Promise.all([
-    getSupplier(params.id),
-    getSupplierAwards(params.id),
+export default async function SupplierDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const [supplier, awardsData, duplicates] = await Promise.all([
+    getSupplier(id),
+    getSupplierAwards(id),
+    getSupplierDuplicates(id),
   ]);
 
   if (!supplier) notFound();
@@ -73,7 +93,7 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
           </Link>
         </div>
         <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Methodology'].map((item) => (
+          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
             <Link
               key={item}
               href={`/${item.toLowerCase()}`}
@@ -109,6 +129,22 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
                   <span className={styles.metaChip}>{supplier.primary_address}</span>
                 </>
               )}
+              {supplier.philgeps_id && (
+                <>
+                  <span className={styles.metaSep}>·</span>
+                  <span className={styles.metaChip}>
+                    PhilGEPS ID:{' '}
+                    <a
+                      href="https://www.philgeps.gov.ph/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--color-data-blue)', textDecoration: 'underline' }}
+                    >
+                      {supplier.philgeps_id}
+                    </a>
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -127,6 +163,49 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             </div>
           ))}
         </div>
+
+        {/* Analytics Charts */}
+        <div className={styles.chartsGrid}>
+          <SupplierAgencyConcentrationChart awards={awardsData.awards} />
+          <SupplierAwardTrendChart awards={awardsData.awards} />
+        </div>
+
+        {duplicates.length > 0 && (
+          <div style={{ background: 'var(--color-flag-light, #2a1a1a)', border: '1px solid var(--color-flag, #ff5a5a)', padding: '20px', marginBottom: '24px', borderRadius: '4px' }}>
+            <h3 className="font-ui" style={{ margin: '0 0 8px', color: 'var(--color-flag, #ff5a5a)', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              ⚠️ Entity Resolution Alert — Potential Aliases detected
+            </h3>
+            <p className="font-body" style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--color-ink-secondary, #ccc)', lineHeight: '1.5' }}>
+              Our supplier deduplication resolver has detected other registered suppliers in the database with highly similar names or identifiers:
+            </p>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              {duplicates.map((dup) => (
+                <Link
+                  key={dup.supplier_id}
+                  href={`/suppliers/${dup.supplier_id}`}
+                  style={{
+                    background: 'rgba(255, 90, 90, 0.1)',
+                    border: '1px solid rgba(255, 90, 90, 0.3)',
+                    padding: '6px 12px',
+                    borderRadius: '2px',
+                    fontSize: '12px',
+                    color: '#ff8a8a',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'border-color 150ms'
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>{dup.canonical_name}</span>
+                  <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.5)' }}>
+                    ({Math.round(dup.similarity * 100)}% match)
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className={styles.sectionHeader}>
           <span className="font-ui">Award History</span>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import styles from './page.module.css';
+import { AgencyCasesRiskChart, AgencyMethodShareChart } from '@/components/AnalyticsCharts';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
@@ -57,10 +58,11 @@ function RiskPip({ score }: { score?: number }) {
   return <span className={`${styles.riskPip} ${cls} font-mono`}>{score.toFixed(2)}</span>;
 }
 
-export default async function AgencyDetailPage({ params }: { params: { id: string } }) {
+export default async function AgencyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const [agency, casesData] = await Promise.all([
-    getAgency(params.id),
-    getAgencyCases(params.id),
+    getAgency(id),
+    getAgencyCases(id),
   ]);
 
   if (!agency) notFound();
@@ -78,7 +80,7 @@ export default async function AgencyDetailPage({ params }: { params: { id: strin
           </Link>
         </div>
         <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Methodology'].map((item) => (
+          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
             <Link
               key={item}
               href={`/${item.toLowerCase()}`}
@@ -156,6 +158,12 @@ export default async function AgencyDetailPage({ params }: { params: { id: strin
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Analytics Charts */}
+        <div className={styles.chartsGrid}>
+          <AgencyCasesRiskChart cases={casesData.cases} />
+          <AgencyMethodShareChart cases={casesData.cases} />
         </div>
 
         {/* Cases Table */}

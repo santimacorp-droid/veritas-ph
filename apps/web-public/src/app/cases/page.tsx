@@ -17,9 +17,17 @@ interface CaseSummary {
   discrepancy_count?: number;
 }
 
-async function getCases(): Promise<{ total: number; cases: CaseSummary[] }> {
+async function getCases(filters: { agency_id?: string; method?: string; category?: string; risk_min?: string; year?: string }): Promise<{ total: number; cases: CaseSummary[] }> {
   try {
-    const res = await fetch(`${API_URL}/cases?limit=50`, { cache: 'no-store' });
+    const query = new URLSearchParams();
+    query.append('limit', '50');
+    if (filters.agency_id) query.append('agency_id', filters.agency_id);
+    if (filters.method) query.append('procurement_method', filters.method);
+    if (filters.category) query.append('category', filters.category);
+    if (filters.risk_min) query.append('risk_min', filters.risk_min);
+    if (filters.year) query.append('year', filters.year);
+
+    const res = await fetch(`${API_URL}/cases?${query.toString()}`, { cache: 'no-store' });
     if (!res.ok) return { total: 0, cases: [] };
     return res.json();
   } catch {
@@ -52,8 +60,13 @@ function formatDate(value?: string) {
   return value ? value.slice(0, 10) : '-';
 }
 
-export default async function CasesPage() {
-  const { total, cases } = await getCases();
+export default async function CasesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ agency_id?: string; method?: string; category?: string; risk_min?: string; year?: string }>;
+}) {
+  const filters = await searchParams;
+  const { total, cases } = await getCases(filters);
 
   return (
     <div>
@@ -67,7 +80,7 @@ export default async function CasesPage() {
           </Link>
         </div>
         <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Methodology'].map((item) => (
+          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
             <Link
               key={item}
               href={`/${item.toLowerCase()}`}
@@ -87,6 +100,57 @@ export default async function CasesPage() {
           </p>
         </div>
 
+        <form className={styles.filterForm} method="GET" action="/cases">
+          <div className={styles.filterGroup}>
+            <label className="font-ui">Agency</label>
+            <select name="agency_id" defaultValue={filters.agency_id || ""}>
+              <option value="">All Agencies</option>
+              <option value="8a7b6c5d-4e3f-2a1b-0c9d-8e7f6a5b4c3d">DPWH</option>
+              <option value="1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d">DepEd</option>
+              <option value="2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e">DOH</option>
+            </select>
+          </div>
+          <div className={styles.filterGroup}>
+            <label className="font-ui">Method</label>
+            <select name="method" defaultValue={filters.method || ""}>
+              <option value="">All Methods</option>
+              <option value="public_bidding">Public Bidding</option>
+              <option value="negotiated">Negotiated</option>
+              <option value="shopping">Shopping</option>
+            </select>
+          </div>
+          <div className={styles.filterGroup}>
+            <label className="font-ui">Category</label>
+            <select name="category" defaultValue={filters.category || ""}>
+              <option value="">All Categories</option>
+              <option value="infrastructure">Infrastructure</option>
+              <option value="goods">Goods</option>
+            </select>
+          </div>
+          <div className={styles.filterGroup}>
+            <label className="font-ui">Min Risk</label>
+            <select name="risk_min" defaultValue={filters.risk_min || ""}>
+              <option value="">All Risks</option>
+              <option value="0.70">High (&gt;= 0.70)</option>
+              <option value="0.40">Medium (&gt;= 0.40)</option>
+              <option value="0.01">Low / Any</option>
+            </select>
+          </div>
+          <div className={styles.filterGroup}>
+            <label className="font-ui">Year</label>
+            <select name="year" defaultValue={filters.year || ""}>
+              <option value="">All Years</option>
+              {Array.from({ length: 2026 - 2010 + 1 }, (_, i) => 2026 - i).map((y) => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="submit" className={`${styles.filterBtn} font-ui`}>Apply</button>
+            <Link href="/cases" className={`${styles.clearBtn} font-ui`}>Clear</Link>
+          </div>
+        </form>
+
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
@@ -97,7 +161,7 @@ export default async function CasesPage() {
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Award Date</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Updated</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Risk</th>
-                <th className={`${styles.th} ${styles.thNum} font-ui`}>Signals</th>
+                <th className={`${styles.th} ${styles.thNum} font-ui`}>Audit Flags</th>
               </tr>
             </thead>
             <tbody>
@@ -161,8 +225,8 @@ export default async function CasesPage() {
         </div>
 
         <footer className={`${styles.disclaimer} font-ui`}>
-          Cases are listed from public records only. Signals shown elsewhere in Veritas are
-          anomaly indicators and not legal determinations.
+          Cases are listed from public records only. Flags shown elsewhere in Veritas are
+          audit anomaly indicators and not legal determinations.
         </footer>
       </main>
     </div>

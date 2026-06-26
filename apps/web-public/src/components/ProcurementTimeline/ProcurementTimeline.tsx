@@ -144,15 +144,28 @@ export function ProcurementTimeline({
                   </span>
                 ) : (
                   <>
-                    {event?.source_url ? (
-                      <a
-                        className={`${styles.eventRef} font-mono`}
-                        href={event.source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {shortRef(event.source_url, event.document_type)}
-                      </a>
+                    {event?.document_id || event?.source_url ? (
+                      <div className={styles.eventRefContainer}>
+                        <a
+                          className={`${styles.eventRef} font-mono`}
+                          href={event.document_id ? `/documents/${event.document_id}` : event.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {shortRef(event.source_url, event.document_type)}
+                        </a>
+                        {event.document_id && (
+                          <a
+                            href={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/documents/${event.document_id}/download`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.downloadIconBtn}
+                            title="Download official PDF"
+                          >
+                            ⬇
+                          </a>
+                        )}
+                      </div>
                     ) : null}
                     {event?.event_date && (
                       <span className={`${styles.eventDate} font-mono`}>

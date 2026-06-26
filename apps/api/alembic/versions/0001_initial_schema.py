@@ -5,8 +5,8 @@ Initial Veritas database schema migration.
 Run: alembic upgrade head
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision = "0001"
@@ -17,41 +17,72 @@ depends_on = None
 
 def upgrade() -> None:
     # Enable extensions
-    op.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
-    op.execute("CREATE EXTENSION IF NOT EXISTS \"pg_trgm\"")
-    op.execute("CREATE EXTENSION IF NOT EXISTS \"vector\"")
-    op.execute("CREATE EXTENSION IF NOT EXISTS \"unaccent\"")
+    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+    op.execute('CREATE EXTENSION IF NOT EXISTS "pg_trgm"')
+    op.execute('CREATE EXTENSION IF NOT EXISTS "vector"')
+    op.execute('CREATE EXTENSION IF NOT EXISTS "unaccent"')
 
     # publishers
     op.create_table(
         "publishers",
-        sa.Column("publisher_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "publisher_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
         sa.Column("name", sa.Text, nullable=False),
         sa.Column("slug", sa.Text, unique=True, nullable=False),
         sa.Column("website", sa.Text),
         sa.Column("publisher_type", sa.Text, nullable=False),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
     )
 
     # agencies
     op.create_table(
         "agencies",
-        sa.Column("agency_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("publisher_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("publishers.publisher_id")),
+        sa.Column(
+            "agency_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
+        sa.Column(
+            "publisher_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("publishers.publisher_id")
+        ),
         sa.Column("name", sa.Text, nullable=False),
         sa.Column("acronym", sa.Text),
         sa.Column("psgc_code", sa.Text),
         sa.Column("agency_type", sa.Text, nullable=False),
-        sa.Column("parent_agency", postgresql.UUID(as_uuid=True), sa.ForeignKey("agencies.agency_id")),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column(
+            "parent_agency", postgresql.UUID(as_uuid=True), sa.ForeignKey("agencies.agency_id")
+        ),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
     )
     op.execute("CREATE INDEX idx_agencies_name_trgm ON agencies USING gin (name gin_trgm_ops)")
 
     # sources
     op.create_table(
         "sources",
-        sa.Column("source_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("publisher_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("publishers.publisher_id")),
+        sa.Column(
+            "source_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
+        sa.Column(
+            "publisher_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("publishers.publisher_id")
+        ),
         sa.Column("source_type", sa.Text, nullable=False),
         sa.Column("publisher_name", sa.Text, nullable=False),
         sa.Column("agency_type", sa.Text),
@@ -66,18 +97,43 @@ def upgrade() -> None:
         sa.Column("last_failure", sa.TIMESTAMP(timezone=True)),
         sa.Column("enabled", sa.Boolean, nullable=False, server_default="true"),
         sa.Column("notes", sa.Text),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
     )
 
     # documents
     op.create_table(
         "documents",
-        sa.Column("document_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("source_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("sources.source_id"), nullable=False),
+        sa.Column(
+            "document_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
+        sa.Column(
+            "source_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("sources.source_id"),
+            nullable=False,
+        ),
         sa.Column("crawl_id", postgresql.UUID(as_uuid=True)),
         sa.Column("source_url", sa.Text, nullable=False),
-        sa.Column("fetch_timestamp", sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
+        sa.Column(
+            "fetch_timestamp",
+            sa.TIMESTAMP(timezone=True),
+            nullable=False,
+            server_default=sa.text("NOW()"),
+        ),
         sa.Column("content_type", sa.Text),
         sa.Column("file_size_bytes", sa.BigInteger),
         sa.Column("sha256_hash", sa.Text, nullable=False),
@@ -88,17 +144,32 @@ def upgrade() -> None:
         sa.Column("is_ocr", sa.Boolean, server_default="false"),
         sa.Column("parser_version", sa.Text),
         sa.Column("processing_status", sa.Text, nullable=False, server_default="'pending'"),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
     )
     op.create_unique_constraint("uq_documents_hash", "documents", ["sha256_hash"])
     op.create_index("idx_documents_source_url", "documents", ["source_url"])
     op.create_index("idx_documents_type", "documents", ["document_type"])
-    op.create_index("idx_documents_fetch_ts", "documents", ["fetch_timestamp"], postgresql_ops={"fetch_timestamp": "DESC"})
+    op.create_index(
+        "idx_documents_fetch_ts",
+        "documents",
+        ["fetch_timestamp"],
+        postgresql_ops={"fetch_timestamp": "DESC"},
+    )
 
     # suppliers
     op.create_table(
         "suppliers",
-        sa.Column("supplier_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "supplier_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
         sa.Column("canonical_name", sa.Text, nullable=False),
         sa.Column("slug", sa.Text, unique=True, nullable=False),
         sa.Column("supplier_type", sa.Text),
@@ -106,16 +177,35 @@ def upgrade() -> None:
         sa.Column("psgc_province", sa.Text),
         sa.Column("philgeps_id", sa.Text),
         sa.Column("embedding", postgresql.ARRAY(sa.Float)),  # vector(1536) via pgvector
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
     )
-    op.execute("CREATE INDEX idx_suppliers_name_trgm ON suppliers USING gin (canonical_name gin_trgm_ops)")
+    op.execute(
+        "CREATE INDEX idx_suppliers_name_trgm ON suppliers USING gin (canonical_name gin_trgm_ops)"
+    )
 
     # procurement_cases
     op.create_table(
         "procurement_cases",
-        sa.Column("case_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("publisher_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("publishers.publisher_id")),
+        sa.Column(
+            "case_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
+        sa.Column(
+            "publisher_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("publishers.publisher_id")
+        ),
         sa.Column("agency_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("agencies.agency_id")),
         sa.Column("procurement_ref_no", sa.Text),
         sa.Column("title", sa.Text, nullable=False),
@@ -134,17 +224,39 @@ def upgrade() -> None:
         sa.Column("risk_score", sa.Numeric(4, 3)),
         sa.Column("confidence_score", sa.Numeric(4, 3)),
         sa.Column("risk_components", postgresql.JSONB),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
     )
     op.create_index("idx_cases_risk", "procurement_cases", ["risk_score"])
-    op.execute("CREATE INDEX idx_cases_title_fts ON procurement_cases USING gin (to_tsvector('english', title))")
+    op.execute(
+        "CREATE INDEX idx_cases_title_fts ON procurement_cases USING gin (to_tsvector('english', title))"
+    )
 
     # discrepancies
     op.create_table(
         "discrepancies",
-        sa.Column("discrepancy_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("case_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("procurement_cases.case_id"), nullable=False),
+        sa.Column(
+            "discrepancy_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
+        sa.Column(
+            "case_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("procurement_cases.case_id"),
+            nullable=False,
+        ),
         sa.Column("discrepancy_type", sa.Text, nullable=False),
         sa.Column("severity", sa.Text, nullable=False),
         sa.Column("explanation", sa.Text, nullable=False),
@@ -154,7 +266,12 @@ def upgrade() -> None:
         sa.Column("rule_version", sa.Text, nullable=False),
         sa.Column("why_fired", sa.Text, nullable=False),
         sa.Column("thresholds_applied", postgresql.JSONB),
-        sa.Column("generated_at", sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
+        sa.Column(
+            "generated_at",
+            sa.TIMESTAMP(timezone=True),
+            nullable=False,
+            server_default=sa.text("NOW()"),
+        ),
         sa.Column("review_status", sa.Text, nullable=False, server_default="'pending'"),
         sa.Column("analyst_outcome", sa.Text),
         sa.Column("analyst_id", postgresql.UUID(as_uuid=True)),
@@ -166,10 +283,20 @@ def upgrade() -> None:
     # evidence_links (provenance)
     op.create_table(
         "evidence_links",
-        sa.Column("link_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "link_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
         sa.Column("entity_type", sa.Text, nullable=False),
         sa.Column("entity_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("document_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("documents.document_id"), nullable=False),
+        sa.Column(
+            "document_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("documents.document_id"),
+            nullable=False,
+        ),
         sa.Column("source_url", sa.Text, nullable=False),
         sa.Column("fetch_timestamp", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("sha256_hash", sa.Text, nullable=False),
@@ -179,14 +306,24 @@ def upgrade() -> None:
         sa.Column("extraction_confidence", sa.Numeric(4, 3)),
         sa.Column("parser_version", sa.Text),
         sa.Column("rule_version", sa.Text),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
     )
     op.create_index("idx_evidence_entity", "evidence_links", ["entity_type", "entity_id"])
 
     # audit_log (immutable)
     op.create_table(
         "audit_log",
-        sa.Column("log_id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "log_id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("uuid_generate_v4()"),
+        ),
         sa.Column("actor_id", postgresql.UUID(as_uuid=True)),
         sa.Column("actor_type", sa.Text),
         sa.Column("action", sa.Text, nullable=False),
@@ -194,7 +331,12 @@ def upgrade() -> None:
         sa.Column("entity_id", postgresql.UUID(as_uuid=True)),
         sa.Column("old_value", postgresql.JSONB),
         sa.Column("new_value", postgresql.JSONB),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.text("NOW()"),
+            nullable=False,
+        ),
     )
 
 

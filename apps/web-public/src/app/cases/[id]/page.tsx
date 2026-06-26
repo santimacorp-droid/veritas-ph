@@ -5,14 +5,24 @@
  */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { EvidenceLink } from '@veritas/types';
 import styles from './page.module.css';
 import { DiscrepancyCard } from '@/components/DiscrepancyCard';
+import RiskRadarChart from '@/components/RiskRadarChart';
 import {
   ProcurementTimeline,
   type TimelineEvent,
 } from '@/components/ProcurementTimeline';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
+interface LinkedLaw {
+  law_id: string;
+  short_title: string;
+  section_number: string;
+  issue_description: string;
+  notes?: string;
+}
 
 interface CaseDetail {
   case_id: string;
@@ -26,6 +36,8 @@ interface CaseDetail {
   agency_acronym?: string;
   procurement_method?: string;
   award_date?: string;
+  risk_components?: Record<string, number> | string;
+  linked_laws?: LinkedLaw[];
 }
 
 interface TimelineResponse {
@@ -42,6 +54,7 @@ type ReviewStatus =
 
 interface CaseDiscrepancy {
   discrepancy_id: string;
+  case_id: string;
   discrepancy_type: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
   explanation: string;
@@ -51,6 +64,7 @@ interface CaseDiscrepancy {
   thresholds_applied?: Record<string, string | number | undefined>;
   generated_at: string;
   review_status: ReviewStatus;
+  evidence?: EvidenceLink[];
 }
 
 interface DiscrepancyResponse {
@@ -85,12 +99,13 @@ function riskClass(score?: number) {
 export default async function CaseDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const [caseData, timelineData, discrepancyData] = await Promise.all([
-    getCase(params.id),
-    getTimeline(params.id),
-    getDiscrepancies(params.id),
+    getCase(id),
+    getTimeline(id),
+    getDiscrepancies(id),
   ]);
 
   if (!caseData) notFound();
@@ -105,7 +120,7 @@ export default async function CaseDetailPage({
 
   return (
     <div>
-      {/* â”€â”€ Site Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Site Header ────────────────────────────────────────── */}
       <header className={styles.siteHeader}>
         <div className={styles.topbar}>
           <Link href="/" className={styles.siteLogo}>
@@ -124,7 +139,7 @@ export default async function CaseDetailPage({
           </div>
         </div>
         <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Methodology'].map((item) => (
+          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
             <Link
               key={item}
               href={`/${item.toLowerCase()}`}
@@ -136,22 +151,22 @@ export default async function CaseDetailPage({
         </nav>
       </header>
 
-      {/* â”€â”€ Page Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Page Content ──────────────────────────────────────── */}
       <main className={styles.pageContent}>
         {/* Breadcrumb */}
         <nav className={`${styles.breadcrumb} font-ui`}>
           <Link href="/cases">Cases</Link>
-          <span className={styles.breadcrumbSep}>â€º</span>
+          <span className={styles.breadcrumbSep}>›</span>
           {caseData.agency_acronym && caseData.agency_id && (
             <>
               <Link href={`/agencies/${caseData.agency_id}`}>
                 {caseData.agency_acronym}
               </Link>
-              <span className={styles.breadcrumbSep}>â€º</span>
+              <span className={styles.breadcrumbSep}>›</span>
             </>
           )}
           <span className={styles.breadcrumbCurrent}>
-            {caseData.procurement_ref_no ?? params.id}
+            {caseData.procurement_ref_no ?? id}
           </span>
         </nav>
 
@@ -199,7 +214,7 @@ export default async function CaseDetailPage({
           <div className={styles.scoreBlock}>
             <div className={`${styles.scoreBlockLabel} font-ui`}>Risk Score</div>
             <div className={`${styles.scoreValue} ${riskClass(caseData.risk_score)} font-display`}>
-              {caseData.risk_score?.toFixed(2) ?? 'â€”'}
+              {caseData.risk_score?.toFixed(2) ?? '—'}
             </div>
             <div className={styles.scoreTrack}>
               <div
@@ -215,7 +230,7 @@ export default async function CaseDetailPage({
           <div className={styles.scoreBlock}>
             <div className={`${styles.scoreBlockLabel} font-ui`}>Confidence Score</div>
             <div className={`${styles.scoreValue} font-display`}>
-              {caseData.confidence_score?.toFixed(2) ?? 'â€”'}
+              {caseData.confidence_score?.toFixed(2) ?? '—'}
             </div>
             <div className={styles.scoreTrack}>
               <div className={`${styles.scoreFill} ${styles.neutral}`} style={{ width: `${confidencePct}%` }} />
@@ -235,6 +250,11 @@ export default async function CaseDetailPage({
               Stages documented
             </div>
           </div>
+
+          <div className={styles.scoreBlock} style={{ padding: '10px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '180px' }}>
+            <div className={`${styles.scoreBlockLabel} font-ui`} style={{ marginBottom: '0' }}>Risk Dimensions</div>
+            <RiskRadarChart riskComponents={caseData.risk_components} />
+          </div>
         </div>
 
         {/* Timeline */}
@@ -243,7 +263,7 @@ export default async function CaseDetailPage({
         </div>
         <div className={styles.timelineWrapper}>
           <ProcurementTimeline
-            case_ref={caseData.procurement_ref_no ?? params.id}
+            case_ref={caseData.procurement_ref_no ?? id}
             events={timelineData.timeline}
             completeness_score={caseData.completeness_score}
           />
@@ -251,15 +271,15 @@ export default async function CaseDetailPage({
 
         {/* Discrepancies */}
         <div className={styles.sectionHeader}>
-          <span className="font-ui">Discrepancy Signals</span>
+          <span className="font-ui">Audit Anomaly Flags</span>
           <span className={`${styles.sectionCount} font-mono`}>
-            {discrepancyData.discrepancies.length} signals
+            {discrepancyData.discrepancies.length} flags
           </span>
         </div>
         <div className={styles.discrepancyList}>
           {discrepancyData.discrepancies.length === 0 ? (
             <p className={`${styles.emptyNote} font-ui`}>
-              No confirmed discrepancy signals for this case.
+              No confirmed anomaly flags for this case.
             </p>
           ) : (
             discrepancyData.discrepancies.map((discrepancy) => (
@@ -272,16 +292,47 @@ export default async function CaseDetailPage({
           )}
         </div>
 
+        {/* Potential Law Violations */}
+        {caseData.linked_laws && caseData.linked_laws.length > 0 && (
+          <div className={styles.sectionHeader} style={{ marginTop: '36px' }}>
+            <span className="font-ui">Potential Law Violations</span>
+          </div>
+        )}
+        {caseData.linked_laws && caseData.linked_laws.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+            {caseData.linked_laws.map((law: LinkedLaw, idx: number) => (
+              <div key={idx} style={{ background: 'var(--color-paper-dark)', border: '1px solid var(--color-rule)', padding: '16px 20px', borderLeft: '4px solid var(--color-flag)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <Link href={`/laws/${law.law_id}`} style={{ color: 'var(--color-data-blue)', fontWeight: 600, textDecoration: 'underline' }} className="font-ui">
+                    {law.short_title} — {law.section_number}
+                  </Link>
+                  <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)' }} className="font-mono">
+                    AUTOMATIC LINK
+                  </span>
+                </div>
+                <p className="font-body" style={{ fontSize: '13.5px', color: 'var(--color-ink-secondary)' }}>
+                  {law.issue_description}
+                </p>
+                {law.notes && (
+                  <p className="font-mono" style={{ fontSize: '11px', color: 'var(--color-ink-muted)', marginTop: '8px', borderTop: '1px dashed var(--color-rule)', paddingTop: '6px' }}>
+                    Note: {law.notes}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Page Actions */}
         <div className={styles.pageActions}>
           <a
-            href={`http://localhost:8000/exports/case/${params.id}.json`}
+            href={`${API_URL}/exports/case/${id}.json`}
             className={`${styles.btnPrimary} font-ui`}
           >
             Download Case Dossier (JSON)
           </a>
           <a
-            href={`http://localhost:8000/exports/case/${params.id}.csv`}
+            href={`${API_URL}/exports/case/${id}.csv`}
             className={`${styles.btnSecondary} font-ui`}
           >
             Download (CSV)

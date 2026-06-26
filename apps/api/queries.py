@@ -6,7 +6,7 @@ Every query returns provenance data — source URLs, hashes, fetch timestamps.
 """
 
 import json
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import bindparam, text
@@ -54,6 +54,8 @@ async def _attach_discrepancy_evidence(
                 el.fetch_timestamp,
                 el.sha256_hash,
                 el.page_number,
+                el.char_start,
+                el.char_end,
                 el.extraction_confidence,
                 d.document_type
             FROM evidence_links el
@@ -82,7 +84,9 @@ async def _attach_discrepancy_evidence(
     for item in items:
         if evidence_by_discrepancy.get(str(item.get("discrepancy_id"))):
             continue
-        fallback_ids.extend(str(doc_id) for doc_id in (item.get("source_document_ids") or []) if doc_id)
+        fallback_ids.extend(
+            str(doc_id) for doc_id in (item.get("source_document_ids") or []) if doc_id
+        )
         if item.get("case_id"):
             fallback_case_ids.append(str(item["case_id"]))
 
@@ -98,7 +102,9 @@ async def _attach_discrepancy_evidence(
             FROM documents
             WHERE document_id IN :document_ids
         """).bindparams(bindparam("document_ids", expanding=True))
-        docs_result = await db.execute(docs_sql, {"document_ids": list(dict.fromkeys(fallback_ids))})
+        docs_result = await db.execute(
+            docs_sql, {"document_ids": list(dict.fromkeys(fallback_ids))}
+        )
         documents_by_id = {
             str(row["document_id"]): {
                 "link_id": str(row["document_id"]),
@@ -133,7 +139,10 @@ async def _attach_discrepancy_evidence(
         for row in case_docs_result.mappings().all():
             case_id = str(row["case_id"])
             documents_by_case.setdefault(case_id, [])
-            if any(item["document_id"] == str(row["document_id"]) for item in documents_by_case[case_id]):
+            if any(
+                item["document_id"] == str(row["document_id"])
+                for item in documents_by_case[case_id]
+            ):
                 continue
             documents_by_case[case_id].append(
                 {
@@ -153,11 +162,11 @@ async def _attach_discrepancy_evidence(
             item["evidence"] = direct_evidence
             continue
 
-        source_document_ids = [str(doc_id) for doc_id in (item.get("source_document_ids") or []) if doc_id]
+        source_document_ids = [
+            str(doc_id) for doc_id in (item.get("source_document_ids") or []) if doc_id
+        ]
         fallback_evidence = [
-            documents_by_id[doc_id]
-            for doc_id in source_document_ids
-            if doc_id in documents_by_id
+            documents_by_id[doc_id] for doc_id in source_document_ids if doc_id in documents_by_id
         ]
         if fallback_evidence:
             item["evidence"] = fallback_evidence
@@ -187,17 +196,57 @@ async def get_public_summary(db: AsyncSession):
     """)
     result = await db.execute(sql)
     row = result.mappings().first()
-    return dict(row) if row else {
-        "total_cases": 0,
-        "total_agencies": 0,
-        "total_discrepancies": 0,
-        "total_awarded": 0,
-    }
+    return (
+        dict(row)
+        if row
+        else {
+            "total_cases": 0,
+            "total_agencies": 0,
+            "total_discrepancies": 0,
+            "total_awarded": 0,
+        }
+    )
 
 
-async def list_cases(db: AsyncSession, limit: int = 25, offset: int = 0):
+async def list_cases(
+    db: AsyncSession,
+    limit: int = 25,
+    offset: int = 0,
+    agency_id: UUID | None = None,
+    procurement_method: str | None = None,
+    category: str | None = None,
+    risk_min: float | None = None,
+    year: int | None = None
+):
     """List procurement cases ordered by freshness first, then risk and award date."""
-    sql = text("""
+    where_clauses = []
+    params = {"limit": limit, "offset": offset}
+    
+    if agency_id:
+        where_clauses.append("pc.agency_id = :agency_id")
+        params["agency_id"] = str(agency_id)
+    if procurement_method:
+        where_clauses.append("LOWER(pc.procurement_method) = LOWER(:procurement_method)")
+        params["procurement_method"] = procurement_method
+    if category:
+        where_clauses.append("LOWER(pc.category) = LOWER(:category)")
+        params["category"] = category
+    if risk_min is not None:
+        where_clauses.append("pc.risk_score >= :risk_min")
+        params["risk_min"] = risk_min
+    if year is not None:
+        if "sqlite" in str(db.bind.url):
+            where_clauses.append("strftime('%Y', pc.award_date) = :year_str")
+            params["year_str"] = str(year)
+        else:
+            where_clauses.append("EXTRACT(YEAR FROM pc.award_date) = :year")
+            params["year"] = year
+        
+    where_sql = ""
+    if where_clauses:
+        where_sql = "WHERE " + " AND ".join(where_clauses)
+        
+    sql = text(f"""
         SELECT
             pc.case_id,
             pc.agency_id,
@@ -213,7 +262,6 @@ async def list_cases(db: AsyncSession, limit: int = 25, offset: int = 0):
             pc.confidence_score,
             pc.updated_at,
             pc.created_at,
-            a.agency_id,
             a.name AS agency_name,
             a.acronym AS agency_acronym,
             COUNT(DISTINCT d.discrepancy_id) FILTER (
@@ -222,6 +270,7 @@ async def list_cases(db: AsyncSession, limit: int = 25, offset: int = 0):
         FROM procurement_cases pc
         LEFT JOIN agencies a ON a.agency_id = pc.agency_id
         LEFT JOIN discrepancies d ON d.case_id = pc.case_id
+        {where_sql}
         GROUP BY
             pc.case_id, pc.title, pc.procurement_ref_no, pc.procurement_method,
             pc.category, pc.awarded_amount, pc.award_date, pc.status,
@@ -234,9 +283,10 @@ async def list_cases(db: AsyncSession, limit: int = 25, offset: int = 0):
             pc.award_date DESC NULLS LAST
         LIMIT :limit OFFSET :offset
     """)
-    result = await db.execute(sql, {"limit": limit, "offset": offset})
+    result = await db.execute(sql, params)
     rows = result.mappings().all()
-    count_result = await db.execute(text("SELECT COUNT(*) FROM procurement_cases"))
+    count_sql = text(f"SELECT COUNT(*) FROM procurement_cases pc {where_sql}")
+    count_result = await db.execute(count_sql, {k: v for k, v in params.items() if k not in ("limit", "offset")})
     total = count_result.scalar_one()
     return total, [dict(r) for r in rows]
 
@@ -244,9 +294,9 @@ async def list_cases(db: AsyncSession, limit: int = 25, offset: int = 0):
 async def search_cases(
     db: AsyncSession,
     q: str,
-    agency_id: Optional[UUID],
-    date_from: Optional[str],
-    date_to: Optional[str],
+    agency_id: UUID | None,
+    date_from: str | None,
+    date_to: str | None,
     limit: int,
     offset: int,
 ):
@@ -300,24 +350,101 @@ async def search_suppliers(
     q: str,
     limit: int,
     offset: int,
+    use_semantic: bool = False,
+    embedding: list[float] | None = None,
 ):
-    """Trigram fuzzy search on supplier names."""
-    sql = text("""
-        SELECT
-            s.supplier_id,
-            s.canonical_name,
-            s.supplier_type,
-            s.psgc_province,
-            s.philgeps_id,
-            similarity(s.canonical_name, :q) AS score
-        FROM suppliers s
-        WHERE s.canonical_name % :q
-        ORDER BY score DESC
-        LIMIT :limit OFFSET :offset
-    """)
-    result = await db.execute(sql, {"q": q, "limit": limit, "offset": offset})
-    rows = result.mappings().all()
-    return [dict(r) for r in rows]
+    """
+    Search suppliers using either Trigram fuzzy match or Vector semantic similarity.
+    For SQLite, vector calculation is done in Python using numpy.
+    """
+    import numpy as np
+
+    if use_semantic and embedding:
+        sql = text("""
+            SELECT
+                s.supplier_id,
+                s.canonical_name,
+                s.supplier_type,
+                s.psgc_province,
+                s.philgeps_id,
+                s.embedding
+            FROM suppliers s
+        """)
+        result = await db.execute(sql)
+        suppliers = []
+        target_vector = np.array(embedding)
+        for r in result.mappings().all():
+            sup = dict(r)
+            emb_str = sup.pop("embedding", None)
+            if emb_str:
+                try:
+                    emb = np.array(json.loads(emb_str))
+                    # Cosine similarity
+                    denom = np.linalg.norm(emb) * np.linalg.norm(target_vector)
+                    if denom > 0:
+                        score = np.dot(emb, target_vector) / denom
+                        sup["score"] = float(score)
+                        suppliers.append(sup)
+                except Exception:
+                    continue
+        suppliers.sort(key=lambda x: x.get("score", 0), reverse=True)
+        return suppliers[offset : offset + limit]
+    else:
+        sql = text("""
+            SELECT
+                s.supplier_id,
+                s.canonical_name,
+                s.supplier_type,
+                s.psgc_province,
+                s.philgeps_id,
+                1.0 AS score
+            FROM suppliers s
+            WHERE s.canonical_name LIKE :q
+            LIMIT :limit OFFSET :offset
+        """)
+        result = await db.execute(sql, {"q": f"%{q}%", "limit": limit, "offset": offset})
+        rows = result.mappings().all()
+        return [dict(r) for r in rows]
+
+
+async def find_duplicate_suppliers(db: AsyncSession, supplier_id: UUID, threshold: float = 0.95):
+    """
+    Find potential duplicates for a given supplier using vector similarity in Python.
+    """
+    import numpy as np
+
+    target_sql = text("SELECT embedding FROM suppliers WHERE supplier_id = :id")
+    target_res = await db.execute(target_sql, {"id": str(supplier_id)})
+    target_row = target_res.mappings().first()
+    if not target_row or not target_row["embedding"]:
+        return []
+
+    try:
+        target_emb = np.array(json.loads(target_row["embedding"]))
+    except Exception:
+        return []
+
+    sql = text(
+        "SELECT supplier_id, canonical_name, embedding FROM suppliers WHERE supplier_id != :id"
+    )
+    result = await db.execute(sql, {"id": str(supplier_id)})
+    duplicates = []
+    for r in result.mappings().all():
+        sup = dict(r)
+        emb_str = sup.pop("embedding", None)
+        if emb_str:
+            try:
+                emb = np.array(json.loads(emb_str))
+                denom = np.linalg.norm(emb) * np.linalg.norm(target_emb)
+                if denom > 0:
+                    sim = np.dot(emb, target_emb) / denom
+                    if sim >= threshold:
+                        sup["similarity"] = float(sim)
+                        duplicates.append(sup)
+            except Exception:
+                continue
+    duplicates.sort(key=lambda x: x.get("similarity", 0), reverse=True)
+    return duplicates
 
 
 async def get_case_detail(db: AsyncSession, case_id: UUID):
@@ -380,7 +507,30 @@ async def get_case_timeline(db: AsyncSession, case_id: UUID):
     """)
     result = await db.execute(sql, {"case_id": str(case_id)})
     rows = result.mappings().all()
-    return [_normalise_discrepancy_row(r) for r in rows]
+    
+    events = [_normalise_discrepancy_row(r) for r in rows]
+    
+    # Surface missing stages explicitly
+    all_stages = ["planning", "tender", "award", "contract", "implementation", "audit"]
+    present_stages = {e.get("stage") for e in events if e.get("stage")}
+    
+    for stage in all_stages:
+        if stage not in present_stages:
+            events.append({
+                "stage": stage,
+                "missing": True,
+                "event_type": None,
+                "event_date": None,
+                "amount": None,
+                "notes": None,
+                "document_id": None
+            })
+            
+    # Sort events by custom stage order, then by date
+    stage_order = {s: i for i, s in enumerate(all_stages)}
+    events.sort(key=lambda x: (stage_order.get(x.get("stage"), 99), x.get("event_date") or ""))
+    
+    return events
 
 
 async def get_case_discrepancies(db: AsyncSession, case_id: UUID, analyst: bool = False):
@@ -569,9 +719,15 @@ async def get_supplier_awards(
     return total, [dict(r) for r in rows]
 
 
-async def list_agencies(db: AsyncSession, limit: int = 50, offset: int = 0):
-    """All agencies with aggregated procurement stats, sorted by total awarded desc."""
-    sql = text("""
+async def list_agencies(db: AsyncSession, limit: int = 50, offset: int = 0, sort: str | None = None):
+    """All agencies with aggregated procurement stats, sorted by risk or volume."""
+    order_by = "total_awarded DESC NULLS LAST"
+    if sort == "risk_score":
+        order_by = "avg_risk_score DESC NULLS LAST"
+    elif sort == "discrepancies":
+        order_by = "confirmed_discrepancies DESC NULLS LAST"
+        
+    sql = text(f"""
         SELECT
             a.agency_id,
             a.name,
@@ -589,7 +745,7 @@ async def list_agencies(db: AsyncSession, limit: int = 50, offset: int = 0):
         LEFT JOIN procurement_cases pc ON pc.agency_id = a.agency_id
         LEFT JOIN discrepancies d      ON d.case_id = pc.case_id
         GROUP BY a.agency_id, a.name, a.acronym, a.agency_type, p.name
-        ORDER BY total_awarded DESC NULLS LAST
+        ORDER BY {order_by}
         LIMIT :limit OFFSET :offset
     """)
     result = await db.execute(sql, {"limit": limit, "offset": offset})
@@ -628,11 +784,13 @@ async def list_recent_discrepancies(db: AsyncSession, limit: int = 10, offset: i
     """)
     result = await db.execute(sql, {"limit": limit, "offset": offset})
     rows = result.mappings().all()
-    count_result = await db.execute(text("""
+    count_result = await db.execute(
+        text("""
         SELECT COUNT(*)
         FROM discrepancies
         WHERE review_status IN ('confirmed', 'published')
-    """))
+    """)
+    )
     total = count_result.scalar_one()
     return total, await _attach_discrepancy_evidence(db, rows)
 
@@ -829,3 +987,43 @@ async def get_case_full_export(db: AsyncSession, case_id: UUID):
         "discrepancies": discrepancies,
         "awards": awards,
     }
+
+
+async def get_chart_stats(db: AsyncSession):
+    """Aggregate statistics for public visualization charts."""
+    # 1. Risk Distribution: Group cases by risk levels (Low: <0.35, Medium: 0.35-0.70, High: >=0.70)
+    risk_sql = text("""
+        SELECT 
+            CASE 
+                WHEN risk_score < 0.35 THEN 'Low'
+                WHEN risk_score >= 0.35 AND risk_score < 0.70 THEN 'Medium'
+                ELSE 'High'
+            END as risk_level,
+            COUNT(*) as count
+        FROM procurement_cases
+        GROUP BY risk_level
+    """)
+    risk_result = await db.execute(risk_sql)
+    risk_data = [dict(r) for r in risk_result.mappings().all()]
+
+    levels = {"Low": 0, "Medium": 0, "High": 0}
+    for item in risk_data:
+        if item["risk_level"] in levels:
+            levels[item["risk_level"]] = item["count"]
+
+    risk_distribution = [{"level": k, "count": v} for k, v in levels.items()]
+
+    # 2. Agency Spending: Concentration of awarded amounts by agency
+    agency_sql = text("""
+        SELECT 
+            COALESCE(a.acronym, a.name, 'Unknown') as agency_name,
+            CAST(SUM(pc.awarded_amount) AS FLOAT) as total_awarded
+        FROM procurement_cases pc
+        LEFT JOIN agencies a ON pc.agency_id = a.agency_id
+        GROUP BY agency_name
+        ORDER BY total_awarded DESC
+    """)
+    agency_result = await db.execute(agency_sql)
+    agency_distribution = [dict(r) for r in agency_result.mappings().all()]
+
+    return {"risk_distribution": risk_distribution, "agency_distribution": agency_distribution}

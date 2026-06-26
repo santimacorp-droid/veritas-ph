@@ -237,3 +237,31 @@
 .pillCheck { color: var(--color-confirm); }
 .pillCross { color: var(--color-flag); }
 .pillName  { color: var(--color-ink-muted); }
+
+.eventRefContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+.downloadIconBtn {
+  font-size: 9px;
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper);
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.downloadIconBtn:hover {
+  background: var(--color-paper-darker);
+  color: var(--color-ink);
+  border-color: var(--color-rule-strong);
+}

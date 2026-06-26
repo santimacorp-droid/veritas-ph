@@ -1,0 +1,9 @@
+{
+  "name": "@veritas/config",
+  "version": "1.0.0",
+  "private": true,
+  "files": [
+    "ts",
+    "eslint"
+  ]
+}

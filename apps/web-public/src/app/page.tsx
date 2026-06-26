@@ -2,27 +2,16 @@ import Link from 'next/link';
 import styles from './page.module.css';
 import {
   DiscrepancyCard,
-  type DiscrepancyCardProps,
-} from '@/components/DiscrepancyCard';
+} from '@/components/DiscrepancyCard/DiscrepancyCard';
+import {
+  RiskDistributionBarChart,
+  AgencyConcentrationPieChart,
+} from '@/components/AnalyticsCharts';
+import { PublicSummary, Discrepancy } from '@veritas/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
-interface SummaryStats {
-  total_cases: number;
-  total_agencies: number;
-  total_discrepancies: number;
-  total_awarded: number;
-}
-
-interface RecentDiscrepancy extends DiscrepancyCardProps {
-  case_id: string;
-  case_title?: string;
-  procurement_ref_no?: string;
-  agency_name?: string;
-  agency_acronym?: string;
-}
-
-async function getSummary(): Promise<SummaryStats | null> {
+async function getSummary(): Promise<PublicSummary | null> {
   try {
     const res = await fetch(`${API_URL}/stats/summary`, { cache: 'no-store' });
     if (!res.ok) return null;
@@ -32,7 +21,7 @@ async function getSummary(): Promise<SummaryStats | null> {
   }
 }
 
-async function getRecentDiscrepancies(): Promise<RecentDiscrepancy[]> {
+async function getRecentDiscrepancies(): Promise<Discrepancy[]> {
   try {
     const res = await fetch(`${API_URL}/discrepancies?limit=6`, { cache: 'no-store' });
     if (!res.ok) return [];
@@ -43,8 +32,35 @@ async function getRecentDiscrepancies(): Promise<RecentDiscrepancy[]> {
   }
 }
 
+interface RiskData {
+  level: string;
+  count: number;
+}
+
+interface AgencyData {
+  agency_name: string;
+  total_awarded: number;
+}
+
+async function getChartStats(): Promise<{ risk_distribution: RiskData[]; agency_distribution: AgencyData[] }> {
+  try {
+    const res = await fetch(`${API_URL}/stats/charts`, { cache: 'no-store' });
+    if (!res.ok) throw new Error();
+    return res.json();
+  } catch {
+    return {
+      risk_distribution: [
+        { level: 'Low', count: 0 },
+        { level: 'Medium', count: 0 },
+        { level: 'High', count: 0 },
+      ],
+      agency_distribution: [],
+    };
+  }
+}
+
 function formatPesoCompact(value?: number | null) {
-  if (value == null) return 'â‚±0';
+  if (value == null) return '₱0';
   return new Intl.NumberFormat('en-PH', {
     style: 'currency',
     currency: 'PHP',
@@ -54,9 +70,10 @@ function formatPesoCompact(value?: number | null) {
 }
 
 export default async function Home() {
-  const [summary, discrepancies] = await Promise.all([
+  const [summary, discrepancies, chartStats] = await Promise.all([
     getSummary(),
     getRecentDiscrepancies(),
+    getChartStats(),
   ]);
 
   return (
@@ -73,6 +90,9 @@ export default async function Home() {
           <Link href="/cases" className={`${styles.navLink} font-ui`}>Cases</Link>
           <Link href="/agencies" className={`${styles.navLink} font-ui`}>Agencies</Link>
           <Link href="/suppliers" className={`${styles.navLink} font-ui`}>Suppliers</Link>
+          <Link href="/scorecard" className={`${styles.navLink} font-ui`}>Scorecard</Link>
+          <Link href="/map" className={`${styles.navLink} font-ui`}>Map</Link>
+          <Link href="/laws" className={`${styles.navLink} font-ui`}>Laws</Link>
           <Link href="/about" className={`${styles.navLink} font-ui`}>About</Link>
         </nav>
       </header>
@@ -86,7 +106,7 @@ export default async function Home() {
           <span className={`${styles.statValue} ${styles.statFlag}`}>
             {summary?.total_discrepancies ?? 0}
           </span>
-          <span className={styles.statLabel}>Confirmed signals</span>
+          <span className={styles.statLabel}>Audit anomaly flags</span>
         </div>
         <div className={`${styles.stat} font-mono`}>
           <span className={styles.statValue}>{summary?.total_agencies ?? 0}</span>
@@ -100,19 +120,25 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Analytics Dashboard Section */}
+      <section className={styles.chartsGrid}>
+        <RiskDistributionBarChart riskData={chartStats.risk_distribution} />
+        <AgencyConcentrationPieChart agencyData={chartStats.agency_distribution} />
+      </section>
+
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={`${styles.sectionTitle} font-display`}>
-            Recent Discrepancies
+            Recent Audit Anomaly Flags
           </h2>
           <span className={`${styles.sectionNote} font-ui`}>
-            Confirmed anomaly indicators from public procurement records
+            Confirmed anomaly flags from public procurement records
           </span>
         </div>
 
         {discrepancies.length === 0 ? (
           <div className={`${styles.emptyState} font-body`}>
-            No reviewed discrepancy cards are available yet. Seed the database or run the crawler
+            No reviewed anomaly flag cards are available yet. Seed the database or run the crawler
             to populate the public feed.
           </div>
         ) : (
@@ -122,29 +148,17 @@ export default async function Home() {
                 <div className={`${styles.discrepancyMeta} font-ui`}>
                   <div className={styles.discrepancyMetaLeft}>
                     <Link href={`/cases/${discrepancy.case_id}`} className={styles.metaLink}>
-                      {discrepancy.procurement_ref_no ?? discrepancy.case_title ?? 'Open case'}
+                      {discrepancy.case_title ?? 'Open case'}
                     </Link>
                     {discrepancy.agency_acronym && (
-                      <span>{discrepancy.agency_acronym}</span>
+                      <span>&bull; {discrepancy.agency_acronym}</span>
                     )}
                   </div>
                   <span className={styles.discrepancyMetaRight}>
-                    {discrepancy.case_title}
+                    {discrepancy.discrepancy_type.replace(/_/g, ' ')}
                   </span>
                 </div>
-                <DiscrepancyCard
-                  discrepancy_id={discrepancy.discrepancy_id}
-                  discrepancy_type={discrepancy.discrepancy_type}
-                  severity={discrepancy.severity}
-                  explanation={discrepancy.explanation}
-                  rule_id={discrepancy.rule_id}
-                  rule_version={discrepancy.rule_version}
-                  why_fired={discrepancy.why_fired}
-                  thresholds_applied={discrepancy.thresholds_applied}
-                  generated_at={discrepancy.generated_at}
-                  review_status={discrepancy.review_status}
-                  evidence={discrepancy.evidence}
-                />
+                <DiscrepancyCard {...discrepancy} />
               </section>
             ))}
           </div>

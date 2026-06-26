@@ -1,49 +1,27 @@
 'use client';
 
 import { startTransition, useEffect, useState } from 'react';
+import Link from 'next/link';
 import styles from './page.module.css';
+import { 
+  Discrepancy, 
+  EvidenceLink, 
+  ProcurementCase, 
+  ReviewOutcome,
+  Severity
+} from '@veritas/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 type AnalystStatus = 'queue' | 'confirmed' | 'published';
-type ReviewOutcome = 'confirmed' | 'false_positive' | 'needs_evidence' | 'publishable_lead';
 
-interface Discrepancy {
-  discrepancy_id: string;
-  discrepancy_type: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  explanation: string;
-  rule_id: string;
-  rule_version: string;
-  why_fired: Record<string, string | number | boolean | undefined>;
-  thresholds_applied?: Record<string, string | number | undefined> | null;
-  generated_at: string;
-  review_status: string;
-  evidence?: EvidenceLink[];
-}
-
-interface EvidenceLink {
-  link_id: string;
-  document_id?: string;
-  document_type?: string;
-  source_url: string;
-  fetch_timestamp: string;
-  sha256_hash: string;
-  page_number?: number;
-}
-
-interface CaseWithDiscrepancies {
+interface CaseWithDiscrepancies extends Partial<ProcurementCase> {
   case_id: string;
   title: string;
-  procurement_ref_no?: string;
-  risk_score?: number;
-  updated_at?: string;
-  agency_name?: string;
-  agency_acronym?: string;
   discrepancies: Discrepancy[];
 }
 
-const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+const SEVERITY_ORDER: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
 const OUTCOMES: { key: ReviewOutcome; label: string; style: string }[] = [
   { key: 'confirmed', label: 'Confirm', style: 'confirm' },
@@ -52,7 +30,7 @@ const OUTCOMES: { key: ReviewOutcome; label: string; style: string }[] = [
   { key: 'publishable_lead', label: 'Publishable Lead', style: 'publish' },
 ];
 
-function SeverityBadge({ severity }: { severity: string }) {
+function SeverityBadge({ severity }: { severity: Severity }) {
   return (
     <span className={`${styles.severityBadge} ${styles[`sev_${severity}`]} font-ui`}>
       {severity.toUpperCase()}
@@ -110,7 +88,7 @@ function DiscrepancyRow({
         {Object.entries(discrepancy.why_fired).map(([key, value]) => (
           <span key={key} className={`${styles.metaChip} font-mono`}>
             <span className={styles.metaKey}>{key.replace(/_/g, ' ')}</span>
-            {String(value)}
+            {String(typeof value === 'object' ? JSON.stringify(value) : value)}
           </span>
         ))}
       </div>
@@ -120,14 +98,17 @@ function DiscrepancyRow({
           {discrepancy.evidence.map((item) => (
             <a
               key={item.link_id}
-              href={item.source_url}
+              href={item.document_id ? `http://localhost:3005/documents/${item.document_id}` : item.source_url}
               target="_blank"
               rel="noreferrer"
               className={`${styles.evidenceLink} font-mono`}
             >
-              <span>{item.document_type ?? 'document'}</span>
+              <span className={styles.docType}>{item.document_type ?? 'document'}</span>
               <span>{new Date(item.fetch_timestamp).toLocaleDateString('en-PH')}</span>
               {item.page_number != null && <span>p.{item.page_number}</span>}
+              {item.bounding_box && (
+                <span className={styles.citationBadge}>CITED</span>
+              )}
             </a>
           ))}
         </div>
@@ -227,14 +208,6 @@ function CaseBlock({
   );
 }
 
-async function fetchCases(status: AnalystStatus): Promise<{ total: number; cases: CaseWithDiscrepancies[] }> {
-  const res = await fetch(`${API_URL}/analyst/cases?status=${status}`, { cache: 'no-store' });
-  if (!res.ok) {
-    throw new Error(`Failed to load ${status} cases`);
-  }
-  return res.json();
-}
-
 export default function AnalystDashboard() {
   const [activeTab, setActiveTab] = useState<AnalystStatus>('queue');
   const [cases, setCases] = useState<CaseWithDiscrepancies[]>([]);
@@ -247,19 +220,42 @@ export default function AnalystDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [token, setToken] = useState<string | null>(null);
+
+  // Initialize token from localStorage (simplified auth for prototype)
+  useEffect(() => {
+    const savedToken = localStorage.getItem('veritas_token');
+    if (savedToken) setToken(savedToken);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadDashboard() {
+      if (!token && !cancelled) {
+        setLoading(false);
+        setError('Authentication required. Please login.');
+        return;
+      }
+
       setLoading(true);
       setError('');
       try {
+        const fetchWithAuth = async (status: AnalystStatus) => {
+          const res = await fetch(`${API_URL}/analyst/cases?status=${status}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            cache: 'no-store'
+          });
+          if (!res.ok) throw new Error(`Failed to load ${status} cases`);
+          return res.json();
+        };
+
         const [queueData, confirmedData, publishedData] = await Promise.all([
-          fetchCases('queue'),
-          fetchCases('confirmed'),
-          fetchCases('published'),
+          fetchWithAuth('queue'),
+          fetchWithAuth('confirmed'),
+          fetchWithAuth('published'),
         ]);
+        
         if (cancelled) return;
 
         setTotals({
@@ -274,9 +270,9 @@ export default function AnalystDashboard() {
           published: publishedData,
         }[activeTab];
         setCases(currentData.cases ?? []);
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          setError('Could not connect to the analyst API. Make sure the backend is running.');
+          setError('Could not connect to the analyst API or session expired.');
           setCases([]);
         }
       } finally {
@@ -290,12 +286,15 @@ export default function AnalystDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, refreshKey]);
+  }, [activeTab, refreshKey, token]);
 
   async function handleReview(caseId: string, discId: string, outcome: ReviewOutcome, notes: string) {
     const res = await fetch(`${API_URL}/analyst/cases/${caseId}/review`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ outcome, discrepancy_id: discId, notes }),
     });
     if (!res.ok) {
@@ -332,10 +331,17 @@ export default function AnalystDashboard() {
               )}
             </button>
           ))}
+          <div style={{ margin: '12px 20px', borderTop: '1px solid var(--color-rule)', opacity: 0.5 }} />
+          <Link href="/legislation" className={`${styles.navItem} font-ui`} style={{ textDecoration: 'none' }}>
+            Legislation
+          </Link>
+          <Link href="/audit-log" className={`${styles.navItem} font-ui`} style={{ textDecoration: 'none' }}>
+            Audit Log
+          </Link>
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <a href="http://localhost:3000" className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
+          <a href="http://localhost:3005" className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
             Public Portal
           </a>
           <a href="http://localhost:8000/api/docs" className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">

@@ -58,3 +58,77 @@
 .discCount { color: var(--color-medium); font-weight: 600; background: var(--color-medium-light); padding: 1px 7px; border: 1px solid var(--color-medium); }
 .emptyCell { padding: 40px 16px; text-align: center; color: var(--color-ink-muted); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
 .disclaimer { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--color-rule); font-size: 10.5px; color: var(--color-ink-muted); font-style: italic; line-height: 1.6; }
+
+/* Filters Layout */
+.filterForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-rule);
+  padding: 16px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+}
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+.filterGroup label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-muted);
+}
+.filterGroup select {
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule-strong);
+  color: var(--color-ink);
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.filterGroup select:focus {
+  border-color: var(--color-data-blue);
+}
+.filterBtn {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  border: 1px solid var(--color-ink);
+  padding: 8px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  height: 36px;
+  transition: opacity 100ms;
+}
+.filterBtn:hover {
+  opacity: 0.9;
+}
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-rule-strong);
+  color: var(--color-ink-secondary);
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  height: 36px;
+  transition: background 100ms;
+}
+.clearBtn:hover {
+  background: var(--color-paper);
+}

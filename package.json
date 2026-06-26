@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "dev:public": "npm --workspace=apps/web-public run dev",
-    "dev:analyst": "npm --workspace=apps/web-analyst run dev"
+    "dev:analyst": "npm --workspace=apps/web-analyst run dev",
+    "lint": "npm run lint --workspaces --if-present"
   }
 }
