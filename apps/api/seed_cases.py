@@ -29,14 +29,14 @@ async def seed_cases():
     async with async_session_maker() as session:
         # Clean existing cases data (dialect-safe truncation)
         print("Clearing existing procurement cases data...")
+        await session.execute(text("DELETE FROM evidence_links"))
         await session.execute(text("DELETE FROM discrepancies"))
         await session.execute(text("DELETE FROM risk_signals"))
-        await session.execute(text("DELETE FROM evidence_links"))
-        await session.execute(text("DELETE FROM awards"))
-        await session.execute(text("DELETE FROM contracts"))
         await session.execute(text("DELETE FROM contract_amendments"))
-        await session.execute(text("DELETE FROM projects"))
+        await session.execute(text("DELETE FROM contracts"))
+        await session.execute(text("DELETE FROM awards"))
         await session.execute(text("DELETE FROM project_locations"))
+        await session.execute(text("DELETE FROM projects"))
         await session.execute(text("DELETE FROM procurement_events"))
         await session.execute(text("DELETE FROM procurement_cases"))
 
