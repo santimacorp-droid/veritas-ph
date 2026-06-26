@@ -15,7 +15,14 @@ load_dotenv()
 db_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../pb_data/data.db"))
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_file}")
 
-engine = create_async_engine(DATABASE_URL, echo=False, future=True, pool_size=20, max_overflow=10)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    future=True,
+    pool_size=20,
+    max_overflow=10,
+    connect_args={"prepared_statement_cache_size": 0}
+)
 
 async_session_maker = async_sessionmaker(
     engine,
