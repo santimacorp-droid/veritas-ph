@@ -300,39 +300,86 @@ async def search_cases(
     limit: int,
     offset: int,
 ):
-    """Full-text search on procurement cases using PostgreSQL ts_rank."""
-    filters = ["to_tsvector('english', pc.title) @@ plainto_tsquery('english', :q)"]
-    params: dict = {"q": q, "limit": limit, "offset": offset}
-
-    if agency_id:
-        filters.append("pc.agency_id = :agency_id")
-        params["agency_id"] = str(agency_id)
-    if date_from:
-        filters.append("pc.award_date >= :date_from")
-        params["date_from"] = date_from
-    if date_to:
-        filters.append("pc.award_date <= :date_to")
-        params["date_to"] = date_to
-
-    where = " AND ".join(filters)
-    sql = text(f"""
-        SELECT
-            pc.case_id,
-            pc.title,
-            pc.procurement_method,
-            pc.awarded_amount,
-            pc.award_date,
-            pc.risk_score,
-            pc.status,
-            a.name AS agency_name,
-            a.acronym AS agency_acronym,
-            ts_rank(to_tsvector('english', pc.title), plainto_tsquery('english', :q)) AS rank
-        FROM procurement_cases pc
-        LEFT JOIN agencies a ON a.agency_id = pc.agency_id
-        WHERE {where}
-        ORDER BY rank DESC, pc.risk_score DESC NULLS LAST
-        LIMIT :limit OFFSET :offset
-    """)
+    """Full-text search on procurement cases using PostgreSQL ts_rank, supporting reference number matches."""
+    is_postgres = "postgres" in str(db.bind.url) if db.bind else True
+    
+    if is_postgres:
+        filters = [
+            "(to_tsvector('english', pc.title || ' ' || COALESCE(pc.procurement_ref_no, '')) @@ plainto_tsquery('english', :q) "
+            "OR pc.procurement_ref_no ILIKE :q_like)"
+        ]
+        params: dict = {"q": q, "q_like": f"%{q}%", "limit": limit, "offset": offset}
+        
+        if agency_id:
+            filters.append("pc.agency_id = :agency_id")
+            params["agency_id"] = str(agency_id)
+        if date_from:
+            filters.append("pc.award_date >= :date_from")
+            params["date_from"] = date_from
+        if date_to:
+            filters.append("pc.award_date <= :date_to")
+            params["date_to"] = date_to
+            
+        where = " AND ".join(filters)
+        sql = text(f"""
+            SELECT
+                pc.case_id,
+                pc.title,
+                pc.procurement_method,
+                pc.awarded_amount,
+                pc.award_date,
+                pc.risk_score,
+                pc.status,
+                a.name AS agency_name,
+                a.acronym AS agency_acronym,
+                CASE
+                    WHEN pc.procurement_ref_no = :q THEN 1.0
+                    WHEN pc.procurement_ref_no ILIKE :q_like THEN 0.8
+                    ELSE ts_rank(to_tsvector('english', pc.title || ' ' || COALESCE(pc.procurement_ref_no, '')), plainto_tsquery('english', :q))
+                END AS rank
+            FROM procurement_cases pc
+            LEFT JOIN agencies a ON a.agency_id = pc.agency_id
+            WHERE {where}
+            ORDER BY rank DESC, pc.risk_score DESC NULLS LAST
+            LIMIT :limit OFFSET :offset
+        """)
+    else:
+        # SQLite fallback for local testing
+        filters = ["(pc.title LIKE :q_like OR pc.procurement_ref_no LIKE :q_like)"]
+        params: dict = {"q_like": f"%{q}%", "limit": limit, "offset": offset}
+        
+        if agency_id:
+            filters.append("pc.agency_id = :agency_id")
+            params["agency_id"] = str(agency_id)
+        if date_from:
+            filters.append("pc.award_date >= :date_from")
+            params["date_from"] = date_from
+        if date_to:
+            filters.append("pc.award_date <= :date_to")
+            params["date_to"] = date_to
+            
+        where = " AND ".join(filters)
+        sql = text(f"""
+            SELECT
+                pc.case_id,
+                pc.title,
+                pc.procurement_method,
+                pc.awarded_amount,
+                pc.award_date,
+                pc.risk_score,
+                pc.status,
+                a.name AS agency_name,
+                a.acronym AS agency_acronym,
+                CASE
+                    WHEN pc.procurement_ref_no = :q_like THEN 1.0
+                    ELSE 0.5
+                END AS rank
+            FROM procurement_cases pc
+            LEFT JOIN agencies a ON a.agency_id = pc.agency_id
+            WHERE {where}
+            ORDER BY rank DESC, pc.risk_score DESC NULLS LAST
+            LIMIT :limit OFFSET :offset
+        """)
 
     result = await db.execute(sql, params)
     rows = result.mappings().all()
