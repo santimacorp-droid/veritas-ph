@@ -1,0 +1,285 @@
+/* Scorecard Page Styles */
+
+.siteHeader {
+  background: var(--color-paper);
+  border-bottom: 1px solid var(--color-rule-strong);
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar {
+  display: flex; align-items: center;
+  padding: 0 32px; height: 56px;
+  border-bottom: 1px solid var(--color-rule);
+}
+.siteLogo { display: flex; flex-direction: column; gap: 1px; text-decoration: none; }
+.logoName { font-size: 22px; font-weight: 700; color: var(--color-ink); letter-spacing: -0.01em; line-height: 1; }
+.logoTagline { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-ink-muted); }
+.navStrip {
+  display: flex; align-items: center;
+  padding: 0 32px; height: 40px;
+}
+.navLink {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  padding: 0 16px; height: 40px;
+  display: flex; align-items: center;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 150ms, border-color 150ms;
+}
+.navLink:hover { color: var(--color-ink); }
+.navActive { color: var(--color-ink); border-bottom-color: var(--color-flag); }
+
+.pageContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+.pageHead {
+  padding: 36px 0 20px;
+  border-bottom: 1px solid var(--color-rule);
+  margin-bottom: 28px;
+}
+.pageTitle {
+  font-size: 28px; font-weight: 700;
+  color: var(--color-ink); margin: 0 0 6px;
+}
+.pageSubtitle {
+  font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--color-ink-muted); margin: 0;
+}
+
+/* Widgets Grid */
+.widgetsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.widgetCard {
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-rule);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.widgetCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+}
+.widgetLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+.widgetValue {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.1;
+}
+.widgetDetail {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+
+/* Highlight Widget States */
+.widgetDanger {
+  border-left: 4px solid var(--color-flag);
+}
+.widgetDanger .widgetValue {
+  color: var(--color-flag);
+}
+.widgetWarn {
+  border-left: 4px solid var(--color-medium);
+}
+.widgetWarn .widgetValue {
+  color: var(--color-medium);
+}
+
+/* Controls */
+.controlsRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.controlsLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.btnGroup {
+  display: flex;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-dark);
+}
+.toggleBtn {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 16px;
+  color: var(--color-ink-secondary);
+  text-decoration: none;
+  transition: background 120ms, color 120ms;
+}
+.toggleBtn:hover {
+  background: var(--color-paper-darker);
+  color: var(--color-ink);
+}
+.btnActive {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+.btnActive:hover {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* Table */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-rule);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.th {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  padding: 11px 16px;
+  text-align: left;
+  background: var(--color-paper-dark);
+  border-bottom: 2px solid var(--color-rule-strong);
+  white-space: nowrap;
+}
+.thNum { text-align: right; }
+.thRank { width: 60px; text-align: center; }
+
+.tr {
+  border-bottom: 1px solid var(--color-rule);
+  transition: background 80ms;
+}
+.tr:last-child { border-bottom: none; }
+.tr:hover { background: var(--color-paper-dark); }
+
+.td {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+.tdRank {
+  text-align: center;
+  color: var(--color-ink-muted);
+  font-weight: 500;
+}
+.tdNum {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.riskHighlight {
+  font-weight: 600;
+}
+
+/* Badges */
+.bandBadge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.bandHigh {
+  background: var(--color-flag-light);
+  color: var(--color-flag);
+  border: 1px solid var(--color-flag);
+}
+.bandMed {
+  background: var(--color-medium-light);
+  color: var(--color-medium);
+  border: 1px solid var(--color-medium);
+}
+.bandLow {
+  background: var(--color-confirm-light);
+  color: var(--color-confirm);
+  border: 1px solid var(--color-confirm);
+}
+.bandUnknown {
+  background: var(--color-paper-darker);
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-rule);
+}
+
+.flagCount {
+  color: var(--color-flag);
+  font-weight: 600;
+  background: var(--color-flag-light);
+  padding: 1px 7px;
+  border: 1px solid var(--color-flag);
+}
+.discCount {
+  color: var(--color-medium);
+  font-weight: 600;
+  background: var(--color-medium-light);
+  padding: 1px 7px;
+  border: 1px solid var(--color-medium);
+}
+.dash { color: var(--color-ink-faint); }
+
+.agencyLink {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+}
+.agencyName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+  transition: color 100ms;
+}
+.agencyLink:hover .agencyName { color: var(--color-data-blue); }
+.agencyAcronym {
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}
+
+.emptyCell {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.disclaimer {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-rule);
+  font-size: 10.5px;
+  color: var(--color-ink-muted);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .widgetsGrid {
+    grid-template-columns: 1fr;
+  }
+}

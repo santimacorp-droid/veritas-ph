@@ -1,0 +1,35 @@
+# Node
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.venv_linux/
+.pytest_cache/
+.ruff_cache/
+.poetry/
+.ipynb_checkpoints/
+
+# Database / PocketBase
+*.db
+*.sqlite
+pb_bin/
+pb_data/
+
+# Environments & Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,51 @@
+/* Analyst Legislation Page */
+
+.siteHeader {
+  background: var(--color-paper-dark);
+  border-bottom: 1px solid var(--color-rule-strong);
+}
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 56px;
+}
+.siteLogo { display: flex; flex-direction: column; gap: 1px; text-decoration: none; }
+.logoName { font-size: 18px; font-weight: 700; color: var(--color-ink); letter-spacing: -0.01em; }
+.logoTagline { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-flag); font-weight: 600; }
+.navStrip { display: flex; align-items: center; padding: 0 32px; height: 40px; background: var(--color-paper); border-bottom: 1px solid var(--color-rule); }
+.navLink { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-ink-secondary); padding: 0 16px; height: 40px; display: flex; align-items: center; text-decoration: none; border-bottom: 2px solid transparent; transition: color 150ms, border-color 150ms; }
+.navLink:hover { color: var(--color-ink); }
+.navActive { color: var(--color-ink); border-bottom-color: var(--color-flag); }
+
+.pageContent { max-width: 1200px; margin: 0 auto; padding: 32px; }
+
+.headerRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.pageTitle { font-size: 24px; font-weight: 700; color: var(--color-ink); }
+.primaryButton { background: var(--color-data-blue); color: #fff; border: none; padding: 8px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; border-radius: 2px; }
+.primaryButton:hover { filter: brightness(1.1); }
+
+.grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+
+.card { background: var(--color-paper); border: 1px solid var(--color-rule); padding: 24px; }
+.cardTitle { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--color-ink); }
+
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.th { font-size: 9.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-ink-muted); padding: 11px 16px; text-align: left; background: var(--color-paper-dark); border-bottom: 2px solid var(--color-rule-strong); }
+.tr { border-bottom: 1px solid var(--color-rule); }
+.tr:last-child { border-bottom: none; }
+.td { padding: 14px 16px; vertical-align: middle; }
+
+.lawLink { display: flex; flex-direction: column; gap: 4px; text-decoration: none; }
+.lawTitle { font-size: 14px; font-weight: 600; color: var(--color-ink); }
+.lawShort { font-size: 12px; color: var(--color-ink-muted); font-family: monospace; }
+.actionButton { background: transparent; border: 1px solid var(--color-rule-strong); color: var(--color-ink-secondary); padding: 6px 12px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: background 150ms; }
+.actionButton:hover { background: var(--color-paper-dark); color: var(--color-ink); }
+
+.statusBadge {
+  display: inline-block; padding: 3px 8px; font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  background: var(--color-paper-dark); color: var(--color-ink);
+  border: 1px solid var(--color-rule);
+}
+.statusBadge[data-status="active"] { background: var(--color-confirm-light); color: var(--color-confirm); border-color: var(--color-confirm); }
+
+.emptyState { text-align: center; padding: 40px; color: var(--color-ink-muted); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; }

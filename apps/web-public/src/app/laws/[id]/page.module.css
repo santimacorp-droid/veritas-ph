@@ -1,0 +1,237 @@
+/* Law Detail Page */
+
+.pageContent { max-width: 1100px; margin: 0 auto; padding: 0 32px 80px; }
+
+.pageHead { padding: 36px 0 20px; border-bottom: 1px solid var(--color-rule); margin-bottom: 28px; }
+.pageTitle { font-size: 28px; font-weight: 700; color: var(--color-ink); margin: 0 0 6px; }
+.pageSubtitle { font-size: 14px; color: var(--color-ink-muted); margin: 0 0 16px; font-weight: 500; }
+
+.metaGrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;
+  background: var(--color-paper-dark); padding: 16px; border: 1px solid var(--color-rule);
+}
+.metaLabel { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-ink-muted); margin-bottom: 4px; font-weight: 600; }
+.metaValue { font-size: 14px; font-weight: 500; color: var(--color-ink); }
+
+.sectionTitle { font-size: 20px; font-weight: 600; margin: 40px 0 20px; color: var(--color-ink); border-bottom: 1px solid var(--color-rule); padding-bottom: 8px; }
+
+.provisionCard {
+  background: var(--color-paper); border: 1px solid var(--color-rule);
+  margin-bottom: 16px; padding: 20px;
+}
+.provisionHeader { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.provisionTitle { font-size: 16px; font-weight: 600; color: var(--color-ink); }
+.provisionSection { font-size: 12px; color: var(--color-ink-muted); font-weight: 500; font-family: monospace; }
+.provisionContent { font-size: 14px; color: var(--color-ink-secondary); line-height: 1.6; white-space: pre-wrap; }
+
+.controversyWrap { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--color-rule); }
+.controversyBadge { display: inline-block; background: var(--color-flag-light); color: var(--color-flag); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; padding: 2px 6px; margin-bottom: 8px; border: 1px solid var(--color-flag); }
+.controversyIssue { font-size: 14px; font-weight: 600; color: var(--color-flag); margin: 0 0 4px; }
+.controversyImpact { font-size: 13px; color: var(--color-ink-secondary); line-height: 1.5; }
+
+.revisionCard {
+  background: var(--color-paper-dark); border: 1px solid var(--color-rule); border-left: 4px solid var(--color-data-blue);
+  margin-bottom: 16px; padding: 20px;
+}
+.revisionHeader { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.revisionBill { font-size: 16px; font-weight: 600; color: var(--color-ink); }
+.revisionSponsor { font-size: 12px; color: var(--color-ink-muted); }
+.revisionChanges { font-size: 14px; color: var(--color-ink-secondary); line-height: 1.5; white-space: pre-wrap; background: var(--color-paper); padding: 12px; border: 1px solid var(--color-rule); margin-top: 12px; font-family: monospace; }
+
+.backLink { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-ink-muted); text-decoration: none; margin-bottom: 24px; transition: color 150ms; }
+.backLink:hover { color: var(--color-ink); }
+
+/* AI Law Analysis Panel */
+.aiPanel {
+  margin: 32px 0;
+  border: 1px solid var(--color-rule-strong);
+  background: var(--color-paper-dark);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.aiHeader {
+  background: var(--color-paper);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-rule-strong);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.aiTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.aiScores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 24px;
+  border-bottom: 1px solid var(--color-rule);
+}
+.scoreGauge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gaugeLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-muted);
+}
+.gaugeRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.gaugeTrack {
+  flex: 1;
+  height: 8px;
+  background: var(--color-rule);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.gaugeFill {
+  height: 100%;
+  border-radius: 4px;
+}
+.gaugeValue {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: monospace;
+}
+.aiContent {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.aiGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.aiSectionTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-muted);
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--color-rule);
+  padding-bottom: 6px;
+}
+.aiList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.aiList li {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--color-ink-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.aiList li::before {
+  content: '•';
+  color: var(--color-data-blue);
+  font-weight: bold;
+}
+.loopholeCard {
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  padding: 16px;
+  border-radius: 2px;
+  margin-bottom: 12px;
+}
+.loopholeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.loopholeSection {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.loopholeBadge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.badgeCritical { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
+.badgeHigh { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid #f97316; }
+.badgeMedium { background: rgba(234, 179, 8, 0.15); color: #eab308; border: 1px solid #eab308; }
+.badgeLow { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid #3b82f6; }
+
+.loopholeDesc {
+  font-size: 13.5px;
+  color: var(--color-ink-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+.revisionCard {
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  padding: 16px;
+  border-radius: 2px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--color-confirm);
+}
+.revisionHeader {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-bottom: 12px;
+}
+.revisionDiff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.revisionCol {
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 8px;
+  border-radius: 2px;
+}
+.revCurrent { background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); color: #f87171; }
+.revSuggested { background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.1); color: #34d399; }
+.revisionRationale {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+  line-height: 1.5;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-rule);
+}
+.citizenSummary {
+  font-size: 14px;
+  color: var(--color-ink-secondary);
+  line-height: 1.6;
+  margin: 0;
+  background: var(--color-paper);
+  padding: 16px;
+  border: 1px solid var(--color-rule);
+  border-radius: 2px;
+}

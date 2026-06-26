@@ -1,0 +1,128 @@
+/* Document Viewer Page Styling */
+
+.pageContent {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-muted, #7A7670);
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: color 150ms;
+}
+
+.backLink:hover {
+  color: var(--color-ink, #1A1814);
+}
+
+.pageHead {
+  padding: 24px 0 20px;
+  border-bottom: 1px solid var(--color-rule, #C8C4BB);
+  margin-bottom: 24px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-ink, #1A1814);
+  margin: 0 0 6px;
+}
+
+.pageSubtitle {
+  font-size: 13px;
+  color: var(--color-ink-muted, #7A7670);
+  margin: 0;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  background: var(--color-paper-dark, #EDEAE3);
+  padding: 16px;
+  border: 1px solid var(--color-rule, #C8C4BB);
+  margin-bottom: 32px;
+}
+
+.metaLabel {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-muted, #7A7670);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.metaValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink, #1A1814);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaValueLink {
+  color: var(--color-data-blue, #2C5F8A);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 150ms;
+}
+
+.metaValueLink:hover {
+  border-bottom-color: var(--color-data-blue, #2C5F8A);
+}
+
+.viewerContainer {
+  background: var(--color-paper, #F9F8F6);
+  border: 1px solid var(--color-rule, #C8C4BB);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-paper-dark, #EDEAE3);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-rule, #C8C4BB);
+}
+
+.viewerTitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink, #1A1814);
+}
+
+.viewerBody {
+  padding: 24px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary, #4A4740);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 700px;
+  overflow-y: auto;
+  background: #FFFFFF;
+}
+
+.emptyState {
+  padding: 48px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-ink-muted, #7A7670);
+}
