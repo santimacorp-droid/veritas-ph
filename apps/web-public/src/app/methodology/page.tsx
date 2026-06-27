@@ -34,65 +34,105 @@ export default function MethodologyPage() {
             System Methodology & Auditing Engine
           </h1>
           <p className={`${styles.pageSubtitle} font-ui`}>
-            Technical blueprint of our data ingestion pipeline, extraction schemas, and risk calculations
+            Comprehensive technical specification of our ingestion pipeline, data extraction, auditing rules, and integrity controls
           </p>
         </div>
 
         <div className={styles.prose}>
           <p className="font-body" style={{ fontSize: '15.5px', lineHeight: '1.75' }}>
-            Veritas runs a continuous, multi-pass auditing pipeline connecting upstream statutory policies with downstream operational procurement. By combining rule-based compliance checks, statistical anomaly detection, and AI-driven legislative audit models, the platform translates raw, unstructured government registries into traceable risk metrics.
+            Veritas utilizes a multi-layered computational pipeline to bridge the gap between upstream statutory policy design and downstream operational procurement outcomes. The platform operates on a zero-trust verification model, applying strict cryptographic checks and deterministic mathematical auditing to guarantee absolute data integrity.
           </p>
         </div>
 
-        {/* SECTION 1: DATA INGESTION PIPELINE */}
+        {/* SECTION 1: DATA INGESTION, CRAWLING & IMMUTABILITY */}
         <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>1. Data Ingestion & Crawling</h2>
+          <h2 className={`${styles.sectionTitle} font-ui`}>1. Data Ingestion, Crawling & Immutability</h2>
           <div className={styles.prose}>
             <p className="font-body">
-              The ingestion pipeline extracts records from primary government publications through scheduled crawler tasks:
+              The ingestion pipeline extracts unstructured data from primary government portals and maps it to a unified relational model:
             </p>
             <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
               <li>
-                <strong>PhilGEPS Procurement Portal:</strong> The crawler queries the open tenders search registry, scraping active and completed procurement postings, bid abstracts, notices of award (NOA), and notices to proceed (NTP).
+                <strong>PhilGEPS Ingestion:</strong> The crawler searches active and completed procurement indices, scraping notice metadata, bidding timelines, and associated award notice links.
               </li>
               <li>
-                <strong>Legislative Registries:</strong> Crawlers scan legal indices (including Lawphil.net and the Official Gazette) to discover newly passed Republic Acts, executive orders, and administrative directives.
+                <strong>Legislation Ingestion:</strong> Crawlers index the legal directories of Lawphil.net and the Official Gazette to collect Republic Acts (RAs), Executive Orders (EOs), and Implementing Rules and Regulations (IRRs).
               </li>
               <li>
-                <strong>Verification Checkpoints:</strong> During crawls, documents are instantly hashed (SHA-256) and recorded in the database to prevent duplicate ingestion and enforce historical immutability.
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        {/* SECTION 2: DATA EXTRACTION & PROVENANCE */}
-        <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>2. Data Extraction & Provenance Tracking</h2>
-          <div className={styles.prose}>
-            <p className="font-body">
-              Once raw text and PDF attachments are ingested, they pass through the data extraction and linking pipelines:
-            </p>
-            <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
-              <li>
-                <strong>Entity Extraction:</strong> An NLP pipeline parses the text using rule-based Named Entity Recognition (NER) to isolate critical dates (deadlines, awards, publications), values (budget ceilings, final bids), and organizations (procuring agencies, winning contractors).
-              </li>
-              <li>
-                <strong>Visual Provenance Coordination:</strong> To prevent extraction errors, every extracted parameter is linked to its exact coordinate offset within the source text:
+                <strong>SHA-256 Cryptographic Hashing:</strong> To protect the pipeline against data tampering or modifications on source portals, every downloaded document is hashed immediately upon ingestion:
                 <div style={{ background: 'var(--color-paper-darker)', padding: '12px 18px', borderRadius: '4px', margin: '12px 0', fontSize: '13px' }} className="font-mono">
-                  Coordinates = &#123; SHA256(Document), Page_Number, Character_Start, Character_End &#125;
+                  Document_Hash = SHA256(Raw_Downloaded_Content)
                 </div>
-                This allows analysts to click any flag on the website and view the exact highlight in the original text.
+                If a document changes on the source portal, the system preserves the historical revision and logs a new version rather than overwriting existing records, ensuring a permanent audit trail.
               </li>
             </ul>
           </div>
         </section>
 
-        {/* SECTION 3: DOWNSTREAM PROCUREMENT ANOMALY RULES */}
+        {/* SECTION 2: ENTITY RESOLUTION & DATA INTEGRITY */}
         <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>3. Downstream Case Auditing (14 Compliance Rules)</h2>
+          <h2 className={`${styles.sectionTitle} font-ui`}>2. Entity Resolution & Database Constraints</h2>
           <div className={styles.prose}>
             <p className="font-body">
-              Downstream operational risk is analyzed by checking every contract award and tender notice against fourteen specialized algorithmic checks. Below, we document the mathematical model and statutory rationale for each rule:
+              Raw government registries frequently contain typos, duplicate entries, and inconsistent naming conventions (e.g., &quot;Dept. of Health&quot; vs. &quot;Department of Health&quot;). Veritas cleans and structures this data through the following controls:
+            </p>
+            <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
+              <li>
+                <strong>String Similarity Deduplication:</strong> Entities are matched using the Jaro-Winkler distance and token-based similarity. When a new notice is crawled, the agency or supplier name is evaluated against the existing database:
+                <div style={{ background: 'var(--color-paper-darker)', padding: '12px 18px', borderRadius: '4px', margin: '12px 0', fontSize: '13px' }} className="font-mono">
+                  Match = True &nbsp;if&nbsp; [ JaroWinkler(Name_A, Name_B) &gt; 0.88 ]
+                </div>
+                If a match is found, the notice is linked to the existing record; otherwise, a new entity is registered.
+              </li>
+              <li>
+                <strong>Relational Database Integrity:</strong> Supabase schema constraints prevent corrupt data from propagating:
+                <ul style={{ paddingLeft: '20px', marginTop: '6px' }}>
+                  <li>Foreign Key constraints link all case awards, discrepancies, and events to unique cases.</li>
+                  <li><code>CHECK</code> constraints enforce validation rules (e.g., severity must be one of: <code>&apos;low&apos;</code>, <code>&apos;medium&apos;</code>, <code>&apos;high&apos;</code>, <code>&apos;critical&apos;</code>).</li>
+                  <li>Unique constraints on <code>procurement_ref_no</code> prevent double-counting.</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* SECTION 3: TEXT PARSING & PROVENANCE COORDINATES */}
+        <section className={styles.methodologySection}>
+          <h2 className={`${styles.sectionTitle} font-ui`}>3. Document Extraction & Visual Provenance</h2>
+          <div className={styles.prose}>
+            <p className="font-body">
+              Veritas extracts fields from tender notices and legal documents using a multi-pass parsing framework:
+            </p>
+            <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
+              <li>
+                <strong>Text Normalization:</strong> Raw HTML pages and PDF text layers are cleaned of control characters, duplicate spacing, and markup formatting.
+              </li>
+              <li>
+                <strong>Entity and Parameter Extraction:</strong> Named Entity Recognition (NER) models isolate key dates, amounts, and organization names.
+              </li>
+              <li>
+                <strong>Visual Provenance Coordinate Offsets:</strong> Every extracted parameter records its exact coordinate offset within the source text to ensure absolute verification:
+                <div style={{ background: 'var(--color-paper-darker)', padding: '12px 18px', borderRadius: '4px', margin: '12px 0', fontSize: '13px' }} className="font-mono">
+                  Provenance_Citation = &#123;
+                  {"\n"}  "document_id": UUID,
+                  {"\n"}  "page_number": Integer,
+                  {"\n"}  "char_start": Integer,
+                  {"\n"}  "char_end": Integer,
+                  {"\n"}  "confidence": Decimal
+                  {"\n"}&#125;
+                </div>
+                When an analyst clicks a discrepancy, the portal highlights the exact character range in the original document, validating the finding.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* SECTION 4: DOWNSTREAM PROCUREMENT ANOMALY RULES */}
+        <section className={styles.methodologySection}>
+          <h2 className={`${styles.sectionTitle} font-ui`}>4. Downstream Procurement Case Audit Engine</h2>
+          <div className={styles.prose}>
+            <p className="font-body">
+              The operational audit engine executes fourteen specialized compliance checks against every case. Below is the detailed calculation logic for each rule:
             </p>
           </div>
 
@@ -105,7 +145,7 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Competition</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags open competitive tenders valued above a critical threshold that yield only a single bidder. A high frequency of single-bid awards indicates potential specification tailoring or pre-arranged collusion.
+                Flags competitive tenders valued above a critical threshold that yield only a single bidder, indicating potential tailored specifications or pre-arranged collusion.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
@@ -114,7 +154,7 @@ export default function MethodologyPage() {
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 36 (Single Calculated Responsive Bid standards).
+                  RA 9184 Section 36 (Single Calculated Responsive Bid requirements).
                 </p>
               </div>
             </div>
@@ -150,7 +190,7 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Timeline</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags procurement events where the duration between the public advertisement date and the bid closing date falls below the legal minimum, limiting fair competition.
+                Flags procurement events where the duration between the public advertisement date and the bid closing date falls below the legal minimum.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
@@ -265,7 +305,7 @@ export default function MethodologyPage() {
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 37.4.1 (Mandated Notice to Proceed timelines).
+                  RA 9184 Section 37.4.1 (Notice to Proceed timelines).
                 </p>
               </div>
             </div>
@@ -277,7 +317,7 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Transparency</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags completed or awarded tenders that fail to publish the standard Abstract of Bids, preventing independent verify-and-match audits.
+                Flags completed or awarded tenders that fail to publish the standard Abstract of Bids.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
@@ -298,7 +338,7 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Compliance</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags cases initiated by agencies that currently have outstanding or unresolved notices of suspension, disallowance, or material findings published by the Commission on Audit (COA).
+                Flags cases initiated by agencies that currently have outstanding or unresolved notices of suspension or disallowance published by the Commission on Audit (COA).
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
@@ -307,7 +347,7 @@ export default function MethodologyPage() {
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  1987 Philippine Constitution Article IX-D Section 2 (COA auditing jurisdiction).
+                  1987 Philippine Constitution Article IX-D Section 2.
                 </p>
               </div>
             </div>
@@ -328,7 +368,7 @@ export default function MethodologyPage() {
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 37 (Evaluation and award chronology).
+                  RA 9184 Section 37 (Award chronology rules).
                 </p>
               </div>
             </div>
@@ -400,9 +440,9 @@ export default function MethodologyPage() {
           </div>
         </section>
 
-        {/* SECTION 4: RISK SCORE AGGREGATION MODEL */}
+        {/* SECTION 5: RISK SCORE AGGREGATION MODEL */}
         <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>4. Case-Level Risk Score Aggregation</h2>
+          <h2 className={`${styles.sectionTitle} font-ui`}>5. Case-Level Risk Score Aggregation</h2>
           <div className={styles.prose}>
             <p className="font-body">
               To aggregate multiple flags into a unified case risk rating, Veritas maps active anomalies to a closed interval between <code>0.0</code> (No Risk) and <code>1.0</code> (Critical Risk):
@@ -486,12 +526,36 @@ export default function MethodologyPage() {
           </div>
         </section>
 
-        {/* SECTION 5: UPSTREAM LEGISLATIVE AUDITING */}
+        {/* SECTION 6: SUPPLIER & AGENCY RISK SCORECARDS */}
         <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>5. Upstream Legislative Vulnerability Auditing</h2>
+          <h2 className={`${styles.sectionTitle} font-ui`}>6. Supplier and Agency Scorecards</h2>
           <div className={styles.prose}>
             <p className="font-body">
-              Upstream legislative audits evaluate the text of Republic Acts and IRRs for systemic corruption loopholes before procurement starts. Our LLM-powered engine computes two primary metrics:
+              Veritas aggregates individual case audit results to evaluate overall entity risk profiles on the Scorecard:
+            </p>
+            <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
+              <li>
+                <strong>Agency Scorecard Calculation:</strong> An agency&apos;s risk index is the average risk score of its cases, weighted by budget value, and multiplied by an active COA audit findings factor:
+                <div style={{ background: 'var(--color-paper-darker)', padding: '12px 18px', borderRadius: '4px', margin: '12px 0', fontSize: '13px' }} className="font-mono">
+                  Agency_Risk = Average(Case_Risk_Scores) &times; [ 1.0 + 0.15 &times; Min(COA_Findings_Count, 3) ]
+                </div>
+              </li>
+              <li>
+                <strong>Supplier Scorecard Calculation:</strong> A contractor&apos;s scorecard incorporates win rates on single-bid tenders, regional license mismatches, and their contribution to localized market monopolies (HHI):
+                <div style={{ background: 'var(--color-paper-darker)', padding: '12px 18px', borderRadius: '4px', margin: '12px 0', fontSize: '13px' }} className="font-mono">
+                  Supplier_Risk = Average(Case_Risk_Scores) &times; [ 1.0 + 0.20 &times; (Single_Bid_Wins / Total_Wins) ]
+                </div>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* SECTION 7: UPSTREAM LEGISLATIVE AUDITING */}
+        <section className={styles.methodologySection}>
+          <h2 className={`${styles.sectionTitle} font-ui`}>7. Upstream Legislative Vulnerability Auditing</h2>
+          <div className={styles.prose}>
+            <p className="font-body">
+              Upstream legislative audits evaluate the text of Republic Acts and IRRs for systemic corruption loopholes before procurement starts. Our legal auditing engine computes two primary metrics:
             </p>
 
             <div className={styles.methodologyGrid}>
@@ -502,7 +566,7 @@ export default function MethodologyPage() {
                   <span className={`${styles.cardPill} ${styles.cardPillBlue} font-ui`}>Statutory Score</span>
                 </div>
                 <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '12px' }}>
-                  Rates the tightness of the law. Broad exceptions or vague procurement categories lower this index.
+                  Rates the loophole tightness of the law. Broad exemptions or vague procurement categories lower this index.
                 </p>
                 <div style={{ background: 'var(--color-paper-darker)', padding: '12px', borderRadius: '4px', fontSize: '12.5px' }} className="font-mono">
                   I_L = max( 0, 100 - &sum; Loophole_Weights )
@@ -533,6 +597,29 @@ export default function MethodologyPage() {
               </div>
 
             </div>
+          </div>
+        </section>
+
+        {/* SECTION 8: HUMAN REVIEW AUDIT TRAIL */}
+        <section className={styles.methodologySection}>
+          <h2 className={`${styles.sectionTitle} font-ui`}>8. Human Analyst Annotations & Audit Trail</h2>
+          <div className={styles.prose}>
+            <p className="font-body">
+              Algorithmic audits are subject to human verification. When an anomaly triggers, it begins in a <code>&apos;pending&apos;</code> status:
+            </p>
+            <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
+              <li>
+                <strong>Verification Outcomes:</strong> Licensed civil society analysts review coordinates and tag findings as:
+                <ul style={{ paddingLeft: '20px', marginTop: '6px' }}>
+                  <li><code>&apos;confirmed&apos;</code> (Validated anomaly, published to citizen feed).</li>
+                  <li><code>&apos;false_positive&apos;</code> (Flag cleared due to specific context, archived).</li>
+                  <li><code>&apos;needs_evidence&apos;</code> (Returned for field inspection).</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Audit Log Immutability:</strong> All manual overrides, comments, and status adjustments are stamped with the analyst&apos;s signature and logged in the audit history database. This prevents arbitrary updates and ensures accountability for both algorithms and auditors.
+              </li>
+            </ul>
           </div>
         </section>
 
