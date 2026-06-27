@@ -275,6 +275,13 @@ async def download_document(document_id: str):
 
             source_url, storage_path = row[0], row[1]
 
+        # Check if the file is already downloaded and stored
+        from storage import get_api_store
+        store = get_api_store()
+        if store.stat(storage_path) is not None:
+            logger.info("Document already exists in storage, skipping download", doc_id=document_id, path=storage_path)
+            return {"status": "success", "document_id": document_id}
+
         # 2. Launch browser and load source_url
         @retry(
             stop=stop_after_attempt(3),
