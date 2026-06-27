@@ -128,7 +128,10 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
             if deepseek_key and deepseek_key != "your_key_here":
                 extract_prompt = f"""
 You are a senior legislative archivist. Your task is to look up and extract the official historical metadata for the following Philippine law.
-If you do not know the exact details, search your knowledge base or extrapolate realistically based on typical senate/congress filings.
+
+CRITICAL REQUIREMENT:
+If you are unsure of any detail, lack the exact historical record, or cannot verify the information with absolute certainty, you MUST return null for that field. 
+DO NOT guess, estimate, approximate, extrapolate, or generate plausible fallbacks. We do not permit any fake or unverified information. Accuracy and absolute truth are mandatory.
 
 Title: {law_row['title']}
 Short Title: {law_row['short_title'] or ''}
@@ -137,11 +140,11 @@ Provisions Preview:
 
 Return strictly a JSON object:
 {{
-  "author": "<principal author / congress filer name, e.g. 'Sen. Sonny Angara' or 'Committee on Finance'>",
-  "sponsor": "<sponsoring senator/representative or co-authors, e.g. 'Sen. Loren Legarda'>",
-  "approved_by": "<name of the President of the Philippines who signed this into law, or agency head who issued it>",
-  "submitted_by": "<when or how it was filed, e.g. 'Filed on Feb 2024 as Senate Bill No. 2593' or 'Bicameral Committee Report'>",
-  "voting_record": "<the final voting tally in Congress/Senate if applicable, e.g. 'Senate: 22-0, House: 213-0', or 'Passed by voice vote'>"
+  "author": "<principal author/congress filer name, or null if not 100% verified>",
+  "sponsor": "<sponsoring senator/representative or co-authors, or null if not 100% verified>",
+  "approved_by": "<name of the President of the Philippines who signed this into law, or null if not 100% verified>",
+  "submitted_by": "<filing details/bill number, or null if not 100% verified>",
+  "voting_record": "<the final voting tally in Congress/Senate if 100% verified, otherwise null>"
 }}
 """
                 try:
