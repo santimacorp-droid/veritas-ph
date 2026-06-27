@@ -115,7 +115,7 @@ async def seed_legislation():
                     suggested_revisions, citizen_summary, analysis_status, completed_at
                 )
                 VALUES (
-                    :aid, :lid, 'pending', NULL, NULL, '[]', '[]', '[]', '[]', NULL, 'pending', NULL
+                    :aid, :lid, 'pending', NULL, NULL, '[]', '[]', '[]', '[]', 'Analysis pending — DeepSeek AI will generate this shortly.', 'pending', NULL
                 )
             """),
             {
@@ -191,7 +191,7 @@ async def seed_legislation():
                     suggested_revisions, citizen_summary, analysis_status, completed_at
                 )
                 VALUES (
-                    :aid, :lid, 'pending', NULL, NULL, '[]', '[]', '[]', '[]', NULL, 'pending', NULL
+                    :aid, :lid, 'pending', NULL, NULL, '[]', '[]', '[]', '[]', 'Analysis pending — DeepSeek AI will generate this shortly.', 'pending', NULL
                 )
             """),
             {
@@ -250,7 +250,7 @@ async def seed_legislation():
                     suggested_revisions, citizen_summary, analysis_status, completed_at
                 )
                 VALUES (
-                    :aid, :lid, 'pending', NULL, NULL, '[]', '[]', '[]', '[]', NULL, 'pending', NULL
+                    :aid, :lid, 'pending', NULL, NULL, '[]', '[]', '[]', '[]', 'Analysis pending — DeepSeek AI will generate this shortly.', 'pending', NULL
                 )
             """),
             {
@@ -310,7 +310,7 @@ async def seed_legislation():
                     suggested_revisions, citizen_summary, analysis_status, completed_at
                 )
                 VALUES (
-                    :aid, :lid, 'pending', NULL, NULL, '[]', '[]', '[]', '[]', NULL, 'pending', NULL
+                    :aid, :lid, 'pending', NULL, NULL, '[]', '[]', '[]', '[]', 'Analysis pending — DeepSeek AI will generate this shortly.', 'pending', NULL
                 )
             """),
             {
