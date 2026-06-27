@@ -22,7 +22,7 @@ logger = structlog.get_logger()
 )
 async def fetch_page_content_simple(url: str) -> str:
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
         page = await browser.new_page()
         await page.goto(url, timeout=30000)
         text_result = await page.inner_text("body")
@@ -135,7 +135,7 @@ async def fetch_sources():
             try:
                 async with async_playwright() as p:
                     logger.info("Launching headless Chromium...")
-                    browser = await p.chromium.launch(headless=True)
+                    browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
                     page = await browser.new_page()
 
                     logger.info(f"Navigating to source URL: {target_url}")
@@ -291,7 +291,7 @@ async def download_document(document_id: str):
         )
         async def fetch_page_content(url: str) -> str:
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
+                browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
                 page = await browser.new_page()
                 logger.info("Loading notice detail page...", url=url)
                 await asyncio.sleep(1.0) # Rate limiting
