@@ -470,7 +470,7 @@ async def get_discrepancy(discrepancy_id: UUID, db: AsyncSession = Depends(get_d
 
 @app.get("/laws", tags=["Public"])
 async def list_laws(
-    limit: int = Query(50, le=100),
+    limit: int = Query(50, le=5000),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
