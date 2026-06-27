@@ -100,39 +100,16 @@ veritas-ph/
 
 ---
 
-## ⚡ Quick Start
+## 🌐 Platform Deployments & Ecosystem
 
-Veritas is designed with a **Zero-Docker development loop** for fast, native local execution using SQLite and PocketBase.
+Veritas is deployed as a fully integrated, live civic technology network:
 
-### 1. Setup & Installation
-Ensure you have **Python 3.11+** and **Node.js 20+** on your system. Install all node workspaces and Python virtual dependencies with:
-```bash
-make install
-```
-
-### 2. Configure PocketBase (Local Document Store)
-Download and set up the local document storage server:
-```bash
-make pb-install
-```
-
-### 3. Initialize & Seed Database
-Configure local SQLite tables and seed them with government agency registries, controversial laws, and mock case records:
-```bash
-make init-db
-```
-
-### 4. Run Development Workspace
-Concurrently launch the FastAPI backend, the background worker processes, and both Next.js applications in a unified workspace:
-```bash
-make dev
-```
-Access the services at:
-* 🌐 **Citizen Portal:** [http://localhost:3005](http://localhost:3005)
-* 💼 **Analyst Workspace:** [http://localhost:3001](http://localhost:3001)
-* ⚙️ **FastAPI Gateway:** [http://localhost:8000](http://localhost:8000)
-* 📘 **Swagger UI API Docs:** [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
-* 📦 **PocketBase Admin:** [http://localhost:8090/_/](http://localhost:8090/_/)
+* 👥 **Citizen Portal:** [https://veritas-ph-web-public.vercel.app](https://veritas-ph-web-public.vercel.app)  
+  * A public dashboard for investigative journalists, civil society watchdogs, and citizens to explore procurement cases, track agency risk scores, and search audited legislative indexes.
+* 💼 **Analyst Workspace:** [https://veritas-ph-web-analyst.vercel.app](https://veritas-ph-web-analyst.vercel.app)  
+  * A secure console for legal analysts and audit organizations to review system-generated anomalies, record manual annotations, and publish investigative leads.
+* ⚙️ **API Gateway:** [https://veritas-ph.onrender.com](https://veritas-ph.onrender.com)  
+  * The central FastAPI engine powering the public REST APIs, handling data normalization, and hosting the Swagger UI endpoints documentation.
 
 ---
 
