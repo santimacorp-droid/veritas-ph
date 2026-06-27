@@ -20,7 +20,7 @@ echo "--> Step 1: Updating system packages..."
 apt-get update -y
 
 echo "--> Step 2: Installing system dependencies..."
-apt-get install -y python3-pip python3-venv nginx git curl make
+apt-get install -y python3-pip python3-venv nginx git curl make unzip
 
 echo "--> Step 3: Setting up repository paths..."
 REPO_DIR="/home/ubuntu/veritas-ph"
