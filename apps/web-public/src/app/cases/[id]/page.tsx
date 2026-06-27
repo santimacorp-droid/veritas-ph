@@ -208,6 +208,19 @@ export default async function CaseDetailPage({
                 {caseData.agency_name}
               </div>
             )}
+            {caseData.supplier_name && (
+              <div className={`${styles.metaChip} font-ui`}>
+                <span className={styles.chipLabel}>Contractor</span>
+                {caseData.supplier_id ? (
+                  <Link href={`/suppliers/${caseData.supplier_id}`} style={{ color: 'inherit', textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                    {caseData.supplier_name}
+                  </Link>
+                ) : (
+                  caseData.supplier_name
+                )}
+              </div>
+            )}
+
             {caseData.procurement_method && (
               <div className={`${styles.metaChip} font-ui`}>
                 <span className={styles.chipLabel}>Method</span>

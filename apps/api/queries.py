@@ -505,7 +505,7 @@ async def find_duplicate_suppliers(db: AsyncSession, supplier_id: UUID, threshol
 
 
 async def get_case_detail(db: AsyncSession, case_id: UUID):
-    """Full case detail with agency and risk info."""
+    """Full case detail with agency, contractor/supplier, and risk info."""
     sql = text("""
         SELECT
             pc.case_id,
@@ -527,13 +527,20 @@ async def get_case_detail(db: AsyncSession, case_id: UUID):
             pc.risk_components,
             pc.created_at,
             pc.updated_at,
+            a.agency_id,
             a.name AS agency_name,
             a.acronym AS agency_acronym,
             a.agency_type,
-            p.name AS publisher_name
+            p.name AS publisher_name,
+            s.supplier_id,
+            s.canonical_name AS supplier_name,
+            s.supplier_type,
+            s.philgeps_id AS supplier_philgeps_id
         FROM procurement_cases pc
         LEFT JOIN agencies a ON a.agency_id = pc.agency_id
         LEFT JOIN publishers p ON p.publisher_id = pc.publisher_id
+        LEFT JOIN awards aw ON aw.case_id = pc.case_id
+        LEFT JOIN suppliers s ON s.supplier_id = aw.supplier_id
         WHERE pc.case_id = :case_id
     """)
     result = await db.execute(sql, {"case_id": str(case_id)})
