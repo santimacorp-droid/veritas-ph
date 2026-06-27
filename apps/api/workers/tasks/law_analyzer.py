@@ -69,8 +69,17 @@ async def fetch_elibrary_law_context(short_title: str) -> str:
                                 doc_soup = BeautifulSoup(doc_resp.text, "html.parser")
                                 doc_text = doc_soup.get_text()
                                 cleaned_text = re.sub(r'\s+', ' ', doc_text).strip()
-                                # Return the last 5000 characters which always contains approval/bill info
-                                return cleaned_text[-5000:]
+                                
+                                # Search for the consolidation/signature section in the text
+                                match = re.search(r'passed by the Senate|Senate Bill No\.|House Bill No\.|Approved:', cleaned_text, re.IGNORECASE)
+                                if match:
+                                    start = max(0, match.start() - 1000)
+                                    end = min(len(cleaned_text), match.end() + 2500)
+                                    logger.info("Found legislative signature section in document text.")
+                                    return cleaned_text[start:end]
+                                else:
+                                    logger.info("Signature section not matched. Falling back to end of document.")
+                                    return cleaned_text[-5000:]
     except Exception as e:
         logger.warning(f"Failed to fetch E-Library details for RA {ra_num}: {e}")
     return ""
