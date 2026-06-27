@@ -19,6 +19,62 @@ from sqlalchemy import text
 logger = structlog.get_logger()
 
 
+async def fetch_elibrary_law_context(short_title: str) -> str:
+    """
+    Queries the official Supreme Court E-Library for the full-text of the Republic Act,
+    and extracts the official approval and consolidation signatures/details from the footer.
+    """
+    logger.info("Checking Supreme Court E-Library for official law text...", short_title=short_title)
+    match = re.search(r'\d+', short_title)
+    if not match:
+        return ""
+    ra_num = match.group(0)
+    
+    url_elib = "https://elibrary.judiciary.gov.ph/republic_acts"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
+            response = await client.get(url_elib, headers=headers)
+            if response.status_code != 200:
+                return ""
+            csrf_match = re.search(r"'csrf_test_name'\s*:\s*'([a-f0-9]+)'", response.text)
+            csrf_token = csrf_match.group(1) if csrf_match else None
+            
+            ajax_url = "https://elibrary.judiciary.gov.ph/republic_acts/fetch_ra"
+            data = {
+                "csrf_test_name": csrf_token,
+                "draw": "1",
+                "start": "0",
+                "length": "10",
+                "search[value]": ra_num,
+                "search[regex]": "false"
+            }
+            resp = await client.post(ajax_url, data=data, headers={"Referer": url_elib})
+            if resp.status_code == 200:
+                res_data = resp.json()
+                rows = res_data.get("data", [])
+                for row in rows:
+                    if len(row) >= 3:
+                        # Extract Bookshelf URL
+                        a_soup = BeautifulSoup(row[2], "html.parser")
+                        a_tag = a_soup.find("a")
+                        if a_tag:
+                            href = a_tag.get("href")
+                            # Fetch Bookshelf document details
+                            doc_resp = await client.get(href, headers=headers)
+                            if doc_resp.status_code == 200:
+                                doc_soup = BeautifulSoup(doc_resp.text, "html.parser")
+                                doc_text = doc_soup.get_text()
+                                cleaned_text = re.sub(r'\s+', ' ', doc_text).strip()
+                                # Return the last 5000 characters which always contains approval/bill info
+                                return cleaned_text[-5000:]
+    except Exception as e:
+        logger.warning(f"Failed to fetch E-Library details for RA {ra_num}: {e}")
+    return ""
+
+
 async def search_web_snippets(query: str) -> str:
     """
     Autonomously searches the web via DuckDuckGo and scrapes official/reputable snippets.
@@ -169,25 +225,32 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
             logger.info("Legislative metadata is missing. Attempting AI metadata extraction...", title=law_row['title'])
             prov_preview = "\n".join([f"Sec {p['section_number']}: {p['title'] or ''}" for p in provisions[:5]])
             
-            # Autonomously search the web for the official law history and bill filings
-            search_query = f'"{law_row["short_title"] or law_row["title"]}" "Senate Bill" OR "House Bill" OR "Bicameral" OR "voting" site:gov.ph'
-            logger.info("Running autonomous search query...", query=search_query)
-            search_context = await search_web_snippets(search_query)
+            # 1. Primary: Attempt to retrieve full text metadata from the official Supreme Court E-Library
+            search_context = ""
+            if law_row['short_title'] and "Republic Act" in law_row['short_title']:
+                search_context = await fetch_elibrary_law_context(law_row['short_title'])
+                if search_context:
+                    logger.info("Supreme Court E-Library document context retrieved successfully.")
+            
+            # 2. Secondary: Fallback to web search if E-Library has no records
             if not search_context:
-                # Try a broader search query if the site-restricted one yielded nothing
-                search_query_broad = f'"{law_row["short_title"] or law_row["title"]}" "Senate Bill" OR "House Bill" "signed by"'
-                logger.info("Running broader autonomous search query...", query=search_query_broad)
-                search_context = await search_web_snippets(search_query_broad)
+                search_query = f'"{law_row["short_title"] or law_row["title"]}" "Senate Bill" OR "House Bill" OR "Bicameral" OR "voting" site:gov.ph'
+                logger.info("E-Library empty. Running autonomous search query...", query=search_query)
+                search_context = await search_web_snippets(search_query)
+                if not search_context:
+                    search_query_broad = f'"{law_row["short_title"] or law_row["title"]}" "Senate Bill" OR "House Bill" "signed by"'
+                    logger.info("Running broader autonomous search query...", query=search_query_broad)
+                    search_context = await search_web_snippets(search_query_broad)
 
             deepseek_key = os.getenv("DEEPSEEK_API_KEY")
             if deepseek_key and deepseek_key != "your_key_here":
                 extract_prompt = f"""
 You are a senior legislative archivist. Your task is to extract the official historical metadata for the following Philippine law.
-You have been provided with real-time official Search Verification Context crawled from the web.
+You have been provided with real-time official Search & E-Library Verification Context.
 
 CRITICAL REQUIREMENT FOR SUBMITTED / FILED AS AND VOTING DETAILS:
-- You must ONLY populate "submitted_by" (e.g. bill number / origin) and "voting_record" if they are explicitly mentioned or supported by the provided Search Verification Context.
-- If the Search Verification Context is empty, does not contain the exact bill numbers/filing details, or if you are in any way unsure, you MUST return null for those fields.
+- You must ONLY populate "submitted_by" (the exact Senate/House Bill numbers) and "voting_record" if they are explicitly mentioned or supported by the provided Verification Context.
+- If the Verification Context does not contain the exact bill numbers/filing details, or if you are in any way unsure, you MUST return null for those fields.
 - DO NOT guess, approximate, extrapolate, or generate plausible fallbacks. Absolute truth and accuracy are mandatory.
 
 Title: {law_row['title']}
@@ -195,8 +258,8 @@ Short Title: {law_row['short_title'] or ''}
 Provisions Preview:
 {prov_preview}
 
-Official Search Verification Context:
-{search_context or "No search context retrieved."}
+Official Verification Context:
+{search_context or "No verification context retrieved."}
 
 Return strictly a JSON object:
 {{
