@@ -17,7 +17,7 @@ interface DocumentMetadata {
 
 async function getDocumentMetadata(id: string): Promise<DocumentMetadata | null> {
   try {
-    const res = await fetch(`${API_URL}/documents/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/documents/${id}`, { next: { revalidate: 30 } });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -27,7 +27,7 @@ async function getDocumentMetadata(id: string): Promise<DocumentMetadata | null>
 
 async function getDocumentContent(id: string): Promise<string | null> {
   try {
-    const res = await fetch(`${API_URL}/documents/${id}/download`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/documents/${id}/download`, { next: { revalidate: 30 } });
     if (!res.ok) return null;
     return res.text();
   } catch {

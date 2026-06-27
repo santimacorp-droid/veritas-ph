@@ -27,7 +27,7 @@ async function getCases(filters: { agency_id?: string; method?: string; category
     if (filters.risk_min) query.append('risk_min', filters.risk_min);
     if (filters.year) query.append('year', filters.year);
 
-    const res = await fetch(`${API_URL}/cases?${query.toString()}`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/cases?${query.toString()}`, { next: { revalidate: 30 } });
     if (!res.ok) return { total: 0, cases: [] };
     return res.json();
   } catch {

@@ -13,7 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 async function getSummary(): Promise<PublicSummary | null> {
   try {
-    const res = await fetch(`${API_URL}/stats/summary`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/stats/summary`, { next: { revalidate: 30 } });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -23,7 +23,7 @@ async function getSummary(): Promise<PublicSummary | null> {
 
 async function getRecentDiscrepancies(): Promise<Discrepancy[]> {
   try {
-    const res = await fetch(`${API_URL}/discrepancies?limit=6`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/discrepancies?limit=6`, { next: { revalidate: 30 } });
     if (!res.ok) return [];
     const data = await res.json();
     return data.discrepancies ?? [];
@@ -44,7 +44,7 @@ interface AgencyData {
 
 async function getChartStats(): Promise<{ risk_distribution: RiskData[]; agency_distribution: AgencyData[] }> {
   try {
-    const res = await fetch(`${API_URL}/stats/charts`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/stats/charts`, { next: { revalidate: 30 } });
     if (!res.ok) throw new Error();
     return res.json();
   } catch {

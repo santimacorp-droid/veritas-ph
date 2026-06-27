@@ -35,13 +35,13 @@ interface AgencyCasesResponse {
 }
 
 async function getAgency(id: string): Promise<AgencyDetail | null> {
-  const res = await fetch(`${API_URL}/agencies/${id}`, { cache: 'no-store' });
+  const res = await fetch(`${API_URL}/agencies/${id}`, { next: { revalidate: 30 } });
   if (!res.ok) return null;
   return res.json();
 }
 
 async function getAgencyCases(id: string): Promise<AgencyCasesResponse> {
-  const res = await fetch(`${API_URL}/agencies/${id}/cases?limit=20`, { cache: 'no-store' });
+  const res = await fetch(`${API_URL}/agencies/${id}/cases?limit=20`, { next: { revalidate: 30 } });
   if (!res.ok) return { cases: [], total: 0 };
   return res.json();
 }

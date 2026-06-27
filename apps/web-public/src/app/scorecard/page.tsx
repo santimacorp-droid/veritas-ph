@@ -18,7 +18,7 @@ interface Agency {
 
 async function getAgencies(sort: string): Promise<{ total: number; agencies: Agency[] }> {
   try {
-    const res = await fetch(`${API_URL}/agencies?sort=${sort}&limit=50`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/agencies?sort=${sort}&limit=50`, { next: { revalidate: 30 } });
     if (!res.ok) return { total: 0, agencies: [] };
     return res.json();
   } catch {

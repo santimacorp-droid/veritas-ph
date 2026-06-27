@@ -16,7 +16,7 @@ interface SupplierSummary {
 
 async function getSuppliers(): Promise<{ total: number; suppliers: SupplierSummary[] }> {
   try {
-    const res = await fetch(`${API_URL}/suppliers?limit=50`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/suppliers?limit=50`, { next: { revalidate: 30 } });
     if (!res.ok) return { total: 0, suppliers: [] };
     return res.json();
   } catch {

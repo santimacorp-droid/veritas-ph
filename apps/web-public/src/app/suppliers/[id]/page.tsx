@@ -33,7 +33,7 @@ interface SupplierAward {
 }
 
 async function getSupplier(id: string): Promise<SupplierProfile | null> {
-  const res = await fetch(`${API_URL}/suppliers/${id}`, { cache: 'no-store' });
+  const res = await fetch(`${API_URL}/suppliers/${id}`, { next: { revalidate: 30 } });
   if (!res.ok) return null;
   return res.json();
 }
@@ -46,7 +46,7 @@ interface SupplierDuplicate {
 
 async function getSupplierDuplicates(id: string): Promise<SupplierDuplicate[]> {
   try {
-    const res = await fetch(`${API_URL}/suppliers/${id}/duplicates`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/suppliers/${id}/duplicates`, { next: { revalidate: 30 } });
     if (!res.ok) return [];
     const data = await res.json();
     return data.duplicates || [];
@@ -56,7 +56,7 @@ async function getSupplierDuplicates(id: string): Promise<SupplierDuplicate[]> {
 }
 
 async function getSupplierAwards(id: string): Promise<{ total: number; awards: SupplierAward[] }> {
-  const res = await fetch(`${API_URL}/suppliers/${id}/awards?limit=20`, { cache: 'no-store' });
+  const res = await fetch(`${API_URL}/suppliers/${id}/awards?limit=20`, { next: { revalidate: 30 } });
   if (!res.ok) return { total: 0, awards: [] };
   return res.json();
 }

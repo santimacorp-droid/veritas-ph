@@ -56,7 +56,7 @@ interface LawDetail {
 
 async function getLaw(id: string): Promise<LawDetail | null> {
   try {
-    const res = await fetch(`${API_URL}/laws/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/laws/${id}`, { next: { revalidate: 30 } });
     if (!res.ok) {
       if (res.status === 404) return null;
       throw new Error('Failed to fetch');
@@ -69,7 +69,7 @@ async function getLaw(id: string): Promise<LawDetail | null> {
 
 async function getLawAnalysis(id: string) {
   try {
-    const res = await fetch(`${API_URL}/laws/${id}/analysis`, { cache: 'no-store' });
+    const res = await fetch(`${API_URL}/laws/${id}/analysis`, { next: { revalidate: 30 } });
     if (!res.ok) return null;
     return res.json();
   } catch {

@@ -44,7 +44,7 @@ export default function MapPage() {
   useEffect(() => {
     async function fetchLocations() {
       try {
-        const res = await fetch(`${API_URL}/projects/locations`, { cache: 'no-store' });
+        const res = await fetch(`${API_URL}/projects/locations`, { next: { revalidate: 30 } });
         if (res.ok) {
           const data = await res.json();
           setLocations(data);
