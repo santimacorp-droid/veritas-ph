@@ -9,13 +9,16 @@ import { EvidenceLink } from '@veritas/types';
 import styles from './page.module.css';
 import { DiscrepancyCard } from '@/components/DiscrepancyCard';
 import RiskRadarChart from '@/components/RiskRadarChart';
+import CaseDownloadButtons from '@/components/CaseDownloadButtons/CaseDownloadButtons';
 import FOIDraftButton from '@/components/FOIDraftButton/FOIDraftButton';
+
 import {
   ProcurementTimeline,
   type TimelineEvent,
 } from '@/components/ProcurementTimeline';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
 
 interface LinkedLaw {
   law_id: string;
@@ -475,18 +478,7 @@ export default async function CaseDetailPage({
 
         {/* Page Actions */}
         <div className={styles.pageActions}>
-          <a
-            href={`${API_URL}/exports/case/${id}.json`}
-            className={`${styles.btnPrimary} font-ui`}
-          >
-            Download Case Dossier (JSON)
-          </a>
-          <a
-            href={`${API_URL}/exports/case/${id}.csv`}
-            className={`${styles.btnSecondary} font-ui`}
-          >
-            Download (CSV)
-          </a>
+          <CaseDownloadButtons caseId={id} btnPrimary={styles.btnPrimary} btnSecondary={styles.btnSecondary} />
         </div>
 
         {/* Methodology */}
