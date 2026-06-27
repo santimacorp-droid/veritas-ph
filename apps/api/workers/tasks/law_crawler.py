@@ -410,14 +410,15 @@ async def fetch_laws() -> dict:
     except Exception as e:
         logger.warning(f"Legislative crawling failed: {e}")
 
-    # 2. Fall back to real curated legislation list to ensure robust DB seeding
-    if not scraped_laws:
-        logger.info("Injecting real curated Philippine legislation fallbacks...")
-        scraped_laws = REAL_LEGISLATION_DATA
+    # 2. Combine crawled laws with curated laws to ensure core procurement legislation is always seeded
+    all_laws_to_ingest = list(REAL_LEGISLATION_DATA)
+    for sl in scraped_laws:
+        if not any(x["short_title"] == sl["short_title"] for x in all_laws_to_ingest):
+            all_laws_to_ingest.append(sl)
 
     # 3. Ingest discovered laws into database
     async with async_session_maker() as session:
-        for law_data in scraped_laws:
+        for law_data in all_laws_to_ingest:
             # Check if already exists
             check_sql = text("SELECT law_id FROM laws WHERE short_title = :st OR title = :t")
             res = await session.execute(check_sql, {"st": law_data["short_title"], "t": law_data["title"]})
