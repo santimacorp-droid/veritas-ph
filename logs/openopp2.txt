@@ -1,4 +1,0 @@
-Status: 200
-  /GEPSNONPILOT/SiteAdministration/SplashPage/GovrntListUI_Splash.aspx?menuIndex=6
-  /GEPSNONPILOT/Tender/SplashOpenOpportunitiesUI.aspx?ClickFrom=OpenOpp&menuIndex=3
-  /GEPSNONPILOT/Tender/RecentAwardNoticeUI.aspx?menuIndex=3
