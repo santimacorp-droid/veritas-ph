@@ -14,19 +14,18 @@ async def list_laws(db: AsyncSession, limit: int = 50, offset: int = 0):
     sql = text("""
         SELECT
             l.law_id, l.title, l.short_title, l.description, l.date_passed, l.status,
-            l.author, l.sponsor, l.approved_by,
+            l.author, l.sponsor, l.approved_by, l.category,
             l.created_at, l.updated_at,
             la.integrity_score, la.governance_score, la.analysis_status, la.loopholes
         FROM laws l
         LEFT JOIN (
             SELECT la1.law_id, la1.integrity_score, la1.governance_score, la1.analysis_status, la1.loopholes
             FROM law_analyses la1
-            WHERE la1.analysis_status = 'completed'
-              AND la1.completed_at = (
-                  SELECT MAX(la2.completed_at)
-                  FROM law_analyses la2
-                  WHERE la2.law_id = la1.law_id AND la2.analysis_status = 'completed'
-              )
+            WHERE la1.created_at = (
+                SELECT MAX(la2.created_at)
+                FROM law_analyses la2
+                WHERE la2.law_id = la1.law_id
+            )
         ) la ON la.law_id = l.law_id
         ORDER BY l.date_passed DESC NULLS LAST, l.created_at DESC
         LIMIT :limit OFFSET :offset
@@ -61,7 +60,7 @@ async def get_law_detail(db: AsyncSession, law_id: UUID):
     sql = text("""
         SELECT
             law_id, title, short_title, description, date_passed, status,
-            author, sponsor, approved_by,
+            author, sponsor, approved_by, category,
             created_at, updated_at
         FROM laws
         WHERE law_id = :law_id

@@ -22,10 +22,19 @@ interface LawSummary {
   governance_score?: number;
   analysis_status?: string;
   loophole_count?: number;
+  category?: string;
 }
 
 function formatDate(value?: string) {
   return value ? value.slice(0, 10) : '-';
+}
+
+function formatCategory(cat?: string) {
+  if (!cat) return 'Republic Act';
+  if (cat === 'republic_act') return 'Republic Act';
+  if (cat === 'gppb_resolution') return 'GPPB Resolution';
+  if (cat === 'coa_circular') return 'COA Circular';
+  return cat.replace(/_/g, ' ').toUpperCase();
 }
 
 export default function LawsPage() {
@@ -35,6 +44,7 @@ export default function LawsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [auditFilter, setAuditFilter] = useState('all');
   const [riskFilter, setRiskFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   useEffect(() => {
     async function loadLaws() {
@@ -42,7 +52,6 @@ export default function LawsPage() {
         const res = await fetch(`${API_URL}/laws?limit=1000`);
         if (res.ok) {
           const data = await res.json();
-          // Filter out any laws that have dummy/placeholder data
           const rawLaws = (data.laws || []) as LawSummary[];
           const cleanedLaws = rawLaws.filter(l => 
             !l.title.toLowerCase().includes("dummy") && 
@@ -96,8 +105,14 @@ export default function LawsPage() {
       }
     }
 
-    return matchesSearch && matchesStatus && matchesAudit && matchesRisk;
+    // 5. Category match
+    const matchesCategory = categoryFilter === 'all' || (item.category ?? 'republic_act') === categoryFilter;
+
+    return matchesSearch && matchesStatus && matchesAudit && matchesRisk && matchesCategory;
   });
+
+  const auditedLaws = filteredLaws.filter(l => l.integrity_score != null);
+  const pendingLaws = filteredLaws.filter(l => l.integrity_score == null);
 
   return (
     <div>
@@ -137,7 +152,7 @@ export default function LawsPage() {
           <div className={styles.bannerContent}>
             <h3 className="font-display">Automated Law Crawler & AI Vulnerability Auditing</h3>
             <p className="font-body">
-              Veritas automatically crawls public legislative registries (such as the Official Gazette and Lawphil) for republic acts and directives. 
+              Veritas automatically crawls public legislative registries (Official Gazette, GPPB, COA, and Lawphil) for republic acts and administrative directives. 
               Our multi-pass AI engine scans the legislation section-by-section to identify systemic loopholes, rate oversight strengths, and suggest concrete revisions to block corruption.
             </p>
           </div>
@@ -148,10 +163,21 @@ export default function LawsPage() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search by title, Republic Act number, or description..."
+            placeholder="Search by title, RA number, or description..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+
+          <select
+            className={styles.filterSelect}
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="all">All Categories</option>
+            <option value="republic_act">Republic Acts</option>
+            <option value="gppb_resolution">GPPB Resolutions</option>
+            <option value="coa_circular">COA Circulars</option>
+          </select>
 
           <select
             className={styles.filterSelect}
@@ -183,10 +209,12 @@ export default function LawsPage() {
             <option value="warn">Medium Risk (40-69)</option>
             <option value="low">Low Risk (70+)</option>
           </select>
+        </div>
 
-          <div className={styles.resultsCount}>
-            Showing {filteredLaws.length} laws
-          </div>
+        {/* Section 1: Audited Legislation */}
+        <div className={styles.sectionHeader}>
+          <h2 className={`${styles.sectionTitle} font-display`}>Audited Legislation & Vulnerability Ratings</h2>
+          <span className={`${styles.sectionNote} font-ui`}>Showing {auditedLaws.length} audited items</span>
         </div>
 
         <div className={styles.tableWrap}>
@@ -208,22 +236,27 @@ export default function LawsPage() {
                     Loading laws from database...
                   </td>
                 </tr>
-              ) : filteredLaws.length === 0 ? (
+              ) : auditedLaws.length === 0 ? (
                 <tr>
                   <td colSpan={6} className={`${styles.emptyCell} font-ui`}>
-                    No laws match the selected search or filters.
+                    No audited laws match the selected search or filters.
                   </td>
                 </tr>
               ) : (
-                filteredLaws.map((item) => {
+                auditedLaws.map((item) => {
                   return (
                     <tr key={item.law_id} className={styles.tr}>
                       <td className={styles.td} style={{ maxWidth: '450px' }}>
                         <Link href={`/laws/${item.law_id}`} className={styles.lawLink}>
                           <span className={`${styles.lawTitle} font-body`}>{item.title}</span>
-                          {item.short_title && (
-                            <span className={`${styles.lawShort} font-mono`}>{item.short_title}</span>
-                          )}
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginTop: '4px' }}>
+                            {item.short_title && (
+                              <span className={`${styles.lawShort} font-mono`}>{item.short_title}</span>
+                            )}
+                            <span className={`${styles.categoryBadge} ${item.category === 'coa_circular' ? styles.catCOA : item.category === 'gppb_resolution' ? styles.catGPPB : styles.catRA} font-ui`}>
+                              {formatCategory(item.category)}
+                            </span>
+                          </div>
                           {item.description && (
                             <span className={`${styles.lawDesc} font-body`}>{item.description}</span>
                           )}
@@ -231,7 +264,7 @@ export default function LawsPage() {
                             <span className={`${styles.lawMetaRow} font-ui`}>
                               {item.author && (
                                 <span className={styles.lawMetaItem}>
-                                  <strong>Author:</strong> {item.author}
+                                  <strong>Author/Issuer:</strong> {item.author}
                                 </span>
                               )}
                               {item.approved_by && (
@@ -246,7 +279,7 @@ export default function LawsPage() {
                       <td className={`${styles.td} ${styles.tdNum}`}>
                         {item.integrity_score != null ? (
                           <div className={styles.scoreGroup}>
-                            <span className={`${styles.scoreValue} font-mono`} style={{ color: item.integrity_score >= 70 ? '#2ecc71' : item.integrity_score >= 40 ? '#ffb700' : '#ff8a8a' }}>
+                            <span className={`${styles.scoreValue} font-mono`} style={{ color: item.integrity_score >= 70 ? '#00E676' : item.integrity_score >= 40 ? '#FF9838' : '#FF4D5E' }}>
                               {item.integrity_score}/100
                             </span>
                             <span className={`${styles.scoreLabel} font-ui`}>loophole resistance</span>
@@ -258,7 +291,7 @@ export default function LawsPage() {
                       <td className={`${styles.td} ${styles.tdNum}`}>
                         {item.governance_score != null ? (
                           <div className={styles.scoreGroup}>
-                            <span className={`${styles.scoreValue} font-mono`} style={{ color: item.governance_score >= 70 ? '#2ecc71' : item.governance_score >= 40 ? '#ffb700' : '#ff8a8a' }}>
+                            <span className={`${styles.scoreValue} font-mono`} style={{ color: item.governance_score >= 70 ? '#00E676' : item.governance_score >= 40 ? '#FF9838' : '#FF4D5E' }}>
                               {item.governance_score}/100
                             </span>
                             <span className={`${styles.scoreLabel} font-ui`}>oversight strength</span>
@@ -269,7 +302,7 @@ export default function LawsPage() {
                       </td>
                       <td className={`${styles.td} ${styles.tdNum}`}>
                         {item.loophole_count != null && item.loophole_count > 0 ? (
-                          <span className={`${styles.loopCountBadge} ${item.loophole_count >= 3 ? styles.badgeCritical : styles.badgeWarn} font-mono`}>
+                          <span className={`${styles.loopCountBadge} ${item.loophole_count >= 2 ? styles.badgeCritical : styles.badgeWarn} font-mono`}>
                             {item.loophole_count} {item.loophole_count === 1 ? 'flaw' : 'flaws'}
                           </span>
                         ) : item.integrity_score != null ? (
@@ -293,6 +326,40 @@ export default function LawsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Section 2: Recently Crawled / Queue Section */}
+        {!loading && pendingLaws.length > 0 && (
+          <div style={{ marginTop: '48px' }}>
+            <div className={styles.sectionHeader}>
+              <h2 className={`${styles.sectionTitle} font-display`}>Recently Indexed (Awaiting AI Audit)</h2>
+              <span className={`${styles.sectionNote} font-ui`}>Showing {pendingLaws.length} queued items</span>
+            </div>
+            
+            <div className={styles.pendingList}>
+              {pendingLaws.map((item) => (
+                <div key={item.law_id} className={styles.pendingCard}>
+                  <div className={styles.pendingCardHeader}>
+                    <Link href={`/laws/${item.law_id}`} className={styles.pendingLink}>
+                      <span className={`${styles.pendingTitle} font-body`}>{item.title}</span>
+                    </Link>
+                    <span className={`${styles.pendingStatus} font-ui`}>
+                      <span className={styles.pulseDot} /> {item.analysis_status === 'running' ? 'Auditing...' : 'Queued'}
+                    </span>
+                  </div>
+                  <div className={styles.pendingCardMeta}>
+                    {item.short_title && (
+                      <span className={`${styles.pendingShort} font-mono`}>{item.short_title}</span>
+                    )}
+                    <span className={`${styles.categoryBadge} ${item.category === 'coa_circular' ? styles.catCOA : item.category === 'gppb_resolution' ? styles.catGPPB : styles.catRA} font-ui`}>
+                      {formatCategory(item.category)}
+                    </span>
+                    <span className="font-mono">{formatDate(item.date_passed)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

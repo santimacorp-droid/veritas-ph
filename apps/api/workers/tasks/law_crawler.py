@@ -135,6 +135,57 @@ REAL_LEGISLATION_DATA = [
                 "impact": "Risk of local government units self-certifying emergencies to bypass bidding controls.",
                 "severity": "medium"
             }
+        ],
+        "category": "republic_act"
+    },
+    {
+        "title": "Approving the Guidelines for the Conduct of Procurement Activities during a State of Calamity, or Implementation of Community Quarantine",
+        "short_title": "GPPB Resolution No. 09-2020",
+        "description": "Issued in 2020 by the Government Procurement Policy Board to streamline emergency procurement procedures during national calamities and pandemics.",
+        "date_passed": "2020-04-07",
+        "status": "active",
+        "author": "Government Procurement Policy Board",
+        "approved_by": "GPPB Chairman",
+        "category": "gppb_resolution",
+        "provisions": [
+            {
+                "section_number": "Section 3",
+                "title": "Emergency Procurement Guidelines",
+                "content": "Allows procuring entities to directly negotiate contracts with capable suppliers, contractors, or consultants for goods, infrastructure, and services in response to a state of calamity or quarantine."
+            }
+        ],
+        "controversies": [
+            {
+                "section_number": "Section 3",
+                "issue_description": "Lack of pricing caps or centralized price monitoring for emergency items under negotiated procurement.",
+                "impact": "High risk of overpriced public spending and supplier favoritism.",
+                "severity": "critical"
+            }
+        ]
+    },
+    {
+        "title": "Guidelines for the Prevention and Disallowance of Irregular, Unnecessary, Excessive, Extravagant and Unconscionable (IUEEU) Expenditures",
+        "short_title": "COA Circular No. 2012-003",
+        "description": "Enacted by the Commission on Audit in 2012 to establish rules and standards against wasteful, unnecessary, or non-compliant public spending.",
+        "date_passed": "2012-10-29",
+        "status": "active",
+        "author": "Commission on Audit",
+        "approved_by": "COA Chairperson",
+        "category": "coa_circular",
+        "provisions": [
+            {
+                "section_number": "Section 4.0",
+                "title": "Definition of Irregular Expenditures",
+                "content": "An expenditure is irregular if it is incurred without adhering to established rules, regulations, procedural guidelines, or statutory ceilings (such as RA 9184 standards)."
+            }
+        ],
+        "controversies": [
+            {
+                "section_number": "Section 4.0",
+                "issue_description": "Subjective application of 'unnecessary' or 'excessive' standards by individual audit teams.",
+                "impact": "Can lead to inconsistent disallowance rulings and delay key infrastructure projects due to audit fear.",
+                "severity": "medium"
+            }
         ]
     }
 ]
@@ -360,8 +411,8 @@ async def fetch_laws() -> dict:
             # Insert Law
             law_id = str(uuid.uuid4())
             insert_law_sql = text("""
-                INSERT INTO laws (law_id, title, short_title, description, date_passed, status, author, sponsor, approved_by)
-                VALUES (:law_id, :title, :short_title, :description, :date_passed, :status, :author, :sponsor, :approved_by)
+                INSERT INTO laws (law_id, title, short_title, description, date_passed, status, author, sponsor, approved_by, category)
+                VALUES (:law_id, :title, :short_title, :description, :date_passed, :status, :author, :sponsor, :approved_by, :category)
             """)
             await session.execute(insert_law_sql, {
                 "law_id": law_id,
@@ -372,7 +423,8 @@ async def fetch_laws() -> dict:
                 "status": law_data["status"],
                 "author": law_data.get("author"),
                 "sponsor": law_data.get("sponsor"),
-                "approved_by": law_data.get("approved_by")
+                "approved_by": law_data.get("approved_by"),
+                "category": law_data.get("category", "republic_act")
             })
 
             # Insert provisions

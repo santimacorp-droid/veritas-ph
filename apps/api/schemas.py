@@ -323,6 +323,7 @@ class LawBase(BaseSchema):
     description: str | None = None
     date_passed: date | None = None
     status: str
+    category: str | None = None
 
 
 class LawList(LawBase):

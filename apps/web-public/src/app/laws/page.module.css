@@ -183,3 +183,133 @@
   color: var(--color-ink-secondary);
 }
 
+/* Category Badges */
+.categoryBadge {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.catRA { background: rgba(0, 176, 255, 0.1); color: var(--color-data-blue); border: 1px solid rgba(0, 176, 255, 0.25); }
+.catGPPB { background: rgba(255, 152, 56, 0.1); color: var(--color-medium); border: 1px solid rgba(255, 152, 56, 0.25); }
+.catCOA { background: rgba(0, 230, 118, 0.1); color: var(--color-confirm); border: 1px solid rgba(0, 230, 118, 0.25); }
+
+/* Section Header styling (using home theme standard) */
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-rule);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-ink);
+}
+
+.sectionNote {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+/* Pending Queue List Cards */
+.pendingList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.pendingCard {
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-rule);
+  border-radius: 6px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.pendingCard:hover {
+  border-color: var(--color-rule-strong);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.pendingCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pendingLink {
+  text-decoration: none;
+  color: inherit;
+}
+.pendingTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+  line-height: 1.4;
+  transition: color 100ms;
+}
+.pendingLink:hover .pendingTitle {
+  color: var(--color-data-blue);
+}
+
+.pendingStatus {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-paper-darker);
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.pulseDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-medium);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 152, 56, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(255, 152, 56, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 152, 56, 0); }
+}
+
+.pendingCardMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--color-ink-muted);
+  flex-wrap: wrap;
+}
+
+.pendingShort {
+  font-weight: 600;
+  color: var(--color-data-blue);
+}
+
