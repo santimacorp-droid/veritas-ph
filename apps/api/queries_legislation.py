@@ -14,6 +14,7 @@ async def list_laws(db: AsyncSession, limit: int = 50, offset: int = 0):
     sql = text("""
         SELECT
             l.law_id, l.title, l.short_title, l.description, l.date_passed, l.status,
+            l.author, l.sponsor, l.approved_by,
             l.created_at, l.updated_at,
             la.integrity_score, la.governance_score, la.analysis_status, la.loopholes
         FROM laws l
@@ -50,6 +51,7 @@ async def list_laws(db: AsyncSession, limit: int = 50, offset: int = 0):
             del d["loopholes"]
         laws_list.append(d)
         
+        
     count_result = await db.execute(text("SELECT COUNT(*) FROM laws"))
     total = count_result.scalar_one()
     return total, laws_list
@@ -59,6 +61,7 @@ async def get_law_detail(db: AsyncSession, law_id: UUID):
     sql = text("""
         SELECT
             law_id, title, short_title, description, date_passed, status,
+            author, sponsor, approved_by,
             created_at, updated_at
         FROM laws
         WHERE law_id = :law_id

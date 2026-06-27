@@ -15,6 +15,9 @@ interface LawSummary {
   description?: string;
   date_passed?: string;
   status: string;
+  author?: string;
+  sponsor?: string;
+  approved_by?: string;
   integrity_score?: number;
   governance_score?: number;
   analysis_status?: string;
@@ -63,7 +66,10 @@ export default function LawsPage() {
     const titleMatch = item.title.toLowerCase().includes(query);
     const shortMatch = item.short_title?.toLowerCase().includes(query) ?? false;
     const descMatch = item.description?.toLowerCase().includes(query) ?? false;
-    const matchesSearch = !search || titleMatch || shortMatch || descMatch;
+    const authorMatch = item.author?.toLowerCase().includes(query) ?? false;
+    const sponsorMatch = item.sponsor?.toLowerCase().includes(query) ?? false;
+    const approverMatch = item.approved_by?.toLowerCase().includes(query) ?? false;
+    const matchesSearch = !search || titleMatch || shortMatch || descMatch || authorMatch || sponsorMatch || approverMatch;
 
     // 2. Status match (active vs repealed)
     const matchesStatus = statusFilter === 'all' || item.status.toLowerCase() === statusFilter;
@@ -220,6 +226,20 @@ export default function LawsPage() {
                           )}
                           {item.description && (
                             <span className={`${styles.lawDesc} font-body`}>{item.description}</span>
+                          )}
+                          {(item.author || item.approved_by) && (
+                            <span className={`${styles.lawMetaRow} font-ui`}>
+                              {item.author && (
+                                <span className={styles.lawMetaItem}>
+                                  <strong>Author:</strong> {item.author}
+                                </span>
+                              )}
+                              {item.approved_by && (
+                                <span className={styles.lawMetaItem}>
+                                  <strong>Approved By:</strong> {item.approved_by}
+                                </span>
+                              )}
+                            </span>
                           )}
                         </Link>
                       </td>

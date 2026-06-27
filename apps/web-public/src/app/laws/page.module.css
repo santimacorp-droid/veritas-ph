@@ -168,3 +168,18 @@
   color: var(--color-ink-muted);
 }
 
+.lawMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--color-ink-muted);
+  margin-top: 8px;
+  border-top: 1px dashed var(--color-rule);
+  padding-top: 6px;
+}
+
+.lawMetaItem strong {
+  color: var(--color-ink-secondary);
+}
+

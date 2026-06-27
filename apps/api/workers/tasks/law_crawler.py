@@ -22,6 +22,9 @@ REAL_LEGISLATION_DATA = [
         "description": "Passed in 1955, this law establishes the civil forfeiture process for properties acquired by public officers and employees that are manifestly out of proportion to their lawful income.",
         "date_passed": "1955-06-18",
         "status": "active",
+        "author": "Congress of the Philippines",
+        "sponsor": "Sen. Lorenzo Tañada",
+        "approved_by": "President Ramon Magsaysay",
         "provisions": [
             {
                 "section_number": "Section 2",
@@ -49,6 +52,9 @@ REAL_LEGISLATION_DATA = [
         "description": "The Government Procurement Reform Act (GPRA), passed in 2003, governs all procurement activities across national agencies, GOCCs, and local government units in the Philippines.",
         "date_passed": "2003-01-10",
         "status": "active",
+        "author": "Rep. Edgardo Angara",
+        "sponsor": "Sen. Aquilino Pimentel Jr.",
+        "approved_by": "President Gloria Macapagal-Arroyo",
         "provisions": [
             {
                 "section_number": "Section 36",
@@ -82,6 +88,9 @@ REAL_LEGISLATION_DATA = [
         "description": "Enacted in 1989, it defines conflict of interest, gift-giving prohibitions, and financial disclosures for public employees to uphold public trust.",
         "date_passed": "1989-02-20",
         "status": "active",
+        "author": "Sen. Jovito Salonga",
+        "sponsor": "Sen. Jovito Salonga",
+        "approved_by": "President Corazon C. Aquino",
         "provisions": [
             {
                 "section_number": "Section 7(a)",
@@ -104,6 +113,9 @@ REAL_LEGISLATION_DATA = [
         "description": "The New Government Procurement Act (NGPA), signed in 2024, modernizes public bidding through digitization, beneficial ownership disclosure, and sustainability standards.",
         "date_passed": "2024-07-20",
         "status": "active",
+        "author": "Sen. Sonny Angara",
+        "sponsor": "Rep. Karlo Nograles",
+        "approved_by": "President Ferdinand Marcos Jr.",
         "provisions": [
             {
                 "section_number": "Section 12",
@@ -176,6 +188,9 @@ async def fetch_laws() -> dict:
                                     "description": f"Scraped from the Official Gazette index. Republic Act Number: {ra_num}.",
                                     "date_passed": "2024-01-01",
                                     "status": "active",
+                                    "author": None,
+                                    "sponsor": None,
+                                    "approved_by": None,
                                     "provisions": [
                                         {
                                             "section_number": "Section 1",
@@ -252,6 +267,9 @@ async def fetch_laws() -> dict:
                                             "description": f"Scraped from the Judiciary E-Library. Bookshelf URL: {bookshelf_url}. Republic Act Number: {ra_num}.",
                                             "date_passed": date_passed if date_passed else "2026-01-01",
                                             "status": "active",
+                                            "author": None,
+                                            "sponsor": None,
+                                            "approved_by": None,
                                             "provisions": [
                                                 {
                                                     "section_number": "Section 1",
@@ -303,6 +321,9 @@ async def fetch_laws() -> dict:
                                         "description": f"Scraped from Lawphil. Document URL: {href}. Republic Act Number: {ra_num}.",
                                         "date_passed": f"{year}-01-01",
                                         "status": "active",
+                                        "author": None,
+                                        "sponsor": None,
+                                        "approved_by": None,
                                         "provisions": [
                                             {
                                                 "section_number": "Section 1",
@@ -339,8 +360,8 @@ async def fetch_laws() -> dict:
             # Insert Law
             law_id = str(uuid.uuid4())
             insert_law_sql = text("""
-                INSERT INTO laws (law_id, title, short_title, description, date_passed, status)
-                VALUES (:law_id, :title, :short_title, :description, :date_passed, :status)
+                INSERT INTO laws (law_id, title, short_title, description, date_passed, status, author, sponsor, approved_by)
+                VALUES (:law_id, :title, :short_title, :description, :date_passed, :status, :author, :sponsor, :approved_by)
             """)
             await session.execute(insert_law_sql, {
                 "law_id": law_id,
@@ -348,7 +369,10 @@ async def fetch_laws() -> dict:
                 "short_title": law_data["short_title"],
                 "description": law_data["description"],
                 "date_passed": date.fromisoformat(law_data["date_passed"]) if law_data.get("date_passed") else None,
-                "status": law_data["status"]
+                "status": law_data["status"],
+                "author": law_data.get("author"),
+                "sponsor": law_data.get("sponsor"),
+                "approved_by": law_data.get("approved_by")
             })
 
             # Insert provisions

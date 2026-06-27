@@ -52,6 +52,9 @@ interface LawDetail {
   description?: string;
   date_passed?: string;
   status: string;
+  author?: string;
+  sponsor?: string;
+  approved_by?: string;
   provisions: Provision[];
   revisions: Revision[];
 }
@@ -117,6 +120,24 @@ export default async function LawDetailPage({ params }: { params: Promise<{ id: 
             <div className={`${styles.metaLabel} font-ui`}>Date Passed</div>
             <div className={`${styles.metaValue} font-mono`}>{formatDate(law.date_passed)}</div>
           </div>
+          {law.author && (
+            <div>
+              <div className={`${styles.metaLabel} font-ui`}>Principal Author</div>
+              <div className={`${styles.metaValue} font-body`}>{law.author}</div>
+            </div>
+          )}
+          {law.sponsor && (
+            <div>
+              <div className={`${styles.metaLabel} font-ui`}>Sponsor</div>
+              <div className={`${styles.metaValue} font-body`}>{law.sponsor}</div>
+            </div>
+          )}
+          {law.approved_by && (
+            <div>
+              <div className={`${styles.metaLabel} font-ui`}>Approved By</div>
+              <div className={`${styles.metaValue} font-body`}>{law.approved_by}</div>
+            </div>
+          )}
         </div>
 
         {/* AI Law Analysis Panel */}
