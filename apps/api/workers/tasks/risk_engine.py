@@ -112,15 +112,18 @@ async def insert_baseline_evidence(db, case_id: str, discrepancy_id: str, rule_v
 # ─── AI Helper & Explanation Generator ───────────────────────────────────────
 
 
-async def call_llm_api(url: str, api_key: str, model: str, prompt: str) -> str | None:
+async def call_llm_api(url: str, api_key: str, model: str, prompt: str, json_mode: bool = False) -> str | None:
     """Helper function to execute standard chat completion request."""
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.2,
-        "max_tokens": 150,
+        "max_tokens": 250 if json_mode else 150,
     }
+    if json_mode and ("gpt" in model or "deepseek" in model):
+        payload["response_format"] = {"type": "json_object"}
+        
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             response = await client.post(url, json=payload, headers=headers)
@@ -1507,7 +1510,7 @@ async def generate_advanced_audit_report(db, case_id: str):
 
     if api_key and api_key != "your_key_here":
         try:
-            res = await call_llm_api(url=url, api_key=api_key, model=model, prompt=prompt)
+            res = await call_llm_api(url=url, api_key=api_key, model=model, prompt=prompt, json_mode=not is_completed)
             if res:
                 if not is_completed:
                     try:

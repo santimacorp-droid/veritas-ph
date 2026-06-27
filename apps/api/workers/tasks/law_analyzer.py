@@ -37,7 +37,7 @@ async def call_llm_json(url: str, api_key: str, model: str, prompt: str) -> str 
         ],
         "temperature": 0.2,
         "max_tokens": 4000,
-        "response_format": {"type": "json_object"} if "gpt" in model else None
+        "response_format": {"type": "json_object"} if ("gpt" in model or "deepseek" in model) else None
     }
     async with httpx.AsyncClient(timeout=60.0) as client:
         try:
@@ -139,9 +139,16 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
 
         law_context += f"Overview: {law_row['description'] or ''}\n\n"
         
+        # Safeguard: prevent token blowup on extremely long laws
+        total_len = sum(len(p['content'] or '') for p in provisions)
+        truncate_provisions = total_len > 40000
+
         law_context += "=== PROVISIONS ===\n"
         for p in provisions:
-            law_context += f"Section {p['section_number']} - {p['title'] or ''}:\n{p['content']}\n\n"
+            content = p['content'] or ''
+            if truncate_provisions and len(content) > 1200:
+                content = content[:1200] + " ... [TRUNCATED FOR LENGTH]"
+            law_context += f"Section {p['section_number']} - {p['title'] or ''}:\n{content}\n\n"
 
         if controversies:
             law_context += "=== KNOWN CONTROVERSIES / ISSUES ===\n"
