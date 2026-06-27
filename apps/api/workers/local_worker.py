@@ -77,16 +77,21 @@ async def run_worker_loop():
                     logger.info(f"Worker analyzing risk for case: {case_id}")
                     await analyze_case(case_id)
 
-                # 5. Run Law Analyzer on pending analyses
-                law_sql = text(
-                    "SELECT law_id FROM law_analyses WHERE analysis_status = 'pending' LIMIT 5"
-                )
+                # 5. Run Law Analyzer on pending analyses (prioritize newest laws first)
+                law_sql = text("""
+                    SELECT la.analysis_id, la.law_id 
+                    FROM law_analyses la
+                    JOIN laws l ON l.law_id = la.law_id
+                    WHERE la.analysis_status = 'pending' 
+                    ORDER BY l.date_passed DESC NULLS LAST, l.created_at DESC 
+                    LIMIT 5
+                """)
                 law_res = await db.execute(law_sql)
-                pending_laws = [str(r["law_id"]) for r in law_res.mappings().all()]
+                pending_items = [(str(r["analysis_id"]), str(r["law_id"])) for r in law_res.mappings().all()]
 
-                for law_id in pending_laws:
-                    logger.info(f"Worker analyzing law: {law_id}")
-                    await analyze_law(law_id)
+                for analysis_id, law_id in pending_items:
+                    logger.info(f"Worker analyzing law: {law_id} (analysis: {analysis_id})")
+                    await analyze_law(law_id, analysis_id=analysis_id)
 
         except Exception as e:
             logger.error("Error in local worker loop", error=str(e))
