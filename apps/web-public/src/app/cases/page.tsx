@@ -40,10 +40,10 @@ async function getCases(filters: { agency_id?: string; method?: string; category
 }
 
 function formatPHP(val?: number) {
-  if (val == null) return '-';
-  if (val >= 1_000_000_000) return `PHP ${(val / 1_000_000_000).toFixed(1)}B`;
-  if (val >= 1_000_000) return `PHP ${(val / 1_000_000).toFixed(1)}M`;
-  return 'PHP ' + val.toLocaleString('en-PH');
+  if (val == null) return '—';
+  if (val >= 1_000_000_000) return `₱${(val / 1_000_000_000).toFixed(2)}B`;
+  if (val >= 1_000_000) return `₱${(val / 1_000_000).toFixed(2)}M`;
+  return '₱' + val.toLocaleString('en-PH');
 }
 
 function RiskBar({ score }: { score?: number }) {
@@ -93,7 +93,7 @@ export default async function CasesPage({
         <div className={styles.pageHead}>
           <h1 className={`${styles.pageTitle} font-display`}>Procurement Cases</h1>
           <p className={`${styles.pageSubtitle} font-ui`}>
-            {total} cases ordered by latest ingestion, then risk and award recency
+            Showing {total} audited cases, ordered by latest ingestion, risk, and award recency
           </p>
         </div>
 
