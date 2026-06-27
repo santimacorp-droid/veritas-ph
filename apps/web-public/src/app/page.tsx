@@ -131,7 +131,7 @@ export default async function Home() {
           <div className={styles.donationText}>
             <h3 className={`${styles.donationTitle} font-display`}>Support Veritas Philippines</h3>
             <p className={`${styles.donationDesc} font-body`}>
-              Help us keep our database storage, API hosting, and bot-bypass crawlers running. Your contributions power public procurement accountability.
+              Help us keep our database storage, API hosting, and ingestion pipelines running. Your contributions power public procurement accountability.
             </p>
           </div>
         </div>
