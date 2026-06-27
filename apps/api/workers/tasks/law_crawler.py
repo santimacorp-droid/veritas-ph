@@ -3,6 +3,14 @@ import uuid
 from datetime import date
 
 import httpx
+import random
+
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+]
 import structlog
 from bs4 import BeautifulSoup
 from database import async_session_maker
@@ -213,13 +221,15 @@ async def fetch_laws() -> dict:
     # 1. Attempt to crawl Official Gazette and Judiciary E-Library online
     try:
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "User-Agent": random.choice(USER_AGENTS)
         }
+        await asyncio.sleep(random.uniform(1.0, 3.0))
         async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
             # 1a. Official Gazette
             url = "https://www.officialgazette.gov.ph/section/laws/republic-acts/"
             try:
                 logger.info("Crawling Official Gazette Republic Acts...", url=url)
+                await asyncio.sleep(random.uniform(0.5, 2.0))
                 response = await client.get(url, headers=headers, follow_redirects=True)
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
