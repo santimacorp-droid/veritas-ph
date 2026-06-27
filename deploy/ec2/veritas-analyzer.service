@@ -1,0 +1,14 @@
+[Unit]
+Description=Veritas Background AI Auditor & Risk Engine
+After=network.target veritas-api.service
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/veritas-ph/apps/api
+ExecStart=/home/ubuntu/veritas-ph/.venv_linux/bin/python workers/analyzer_worker.py
+Restart=always
+RestartSec=10
+EnvironmentFile=/home/ubuntu/veritas-ph/apps/api/.env
+
+[Install]
+WantedBy=multi-user.target

@@ -47,14 +47,23 @@ sudo -u ubuntu make pb-install
 
 echo "--> Step 7: Configuring systemd services..."
 cp deploy/ec2/veritas-api.service /etc/systemd/system/
-cp deploy/ec2/veritas-worker.service /etc/systemd/system/
+cp deploy/ec2/veritas-crawler.service /etc/systemd/system/
+cp deploy/ec2/veritas-analyzer.service /etc/systemd/system/
 cp deploy/ec2/veritas-pocketbase.service /etc/systemd/system/
+
+# Clean up old combined service if present
+if systemctl is-active --quiet veritas-worker.service; then
+  systemctl stop veritas-worker.service
+  systemctl disable veritas-worker.service
+  rm -f /etc/systemd/system/veritas-worker.service
+fi
 
 # Reload systemd and enable services to start on boot
 systemctl daemon-reload
 systemctl enable veritas-pocketbase.service
 systemctl enable veritas-api.service
-systemctl enable veritas-worker.service
+systemctl enable veritas-crawler.service
+systemctl enable veritas-analyzer.service
 
 echo "--> Step 8: Configuring Nginx Reverse Proxy..."
 cp deploy/ec2/nginx.conf /etc/nginx/sites-available/veritas
@@ -80,9 +89,11 @@ echo ""
 echo "2. Start the Veritas services:"
 echo "   sudo systemctl start veritas-pocketbase"
 echo "   sudo systemctl start veritas-api"
-echo "   sudo systemctl start veritas-worker"
+echo "   sudo systemctl start veritas-crawler"
+echo "   sudo systemctl start veritas-analyzer"
 echo ""
 echo "3. Check service statuses to verify health:"
 echo "   sudo systemctl status veritas-api"
-echo "   sudo systemctl status veritas-worker"
+echo "   sudo systemctl status veritas-crawler"
+echo "   sudo systemctl status veritas-analyzer"
 echo "=================================================="
