@@ -42,8 +42,20 @@ async function handleProxy(request: NextRequest, path: string[]) {
       );
     }
     
-    const data = await res.json();
-    return NextResponse.json(data);
+    const data = await res.arrayBuffer();
+    const responseHeaders = new Headers();
+    const headersToForward = ['content-type', 'content-disposition', 'content-length', 'cache-control'];
+    for (const h of headersToForward) {
+      const val = res.headers.get(h);
+      if (val) {
+        responseHeaders.set(h, val);
+      }
+    }
+
+    return new NextResponse(data, {
+      status: res.status,
+      headers: responseHeaders,
+    });
   } catch (error) {
     console.error(`Proxy ${request.method} error on ${targetUrl}:`, error);
     return NextResponse.json(
