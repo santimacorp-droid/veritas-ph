@@ -9,6 +9,7 @@ import json
 import random
 import re
 from uuid import uuid4
+from datetime import datetime
 
 import structlog
 from database import async_session_maker
@@ -484,7 +485,11 @@ async def process_document(document_id: str):
                     "method": method_key,
                     "cat": cat_key,
                     "amount": planned_amount,
-                    "deadline": normalize_date_to_iso(extracted_data.get("closing_date")),
+                    "deadline": (
+                        datetime.strptime(dl, "%Y-%m-%d").date()
+                        if (dl := normalize_date_to_iso(extracted_data.get("closing_date")))
+                        else None
+                    ),
                 },
             )
 
@@ -502,7 +507,11 @@ async def process_document(document_id: str):
                     "eid": str(uuid4()),
                     "cid": case_id,
                     "did": document_id,
-                    "event_date": normalize_date_to_iso(extracted_data.get("date_published")),
+                    "event_date": (
+                        datetime.strptime(ed, "%Y-%m-%d").date()
+                        if (ed := normalize_date_to_iso(extracted_data.get("date_published")))
+                        else None
+                    ),
                     "amount": planned_amount,
                 },
             )
