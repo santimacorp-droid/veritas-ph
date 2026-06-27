@@ -167,7 +167,7 @@ async def generate_explanation(
     # 1. Try Deepseek
     deepseek_key = os.getenv("DEEPSEEK_API_KEY")
     if deepseek_key and deepseek_key != "your_key_here":
-        deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-flash")
+        deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
         logger.info(f"Attempting explanation generation using Deepseek ({deepseek_model})...")
         res = await call_llm_api(
             url="https://api.deepseek.com/chat/completions",
@@ -1501,7 +1501,7 @@ async def generate_advanced_audit_report(db, case_id: str):
 
     api_key = os.getenv("DEEPSEEK_API_KEY")
     url = "https://api.deepseek.com/chat/completions"
-    model = os.getenv("DEEPSEEK_MODEL", "deepseek-flash")
+    model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
 
     if not api_key or api_key == "your_key_here":
         api_key = os.getenv("OPENAI_API_KEY")
