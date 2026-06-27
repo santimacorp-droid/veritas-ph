@@ -84,3 +84,36 @@ a {
   transition: color 150ms ease, opacity 150ms ease;
 }
 
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-paper);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-rule-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-muted);
+}
+
+/* Unified Glassmorphic Form Inputs */
+select, input[type="text"], input[type="search"], input[type="date"] {
+  background: var(--color-paper-dark) !important;
+  border: 1px solid var(--color-rule) !important;
+  color: var(--color-ink) !important;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  transition: all 150ms ease;
+}
+select:focus, input[type="text"]:focus, input[type="search"]:focus, input[type="date"]:focus {
+  border-color: var(--color-data-blue) !important;
+  box-shadow: 0 0 10px rgba(0, 176, 255, 0.15) !important;
+  outline: none;
+}
+
