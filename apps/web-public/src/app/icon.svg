@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Cyber Blue & Neon Green Gradient -->
+  <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stopColor="#00E676" />
+    <stop offset="100%" stopColor="#00B0FF" />
+  </linearGradient>
+
+  <!-- Neon Red & Orange Gradient -->
+  <linearGradient id="risk" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stopColor="#FF9838" />
+    <stop offset="100%" stopColor="#FF4D5E" />
+  </linearGradient>
+
+  <!-- Glowing background effect -->
+  <circle cx="16" cy="16" r="16" fill="#08090C" />
+
+  <!-- Outer Shield -->
+  <path
+    d="M16 4L26 8V16C26 22 21.8 26.2 16 27.2C10.2 26.2 6 22 6 16V8L16 4Z"
+    stroke="url(#cyber)"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    opacity="0.3"
+  />
+
+  <!-- Main Balance scale weights -->
+  <circle cx="10" cy="13" r="1.5" fill="url(#cyber)" />
+  <circle cx="22" cy="13" r="1.5" fill="url(#risk)" />
+  
+  <line x1="10" y1="13" x2="16" y2="10" stroke="url(#cyber)" strokeWidth="0.8" strokeDasharray="1 1" />
+  <line x1="22" y1="13" x2="16" y2="10" stroke="url(#risk)" strokeWidth="0.8" strokeDasharray="1 1" />
+  
+  <line x1="10" y1="10" x2="22" y2="10" stroke="url(#cyber)" strokeWidth="1.2" strokeLinecap="round" />
+  <line x1="16" y1="8" x2="16" y2="23" stroke="url(#cyber)" strokeWidth="1.2" strokeLinecap="round" />
+
+  <path
+    d="M9 19C11.5 21.5 13 22 16 22C19 22 20.5 21.5 23 19"
+    stroke="url(#risk)"
+    strokeWidth="1.2"
+    strokeLinecap="round"
+    opacity="0.8"
+  />
+
+  <!-- The Veritas "V" -->
+  <path
+    d="M11 9L16 19L21 9"
+    stroke="url(#cyber)"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+</svg>

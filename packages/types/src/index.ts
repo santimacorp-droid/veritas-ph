@@ -90,6 +90,10 @@ export interface CaseDetail extends ProcurementCase {
   risk_components?: Record<string, any>;
   agency_type?: string;
   publisher_name?: string;
+  supplier_id?: string;
+  supplier_name?: string;
+  supplier_type?: string;
+  supplier_philgeps_id?: string;
 }
 
 export interface TimelineEvent {

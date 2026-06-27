@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Header.module.css';
+import VeritasLogo from '../VeritasLogo/VeritasLogo';
 
 export default function Header() {
   const pathname = usePathname();
@@ -23,8 +24,7 @@ export default function Header() {
     <header className={styles.header}>
       <div className={styles.container}>
         <Link href="/" className={styles.logo}>
-          <span className={`${styles.logoName} font-display`}>VERITAS</span>
-          <span className={`${styles.logoTagline} font-ui`}>Philippines Procurement Transparency</span>
+          <VeritasLogo size={32} showText={true} />
         </Link>
         <nav className={styles.nav}>
           {navItems.map((item) => {

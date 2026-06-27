@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import styles from './Footer.module.css';
+import VeritasLogo from '../VeritasLogo/VeritasLogo';
 
 export default function Footer() {
   return (
     <footer className={styles.footer}>
       <div className={styles.container}>
         <div className={styles.left}>
-          <span className={`${styles.title} font-display`}>VERITAS</span>
-          <p className={`${styles.desc} font-body`}>
+          <VeritasLogo size={24} showText={true} animated={false} />
+          <p className={`${styles.desc} font-body`} style={{ marginTop: '12px' }}>
             A community-driven procurement analytics and legal vulnerability audit platform for public accountability in the Philippines.
           </p>
         </div>

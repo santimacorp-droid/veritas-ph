@@ -46,6 +46,10 @@ interface CaseDetail {
   awarded_amount?: number;
   final_contract_amount?: number;
   status?: string;
+  supplier_id?: string;
+  supplier_name?: string;
+  supplier_type?: string;
+  supplier_philgeps_id?: string;
 }
 
 interface TimelineResponse {
