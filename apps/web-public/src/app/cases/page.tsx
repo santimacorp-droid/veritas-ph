@@ -105,9 +105,6 @@ export default async function CasesPage({
             <label className="font-ui">Agency</label>
             <select name="agency_id" defaultValue={filters.agency_id || ""}>
               <option value="">All Agencies</option>
-              <option value="8a7b6c5d-4e3f-2a1b-0c9d-8e7f6a5b4c3d">DPWH</option>
-              <option value="1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d">DepEd</option>
-              <option value="2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e">DOH</option>
             </select>
           </div>
           <div className={styles.filterGroup}>

@@ -47,12 +47,12 @@ async function getAgencyCases(id: string): Promise<AgencyCasesResponse> {
 }
 
 function formatPHP(val?: number) {
-  if (val == null) return 'â€”';
-  return 'â‚± ' + val.toLocaleString('en-PH', { minimumFractionDigits: 2 });
+  if (val == null) return '—';
+  return '₱ ' + val.toLocaleString('en-PH', { minimumFractionDigits: 2 });
 }
 
 function RiskPip({ score }: { score?: number }) {
-  if (score == null) return <span>â€”</span>;
+  if (score == null) return <span>—</span>;
   const pct = Math.round(score * 100);
   const cls = pct >= 70 ? styles.riskHigh : pct >= 40 ? styles.riskMed : styles.riskLow;
   return <span className={`${styles.riskPip} ${cls} font-mono`}>{score.toFixed(2)}</span>;
@@ -96,7 +96,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
         {/* Breadcrumb */}
         <nav className={`${styles.breadcrumb} font-ui`}>
           <Link href="/agencies">Agencies</Link>
-          <span className={styles.breadcrumbSep}>â€º</span>
+          <span className={styles.breadcrumbSep}>›</span>
           <span className={styles.breadcrumbCurrent}>{agency.acronym ?? agency.name}</span>
         </nav>
 
@@ -108,13 +108,13 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
               {agency.acronym && <span className={styles.metaChip}>{agency.acronym}</span>}
               {agency.publisher_name && (
                 <>
-                  <span className={styles.metaSep}>Â·</span>
+                  <span className={styles.metaSep}>·</span>
                   <span className={styles.metaChip}>{agency.publisher_name}</span>
                 </>
               )}
               {agency.agency_type && (
                 <>
-                  <span className={styles.metaSep}>Â·</span>
+                  <span className={styles.metaSep}>·</span>
                   <span className={`${styles.metaChip} ${styles.metaType}`}>
                     {agency.agency_type.replace(/_/g, ' ')}
                   </span>
@@ -154,7 +154,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
                 />
               </div>
               <span className={`${styles.riskBarLabel} font-mono`}>
-                {agency.avg_risk_score?.toFixed(2) ?? 'â€”'}
+                {agency.avg_risk_score?.toFixed(2) ?? '—'}
               </span>
             </div>
           </div>
@@ -201,16 +201,16 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
                       </Link>
                     </td>
                     <td className={`${styles.td} font-mono`} style={{ fontSize: 11, color: 'var(--color-data-blue)' }}>
-                      {agencyCase.procurement_ref_no ?? 'â€”'}
+                      {agencyCase.procurement_ref_no ?? '—'}
                     </td>
                     <td className={`${styles.td} ${styles.tdNum} font-mono`}>
                       {formatPHP(agencyCase.awarded_amount)}
                     </td>
                     <td className={`${styles.td} font-ui`} style={{ fontSize: 11, textTransform: 'capitalize' }}>
-                      {agencyCase.procurement_method?.replace(/_/g, ' ') ?? 'â€”'}
+                      {agencyCase.procurement_method?.replace(/_/g, ' ') ?? '—'}
                     </td>
                     <td className={`${styles.td} ${styles.tdNum} font-mono`} style={{ fontSize: 11 }}>
-                      {agencyCase.award_date ?? 'â€”'}
+                      {agencyCase.award_date ?? '—'}
                     </td>
                     <td className={`${styles.td} ${styles.tdNum}`}>
                       <RiskPip score={agencyCase.risk_score} />
@@ -218,7 +218,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
                     <td className={`${styles.td} ${styles.tdNum} font-mono`}>
                       {agencyCase.discrepancy_count && agencyCase.discrepancy_count > 0
                         ? <span className={styles.discCount}>{agencyCase.discrepancy_count}</span>
-                        : <span style={{ color: 'var(--color-ink-faint)' }}>â€”</span>}
+                        : <span style={{ color: 'var(--color-ink-faint)' }}>—</span>}
                     </td>
                   </tr>
                 ))

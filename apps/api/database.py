@@ -52,14 +52,16 @@ def make_robust_db_url(url_str: str) -> str:
 db_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../pb_data/data.db"))
 DATABASE_URL = make_robust_db_url(os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_file}"))
 
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    future=True,
-    pool_size=20,
-    max_overflow=10,
-    connect_args={"prepared_statement_cache_size": 0}
-)
+engine_kwargs = {
+    "echo": False,
+    "future": True,
+}
+if "sqlite" not in DATABASE_URL:
+    engine_kwargs["pool_size"] = 20
+    engine_kwargs["max_overflow"] = 10
+    engine_kwargs["connect_args"] = {"prepared_statement_cache_size": 0}
+
+engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
 async_session_maker = async_sessionmaker(
     engine,

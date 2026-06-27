@@ -56,7 +56,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|veritas\.ph|www\.veritas\.ph)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -424,11 +424,13 @@ async def download_document(document_id: UUID, db: AsyncSession = Depends(get_db
     except Exception:
         raise HTTPException(status_code=502, detail="Object storage unavailable") from None
 
+    import mimetypes
     ct = row["content_type"] or "application/octet-stream"
+    ext = mimetypes.guess_extension(ct) or ".bin"
     return Response(
         content=content,
         media_type=ct,
-        headers={"Content-Disposition": f'inline; filename="{document_id}.html"'},
+        headers={"Content-Disposition": f'inline; filename="{document_id}{ext}"'},
     )
 
 
@@ -454,7 +456,7 @@ async def get_discrepancy(discrepancy_id: UUID, db: AsyncSession = Depends(get_d
     Only published discrepancies are accessible here.
     """
     result = await db.execute(
-        text("SELECT * FROM discrepancies WHERE discrepancy_id = :id AND review_status = 'published'"),
+        text("SELECT * FROM discrepancies WHERE discrepancy_id = :id AND review_status IN ('confirmed', 'published')"),
         {"id": str(discrepancy_id)},
     )
     row = result.mappings().first()
@@ -982,7 +984,7 @@ async def submit_case_review(
                 )
                 VALUES (
                     :log_id, :actor_id, 'analyst', 'review_status_updated', 'discrepancy', :entity_id,
-                    CAST(:old_value AS JSONB), CAST(:new_value AS JSONB)
+                    :old_value, :new_value
                 )
             """),
             {
@@ -1125,7 +1127,7 @@ async def submit_takedown(
         {
             "sid": submission_id,
             "email": payload.submitter_email,
-            "notes": f"URL: {payload.report_url}\\nReason: {payload.reason}"
+            "notes": f"URL: {payload.report_url}\nReason: {payload.reason}"
         }
     )
     await db.commit()

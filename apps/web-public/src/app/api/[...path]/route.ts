@@ -7,9 +7,12 @@ async function handleProxy(request: NextRequest, path: string[]) {
   const searchParams = request.nextUrl.search;
   const targetUrl = `${API_URL}/${targetPath}${searchParams}`;
   
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
+  const headers: HeadersInit = {};
+  
+  const contentType = request.headers.get('Content-Type');
+  if (contentType) {
+    headers['Content-Type'] = contentType;
+  }
   
   const authHeader = request.headers.get('Authorization');
   if (authHeader) {

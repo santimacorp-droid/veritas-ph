@@ -72,21 +72,33 @@ interface DiscrepancyResponse {
 }
 
 async function getCase(id: string): Promise<CaseDetail | null> {
-  const res = await fetch(`${API_URL}/cases/${id}`, { next: { revalidate: 30 } });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetch(`${API_URL}/cases/${id}`, { next: { revalidate: 30 } });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }
 
 async function getTimeline(id: string): Promise<TimelineResponse> {
-  const res = await fetch(`${API_URL}/cases/${id}/timeline`, { next: { revalidate: 30 } });
-  if (!res.ok) return { timeline: [] };
-  return res.json();
+  try {
+    const res = await fetch(`${API_URL}/cases/${id}/timeline`, { next: { revalidate: 30 } });
+    if (!res.ok) return { timeline: [] };
+    return res.json();
+  } catch {
+    return { timeline: [] };
+  }
 }
 
 async function getDiscrepancies(id: string): Promise<DiscrepancyResponse> {
-  const res = await fetch(`${API_URL}/cases/${id}/discrepancies`, { next: { revalidate: 30 } });
-  if (!res.ok) return { discrepancies: [] };
-  return res.json();
+  try {
+    const res = await fetch(`${API_URL}/cases/${id}/discrepancies`, { next: { revalidate: 30 } });
+    if (!res.ok) return { discrepancies: [] };
+    return res.json();
+  } catch {
+    return { discrepancies: [] };
+  }
 }
 
 function riskClass(score?: number) {

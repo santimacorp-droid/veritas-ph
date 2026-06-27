@@ -175,8 +175,8 @@ export function DiscrepancyCard({
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  const hashShort = (hash: string) =>
-    hash.length > 16 ? hash.slice(0, 16) + '…' : hash;
+  const hashShort = (hash?: string | null) =>
+    !hash ? '—' : hash.length > 16 ? hash.slice(0, 16) + '…' : hash;
 
   const ruleGuide = RULE_GUIDES[rule_id];
 
@@ -229,15 +229,19 @@ export function DiscrepancyCard({
         <div className={styles.metaSection}>
           <div className={styles.metaLabel}>Audit Finding Details</div>
           <div className={styles.metaContent}>
-            {Object.entries(why_fired).map(([key, val]) => {
-              const label = KEY_LABEL_MAPPING[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-              return (
-                <div key={key} style={{ margin: '3px 0' }}>
-                  <span className={styles.metaKey}>{label}: </span>
-                  <span className={styles.metaValue} style={{ fontWeight: 600 }}>{formatWhyFiredValue(key, val)}</span>
-                </div>
-              );
-            })}
+            {Object.keys(why_fired).length === 0 ? (
+              <span className={styles.metaValue}>No details recorded.</span>
+            ) : (
+              Object.entries(why_fired).map(([key, val]) => {
+                const label = KEY_LABEL_MAPPING[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                return (
+                  <div key={key} style={{ margin: '3px 0' }}>
+                    <span className={styles.metaKey}>{label}: </span>
+                    <span className={styles.metaValue} style={{ fontWeight: 600 }}>{formatWhyFiredValue(key, val)}</span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -294,7 +298,7 @@ export function DiscrepancyCard({
                     {filename}
                   </span>
                   <span className={styles.docMeta}>
-                    {new Date(ev.fetch_timestamp).toLocaleDateString('en-PH')}
+                    {ev.fetch_timestamp ? new Date(ev.fetch_timestamp).toLocaleDateString('en-PH') : '—'}
                     {ev.page_number != null ? ` · p.${ev.page_number}` : ''}
                     {ev.bounding_box && (
                       <span className={styles.citationBadge}>CITED</span>

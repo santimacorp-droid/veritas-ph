@@ -202,6 +202,11 @@ CREATE INDEX IF NOT EXISTS idx_cases_ref_no ON procurement_cases(procurement_ref
 CREATE INDEX IF NOT EXISTS idx_cases_agency ON procurement_cases(agency_id);
 CREATE INDEX IF NOT EXISTS idx_cases_risk ON procurement_cases(risk_score DESC);
 CREATE INDEX IF NOT EXISTS idx_cases_title ON procurement_cases(title);
+CREATE INDEX IF NOT EXISTS idx_cases_award_date ON procurement_cases(award_date DESC);
+CREATE INDEX IF NOT EXISTS idx_cases_status ON procurement_cases(status);
+CREATE INDEX IF NOT EXISTS idx_cases_category ON procurement_cases(category);
+CREATE INDEX IF NOT EXISTS idx_cases_method ON procurement_cases(procurement_method);
+CREATE INDEX IF NOT EXISTS idx_cases_updated ON procurement_cases(updated_at DESC);
 
 -- ─── Procurement Events (Timeline Stages) ───────────────────────────────────
 

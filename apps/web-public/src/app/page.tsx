@@ -47,7 +47,8 @@ async function getChartStats(): Promise<{ risk_distribution: RiskData[]; agency_
     const res = await fetch(`${API_URL}/stats/charts`, { next: { revalidate: 30 } });
     if (!res.ok) throw new Error();
     return res.json();
-  } catch {
+  } catch (error) {
+    console.error(error);
     return {
       risk_distribution: [
         { level: 'Low', count: 0 },

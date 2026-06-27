@@ -33,6 +33,9 @@ def _normalise_discrepancy_row(row: Any) -> dict[str, Any]:
 
     parsed_thresholds = _parse_jsonish(data.get("thresholds_applied"))
     data["thresholds_applied"] = parsed_thresholds if isinstance(parsed_thresholds, dict) else None
+
+    parsed_source_docs = _parse_jsonish(data.get("source_document_ids"))
+    data["source_document_ids"] = parsed_source_docs if isinstance(parsed_source_docs, list) else []
     return data
 
 
@@ -235,7 +238,8 @@ async def list_cases(
         where_clauses.append("pc.risk_score >= :risk_min")
         params["risk_min"] = risk_min
     if year is not None:
-        if "sqlite" in str(db.bind.url):
+        from database import DATABASE_URL
+        if "sqlite" in DATABASE_URL:
             where_clauses.append("strftime('%Y', pc.award_date) = :year_str")
             params["year_str"] = str(year)
         else:
@@ -264,9 +268,7 @@ async def list_cases(
             pc.created_at,
             a.name AS agency_name,
             a.acronym AS agency_acronym,
-            COUNT(DISTINCT d.discrepancy_id) FILTER (
-                WHERE d.review_status IN ('confirmed', 'published')
-            ) AS discrepancy_count
+            COUNT(DISTINCT CASE WHEN d.review_status IN ('confirmed', 'published') THEN d.discrepancy_id END) AS discrepancy_count
         FROM procurement_cases pc
         LEFT JOIN agencies a ON a.agency_id = pc.agency_id
         LEFT JOIN discrepancies d ON d.case_id = pc.case_id
@@ -301,7 +303,8 @@ async def search_cases(
     offset: int,
 ):
     """Full-text search on procurement cases using PostgreSQL ts_rank, supporting reference number matches."""
-    is_postgres = "postgres" in str(db.bind.url) if db.bind else True
+    from database import DATABASE_URL
+    is_postgres = "postgres" in DATABASE_URL
     
     if is_postgres:
         filters = [
@@ -555,7 +558,7 @@ async def get_case_timeline(db: AsyncSession, case_id: UUID):
     result = await db.execute(sql, {"case_id": str(case_id)})
     rows = result.mappings().all()
     
-    events = [_normalise_discrepancy_row(r) for r in rows]
+    events = [dict(r) for r in rows]
     
     # Surface missing stages explicitly
     all_stages = ["planning", "tender", "award", "contract", "implementation", "audit"]
@@ -664,7 +667,7 @@ async def get_agency_profile(db: AsyncSession, agency_id: UUID):
         LEFT JOIN publishers p ON p.publisher_id = a.publisher_id
         LEFT JOIN procurement_cases pc ON pc.agency_id = a.agency_id
         WHERE a.agency_id = :agency_id
-        GROUP BY a.agency_id, a.name, a.acronym, a.agency_type, p.name
+        GROUP BY a.agency_id, a.name, a.acronym, a.agency_type, p.publisher_id, p.name
     """)
     result = await db.execute(sql, {"agency_id": str(agency_id)})
     row = result.mappings().first()
@@ -791,7 +794,7 @@ async def list_agencies(db: AsyncSession, limit: int = 50, offset: int = 0, sort
         LEFT JOIN publishers p         ON p.publisher_id = a.publisher_id
         LEFT JOIN procurement_cases pc ON pc.agency_id = a.agency_id
         LEFT JOIN discrepancies d      ON d.case_id = pc.case_id
-        GROUP BY a.agency_id, a.name, a.acronym, a.agency_type, p.name
+        GROUP BY a.agency_id, a.name, a.acronym, a.agency_type, p.publisher_id, p.name
         ORDER BY {order_by}
         LIMIT :limit OFFSET :offset
     """)
@@ -859,9 +862,7 @@ async def get_agency_cases(
             pc.award_date,
             pc.risk_score,
             pc.status,
-            COUNT(DISTINCT d.discrepancy_id) FILTER (
-                WHERE d.review_status IN ('confirmed','published')
-            ) AS discrepancy_count
+            COUNT(DISTINCT CASE WHEN d.review_status IN ('confirmed', 'published') THEN d.discrepancy_id END) AS discrepancy_count
         FROM procurement_cases pc
         LEFT JOIN discrepancies d ON d.case_id = pc.case_id
         WHERE pc.agency_id = :agency_id
@@ -1067,7 +1068,7 @@ async def get_chart_stats(db: AsyncSession):
             CAST(SUM(pc.awarded_amount) AS FLOAT) as total_awarded
         FROM procurement_cases pc
         LEFT JOIN agencies a ON pc.agency_id = a.agency_id
-        GROUP BY agency_name
+        GROUP BY COALESCE(a.acronym, a.name, 'Unknown')
         ORDER BY total_awarded DESC
     """)
     agency_result = await db.execute(agency_sql)
