@@ -39,7 +39,7 @@ chown -R ubuntu:ubuntu .venv_linux
 
 echo "--> Step 5: Installing Python dependencies..."
 sudo -u ubuntu .venv_linux/bin/pip install --upgrade pip
-sudo -u ubuntu .venv_linux/bin/pip install -r apps/api/requirements.txt
+sudo -u ubuntu .venv_linux/bin/pip install -r requirements.txt
 
 echo "--> Step 6: Installing PocketBase binary..."
 # Run make pb-install as ubuntu user
