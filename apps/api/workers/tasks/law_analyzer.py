@@ -202,14 +202,15 @@ Return exactly a JSON object conforming to this schema:
         deepseek_key = os.getenv("DEEPSEEK_API_KEY")
         if deepseek_key and deepseek_key != "your_key_here":
             logger.info("Attempting DeepSeek for law analysis...")
+            deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-flash")
             raw_response = await call_llm_json(
                 url="https://api.deepseek.com/chat/completions",
                 api_key=deepseek_key,
-                model="deepseek-chat",
+                model=deepseek_model,
                 prompt=prompt
             )
             if raw_response:
-                model_used = "deepseek-chat"
+                model_used = deepseek_model
 
         if not raw_response:
             openai_key = os.getenv("OPENAI_API_KEY")

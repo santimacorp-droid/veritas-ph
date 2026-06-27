@@ -9,6 +9,7 @@ import { EvidenceLink } from '@veritas/types';
 import styles from './page.module.css';
 import { DiscrepancyCard } from '@/components/DiscrepancyCard';
 import RiskRadarChart from '@/components/RiskRadarChart';
+import FOIDraftButton from '@/components/FOIDraftButton/FOIDraftButton';
 import {
   ProcurementTimeline,
   type TimelineEvent,
@@ -102,6 +103,21 @@ async function getDiscrepancies(id: string): Promise<DiscrepancyResponse> {
     return res.json();
   } catch {
     return { discrepancies: [] };
+}
+
+interface AuditReport {
+  report_type: 'predictive' | 'post_mortem' | 'none';
+  risk_probability: number | null;
+  analysis_details: string;
+}
+
+async function getAuditReport(id: string): Promise<AuditReport> {
+  try {
+    const res = await fetch(`${API_URL}/cases/${id}/audit-report`, { next: { revalidate: 30 } });
+    if (!res.ok) return { report_type: 'none', risk_probability: null, analysis_details: 'No advanced audit report generated yet.' };
+    return res.json();
+  } catch {
+    return { report_type: 'none', risk_probability: null, analysis_details: 'No advanced audit report generated yet.' };
   }
 }
 
@@ -125,10 +141,11 @@ export default async function CaseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [caseData, timelineData, discrepancyData] = await Promise.all([
+  const [caseData, timelineData, discrepancyData, auditReport] = await Promise.all([
     getCase(id),
     getTimeline(id),
     getDiscrepancies(id),
+    getAuditReport(id),
   ]);
 
   if (!caseData) notFound();
@@ -310,6 +327,46 @@ export default async function CaseDetailPage({
           </div>
         </div>
 
+        {/* Advanced Audit Report (DeepSeek) */}
+        {auditReport.report_type !== 'none' && (
+          <>
+            <div className={styles.sectionHeader}>
+              <span className="font-ui">🔬 Advanced Audit Report</span>
+              <span className={`${styles.sectionCount} font-mono`} style={{ background: 'var(--color-flag)', color: 'var(--color-paper)' }}>
+                DeepSeek AI
+              </span>
+            </div>
+            <div style={{
+              background: 'var(--color-paper-dark)',
+              border: '1px solid var(--color-rule)',
+              borderRadius: '4px',
+              padding: '24px',
+              marginBottom: '32px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '3px 8px', borderRadius: '3px', background: auditReport.report_type === 'predictive' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: auditReport.report_type === 'predictive' ? 'var(--color-flag)' : 'var(--color-confirm)', fontWeight: 600 }} className="font-ui">
+                    {auditReport.report_type === 'predictive' ? '🔮 Predictive Risk Model' : '🔎 Forensic Audit Report'}
+                  </span>
+                </div>
+                {auditReport.report_type === 'predictive' && auditReport.risk_probability !== null && (
+                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', color: 'var(--color-ink-secondary)' }} className="font-ui">Probability of Overrun:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: auditReport.risk_probability >= 0.7 ? 'var(--color-flag)' : 'var(--color-ink)' }} className="font-display">
+                      {Math.round(auditReport.risk_probability * 100)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p style={{ margin: 0, fontSize: '14.5px', lineHeight: '1.6', color: 'var(--color-ink)' }} className="font-body">
+                {auditReport.analysis_details}
+              </p>
+            </div>
+          </>
+        )}
+
         {/* Timeline */}
         <div className={styles.sectionHeader}>
           <span className="font-ui">Procurement Timeline</span>
@@ -397,6 +454,7 @@ export default async function CaseDetailPage({
                 <p className="font-body">
                   Use the Philippine Government FOI portal (foi.gov.ph) to request the missing documents (e.g. Bid Abstracts, Project NTPs, or BAC Resolutions). Reference PhilGEPS ID: <strong>{caseData.procurement_ref_no ?? 'N/A'}</strong>.
                 </p>
+                <FOIDraftButton caseId={id} />
               </div>
               <div className={styles.actionItem}>
                 <h4 className="font-ui">3. Report to COA</h4>

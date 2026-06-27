@@ -19,6 +19,7 @@ DEPED_ID = "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
 DOH_ID = "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e"
 
 SUNRISE_ID = "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"
+SUNRISE_COLLUSIVE_ID = "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e99"
 PACIFIC_ID = "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a"
 ALLIED_ID = "5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b"
 NORTHERN_ID = "6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c"
@@ -29,6 +30,7 @@ async def seed_cases():
     async with async_session_maker() as session:
         # Clean existing cases data (dialect-safe truncation)
         print("Clearing existing procurement cases data...")
+        await session.execute(text("DELETE FROM audit_reports"))
         await session.execute(text("DELETE FROM evidence_links"))
         await session.execute(text("DELETE FROM discrepancies"))
         await session.execute(text("DELETE FROM risk_signals"))
@@ -39,6 +41,7 @@ async def seed_cases():
         await session.execute(text("DELETE FROM projects"))
         await session.execute(text("DELETE FROM procurement_events"))
         await session.execute(text("DELETE FROM procurement_cases"))
+        await session.execute(text("DELETE FROM corporate_registries"))
 
         # 1. Seed Agencies
         print("Seeding agencies...")
@@ -110,6 +113,15 @@ async def seed_cases():
                 "00-777-888",
                 "northern@mail.com",
             ),
+            (
+                SUNRISE_COLLUSIVE_ID,
+                "Sunrise Builders & Supply LLC",
+                "sunrise-builders-supply",
+                "corporation",
+                "Quezon City",
+                "00-999-000",
+                "sunrise-collusive@mail.com",
+            ),
         ]
         for supplier_id, name, slug, stype, addr, philgeps, sec in suppliers:
             await session.execute(
@@ -127,6 +139,68 @@ async def seed_cases():
                     "philgeps": philgeps,
                     "sec": sec,
                 },
+            )
+
+        # 2.5 Seed Corporate Registries
+        print("Seeding corporate registries...")
+        registries = [
+            (
+                str(uuid.uuid4()),
+                "Sunrise Construction & Supply",
+                "SEC-SUNRISE-111",
+                "Quezon City",
+                ["Juan Dela Cruz", "Maria Dela Cruz"],
+                [{"name": "Juan Dela Cruz", "percentage": 80.0}, {"name": "Maria Dela Cruz", "percentage": 20.0}]
+            ),
+            (
+                str(uuid.uuid4()),
+                "Sunrise Builders & Supply LLC",
+                "SEC-SUNRISE-999",
+                "Quezon City",
+                ["Juan Dela Cruz", "Maria Dela Cruz"],
+                [{"name": "Juan Dela Cruz", "percentage": 60.0}, {"name": "Maria Dela Cruz", "percentage": 40.0}]
+            ),
+            (
+                str(uuid.uuid4()),
+                "Pacific Builders Corporation",
+                "SEC-PACIFIC-333",
+                "Pasig City",
+                ["Pacifico Ramos", "Carla Ramos"],
+                [{"name": "Pacifico Ramos", "percentage": 90.0}, {"name": "Carla Ramos", "percentage": 10.0}]
+            ),
+            (
+                str(uuid.uuid4()),
+                "Northern Trading & Supplies",
+                "SEC-NORTH-777",
+                "Baguio City",
+                ["Northern Director", "Baguio Partner"],
+                [{"name": "Northern Director", "percentage": 50.0}, {"name": "Baguio Partner", "percentage": 50.0}]
+            ),
+            (
+                str(uuid.uuid4()),
+                "Allied Healthcare Solutions Inc.",
+                "SEC-ALLIED-555",
+                "Manila",
+                ["Allied Director", "Allied Partner"],
+                [{"name": "Allied Director", "percentage": 50.0}, {"name": "Allied Partner", "percentage": 50.0}]
+            )
+        ]
+
+        for rid, name, sec_no, addr, directors, shareholders in registries:
+            await session.execute(
+                text("""
+                    INSERT INTO corporate_registries (registry_id, company_name, registration_no, registered_addr, directors, shareholders)
+                    VALUES (:rid, :name, :sec_no, :addr, :directors, :shareholders)
+                    ON CONFLICT(registry_id) DO NOTHING
+                """),
+                {
+                    "rid": rid,
+                    "name": name,
+                    "sec_no": sec_no,
+                    "addr": addr,
+                    "directors": json.dumps(directors),
+                    "shareholders": json.dumps(shareholders),
+                }
             )
 
         # 3. Seed Procurement Cases

@@ -245,6 +245,79 @@ async def get_case_discrepancies(case_id: UUID, db: AsyncSession = Depends(get_d
     return {"case_id": str(case_id), "discrepancies": discrepancies}
 
 
+@app.get("/cases/{case_id}/audit-report", tags=["Public"])
+async def get_case_audit_report(case_id: UUID, db: AsyncSession = Depends(get_db)):
+    """Fetch the DeepSeek predictive/forensic audit report for a case."""
+    res = await db.execute(
+        text("SELECT report_type, risk_probability, analysis_details FROM audit_reports WHERE case_id = :cid"),
+        {"cid": str(case_id)}
+    )
+    row = res.mappings().first()
+    if not row:
+        return {"report_type": "none", "risk_probability": None, "analysis_details": "No advanced audit report generated yet."}
+    return dict(row)
+
+
+@app.get("/cases/{case_id}/foi-draft", tags=["Public"])
+async def get_case_foi_draft(case_id: UUID, db: AsyncSession = Depends(get_db)):
+    """Generate a formatted, copy-paste ready FOI request letter for missing documents."""
+    from datetime import date
+    case_res = await db.execute(
+        text("""
+            SELECT pc.title, pc.reference_no, a.name AS agency_name 
+            FROM procurement_cases pc
+            LEFT JOIN agencies a ON a.agency_id = pc.agency_id
+            WHERE pc.case_id = :cid
+        """),
+        {"cid": str(case_id)}
+    )
+    case = case_res.mappings().first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    disc_res = await db.execute(
+        text("SELECT explanation, rule_id FROM discrepancies WHERE case_id = :cid"),
+        {"cid": str(case_id)}
+    )
+    discrepancies = disc_res.mappings().all()
+    
+    missing_docs = []
+    for d in discrepancies:
+        if d["rule_id"] == "RULE-009":
+            missing_docs.append("Official Bid Abstract / Evaluation Report")
+        elif d["rule_id"] == "RULE-002":
+            missing_docs.append("Notice to Proceed (NTP) / Detailed Contract price breakdown")
+        elif d["rule_id"] == "RULE-003":
+            missing_docs.append("Complete Invitation to Bid / Bidding Timetable logs")
+            
+    if not missing_docs:
+        missing_docs.append("Complete Bid Evaluation Reports and Notice of Award (NOA)")
+
+    missing_docs_str = "\n".join([f"- {doc}" for doc in missing_docs])
+
+    letter = (
+        f"Date: {date.today().strftime('%B %d, %Y')}\n\n"
+        f"TO: Bids and Awards Committee (BAC) Secretariat / FOI Receiving Officer\n"
+        f"AGENCY: {case['agency_name'] or 'Procuring Entity'}\n\n"
+        f"SUBJECT: REQUEST FOR OFFICIAL PROCUREMENT DOCUMENTS UNDER EXECUTIVE ORDER NO. 2 (S. 2016) ON FREEDOM OF INFORMATION\n\n"
+        f"Dear Sir/Madam,\n\n"
+        f"I am writing to formally request official copies of key procurement documents related to the project:\n"
+        f"\"{case['title']}\"\n"
+        f"under PhilGEPS Reference Number: {case['reference_no'] or 'N/A'}.\n\n"
+        f"Pursuant to Executive Order No. 2, series of 2016, and the constitutional right to information on matters of public concern, "
+        f"I would like to request the following records:\n"
+        f"{missing_docs_str}\n\n"
+        f"These documents will be used solely for citizen monitoring, transparency research, and public interest review of "
+        f"operational compliance. I look forward to your response within the statutory 15 working days.\n\n"
+        f"Thank you for your cooperation.\n\n"
+        f"Sincerely,\n"
+        f"[Your Name]\n"
+        f"[Your Contact Information]\n"
+    )
+
+    return {"case_id": str(case_id), "foi_letter": letter}
+
+
 @app.get("/projects/locations", tags=["Public"])
 async def get_projects_locations(db: AsyncSession = Depends(get_db)):
     """Retrieve coordinates and metadata for all projects to render on the map."""

@@ -556,6 +556,26 @@ CREATE TABLE IF NOT EXISTS linker_metrics (
     false_negatives INTEGER NOT NULL,
     samples_evaluated INTEGER NOT NULL
 );
+
+-- ─── Corporate Registries & Advanced Audits ─────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS corporate_registries (
+    registry_id      TEXT PRIMARY KEY,
+    company_name     TEXT NOT NULL,
+    registration_no  TEXT UNIQUE NOT NULL,
+    registered_addr  TEXT NOT NULL,
+    directors        JSONB NOT NULL,
+    shareholders     JSONB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS audit_reports (
+    report_id            TEXT PRIMARY KEY,
+    case_id              TEXT NOT NULL REFERENCES procurement_cases(case_id) ON DELETE CASCADE,
+    report_type          TEXT NOT NULL CHECK (report_type IN ('predictive', 'post_mortem')),
+    risk_probability     NUMERIC,
+    analysis_details     TEXT NOT NULL,
+    created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 
