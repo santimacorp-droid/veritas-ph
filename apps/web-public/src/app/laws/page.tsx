@@ -18,6 +18,8 @@ interface LawSummary {
   author?: string;
   sponsor?: string;
   approved_by?: string;
+  submitted_by?: string;
+  voting_record?: string;
   integrity_score?: number;
   governance_score?: number;
   analysis_status?: string;
@@ -239,7 +241,7 @@ export default function LawsPage() {
                           {item.description && (
                             <span className={`${styles.lawDesc} font-body`}>{item.description}</span>
                           )}
-                          {(item.author || item.approved_by) && (
+                          {(item.author || item.approved_by || item.voting_record) && (
                             <span className={`${styles.lawMetaRow} font-ui`}>
                               {item.author && (
                                 <span className={styles.lawMetaItem}>
@@ -248,7 +250,12 @@ export default function LawsPage() {
                               )}
                               {item.approved_by && (
                                 <span className={styles.lawMetaItem}>
-                                  <strong>Approved By:</strong> {item.approved_by}
+                                  <strong>Signed By:</strong> {item.approved_by}
+                                </span>
+                              )}
+                              {item.voting_record && (
+                                <span className={styles.lawMetaItem}>
+                                  <strong>Vote:</strong> {item.voting_record}
                                 </span>
                               )}
                             </span>

@@ -486,6 +486,8 @@ CREATE TABLE IF NOT EXISTS laws (
     author          TEXT,
     sponsor         TEXT,
     approved_by     TEXT,
+    submitted_by    TEXT,
+    voting_record   TEXT,
     category        TEXT DEFAULT 'republic_act',
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -614,6 +616,12 @@ async def initialize_database():
                 print("Applied migration: geography_codes to suppliers")
             except Exception as e:
                 print(f"Migration warning (geography_codes): {e}")
+            try:
+                await conn.execute(text("ALTER TABLE laws ADD COLUMN IF NOT EXISTS submitted_by TEXT;"))
+                await conn.execute(text("ALTER TABLE laws ADD COLUMN IF NOT EXISTS voting_record TEXT;"))
+                print("Applied migration: submitted_by & voting_record to laws")
+            except Exception as e:
+                print(f"Migration warning (laws columns): {e}")
         else:
             # SQLite: Check if columns exist using PRAGMA
             try:
@@ -625,6 +633,15 @@ async def initialize_database():
                 if "geography_codes" not in columns:
                     await conn.execute(text("ALTER TABLE suppliers ADD COLUMN geography_codes TEXT;"))
                     print("Applied SQLite migration: geography_codes to suppliers")
+
+                res_laws = await conn.execute(text("PRAGMA table_info(laws);"))
+                laws_cols = [row[1] for row in res_laws.fetchall()]
+                if "submitted_by" not in laws_cols:
+                    await conn.execute(text("ALTER TABLE laws ADD COLUMN submitted_by TEXT;"))
+                    print("Applied SQLite migration: submitted_by to laws")
+                if "voting_record" not in laws_cols:
+                    await conn.execute(text("ALTER TABLE laws ADD COLUMN voting_record TEXT;"))
+                    print("Applied SQLite migration: voting_record to laws")
             except Exception as e:
                 print(f"SQLite migration failed: {e}")
                 

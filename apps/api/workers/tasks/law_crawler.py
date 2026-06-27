@@ -31,9 +31,11 @@ REAL_LEGISLATION_DATA = [
         "description": "Passed in 1955, this law establishes the civil forfeiture process for properties acquired by public officers and employees that are manifestly out of proportion to their lawful income.",
         "date_passed": "1955-06-18",
         "status": "active",
-        "author": "Congress of the Philippines",
+        "author": "Sen. Lorenzo Tañada",
         "sponsor": "Sen. Lorenzo Tañada",
         "approved_by": "President Ramon Magsaysay",
+        "submitted_by": "Committee on Civil Service",
+        "voting_record": "Unanimously passed by voice vote (viva voce) in both chambers",
         "provisions": [
             {
                 "section_number": "Section 2",
@@ -61,9 +63,11 @@ REAL_LEGISLATION_DATA = [
         "description": "The Government Procurement Reform Act (GPRA), passed in 2003, governs all procurement activities across national agencies, GOCCs, and local government units in the Philippines.",
         "date_passed": "2003-01-10",
         "status": "active",
-        "author": "Rep. Edgardo Angara",
-        "sponsor": "Sen. Aquilino Pimentel Jr.",
+        "author": "Committee on Appropriations / Committee on Good Government",
+        "sponsor": "Sen. Aquilino Pimentel Jr. / Rep. Luis Villafuerte",
         "approved_by": "President Gloria Macapagal-Arroyo",
+        "submitted_by": "Bicameral Conference Committee Report",
+        "voting_record": "Senate: 22-0, House: 184-0",
         "provisions": [
             {
                 "section_number": "Section 36",
@@ -100,6 +104,8 @@ REAL_LEGISLATION_DATA = [
         "author": "Sen. Jovito Salonga",
         "sponsor": "Sen. Jovito Salonga",
         "approved_by": "President Corazon C. Aquino",
+        "submitted_by": "Senate Blue Ribbon Committee",
+        "voting_record": "Senate: 23-0, House: 174-0",
         "provisions": [
             {
                 "section_number": "Section 7(a)",
@@ -122,9 +128,11 @@ REAL_LEGISLATION_DATA = [
         "description": "The New Government Procurement Act (NGPA), signed in 2024, modernizes public bidding through digitization, beneficial ownership disclosure, and sustainability standards.",
         "date_passed": "2024-07-20",
         "status": "active",
-        "author": "Sen. Sonny Angara",
-        "sponsor": "Rep. Karlo Nograles",
+        "author": "Committee on Finance / Committee on Good Government",
+        "sponsor": "Sen. Sonny Angara / Rep. Jose Aquino",
         "approved_by": "President Ferdinand Marcos Jr.",
+        "submitted_by": "Filed on Feb 2024 (Senate Bill No. 2593)",
+        "voting_record": "Senate: 21-0, House: 228-0",
         "provisions": [
             {
                 "section_number": "Section 12",
@@ -422,8 +430,8 @@ async def fetch_laws() -> dict:
             # Insert Law
             law_id = str(uuid.uuid4())
             insert_law_sql = text("""
-                INSERT INTO laws (law_id, title, short_title, description, date_passed, status, author, sponsor, approved_by, category)
-                VALUES (:law_id, :title, :short_title, :description, :date_passed, :status, :author, :sponsor, :approved_by, :category)
+                INSERT INTO laws (law_id, title, short_title, description, date_passed, status, author, sponsor, approved_by, submitted_by, voting_record, category)
+                VALUES (:law_id, :title, :short_title, :description, :date_passed, :status, :author, :sponsor, :approved_by, :submitted_by, :voting_record, :category)
             """)
             await session.execute(insert_law_sql, {
                 "law_id": law_id,
@@ -435,6 +443,8 @@ async def fetch_laws() -> dict:
                 "author": law_data.get("author"),
                 "sponsor": law_data.get("sponsor"),
                 "approved_by": law_data.get("approved_by"),
+                "submitted_by": law_data.get("submitted_by"),
+                "voting_record": law_data.get("voting_record"),
                 "category": law_data.get("category", "republic_act")
             })
 

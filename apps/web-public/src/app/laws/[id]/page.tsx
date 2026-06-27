@@ -54,6 +54,8 @@ interface LawDetail {
   author?: string;
   sponsor?: string;
   approved_by?: string;
+  submitted_by?: string;
+  voting_record?: string;
   provisions: Provision[];
   revisions: Revision[];
 }
@@ -127,14 +129,26 @@ export default async function LawDetailPage({ params }: { params: Promise<{ id: 
           )}
           {law.sponsor && (
             <div>
-              <div className={`${styles.metaLabel} font-ui`}>Sponsor</div>
+              <div className={`${styles.metaLabel} font-ui`}>Sponsor / Co-Authors</div>
               <div className={`${styles.metaValue} font-body`}>{law.sponsor}</div>
+            </div>
+          )}
+          {law.submitted_by && (
+            <div>
+              <div className={`${styles.metaLabel} font-ui`}>Submitted / Filed As</div>
+              <div className={`${styles.metaValue} font-body`}>{law.submitted_by}</div>
             </div>
           )}
           {law.approved_by && (
             <div>
-              <div className={`${styles.metaLabel} font-ui`}>Approved By</div>
+              <div className={`${styles.metaLabel} font-ui`}>Signed By</div>
               <div className={`${styles.metaValue} font-body`}>{law.approved_by}</div>
+            </div>
+          )}
+          {law.voting_record && (
+            <div>
+              <div className={`${styles.metaLabel} font-ui`}>Voting Record (Congress)</div>
+              <div className={`${styles.metaValue} font-mono`} style={{ fontSize: '12px' }}>{law.voting_record}</div>
             </div>
           )}
         </div>
