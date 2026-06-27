@@ -531,18 +531,16 @@ async def seed_cases():
             status,
             geo_scope,
         ) in cases:
-            # Generate realistic completeness, confidence and risk components based on the risk score
-            completeness = 1.0
-            confidence = 0.95 if risk < 0.7 else 0.85
-            
-            # Risk dimensions matching the risk score
-            risk_val = risk if risk is not None else 0.0
+            # Force risk_score to be NULL for clean audit run!
+            risk = None
+            completeness = None
+            confidence = None
             r_comp = {
-                "competition": min(1.0, max(0.1, risk_val * 1.1)) if method in ('negotiated', 'shopping') or risk_val > 0.5 else 0.1,
-                "timeline": min(1.0, max(0.1, risk_val * 1.2)) if risk_val > 0.4 else 0.1,
-                "financial": min(1.0, max(0.1, risk_val * 0.95)) if planned and awarded and awarded > planned * 0.95 else 0.1,
-                "transparency": min(1.0, max(0.1, risk_val * 1.05)) if risk_val > 0.6 else 0.1,
-                "compliance": min(1.0, max(0.1, risk_val * 0.85)) if risk_val > 0.3 else 0.1
+                "competition": 0.0,
+                "timeline": 0.0,
+                "financial": 0.0,
+                "transparency": 0.0,
+                "compliance": 0.0
             }
 
             await session.execute(
@@ -803,31 +801,7 @@ async def seed_cases():
             ),
         ]
 
-        for did, cid, dtype, sev, exp, rule, rver, why, thresh, rstatus in discrepancies:
-            await session.execute(
-                text("""
-                    INSERT INTO discrepancies (
-                        discrepancy_id, case_id, discrepancy_type, severity, explanation, 
-                        rule_id, rule_version, why_fired, thresholds_applied, review_status
-                    )
-                    VALUES (
-                        :did, :cid, :dtype, :sev, :exp, 
-                        :rule, :rver, :why, :thresh, :rstatus
-                    )
-                """),
-                {
-                    "did": did,
-                    "cid": cid,
-                    "dtype": dtype,
-                    "sev": sev,
-                    "exp": exp,
-                    "rule": rule,
-                    "rver": rver,
-                    "why": json.dumps(why),
-                    "thresh": json.dumps(thresh),
-                    "rstatus": rstatus,
-                },
-            )
+        print("Skipping pre-computed discrepancies seeding for a clean AI audit run.")
 
         # 5. Seed Awards
         print("Seeding awards...")
