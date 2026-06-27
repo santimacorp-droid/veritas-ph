@@ -253,6 +253,53 @@ async def fetch_laws() -> dict:
                         logger.info(f"Scraped {elib_count} raw acts from Judiciary E-Library AJAX response.")
             except Exception as e:
                 logger.warning(f"Judiciary E-Library crawling failed: {e}")
+
+            # 1c. Lawphil.net
+            try:
+                current_year = date.today().year
+                for year in [current_year - 1, current_year]:
+                    url_lawphil = f"https://lawphil.net/statutes/repacts/ra{year}/ra{year}.html"
+                    logger.info(f"Crawling Lawphil Republic Acts for year {year}...", url=url_lawphil)
+                    response = await client.get(url_lawphil, headers=headers, follow_redirects=True)
+                    if response.status_code == 200:
+                        clean_text = re.sub(r"&#(\d+)(?!;)", r"&#\1;", response.text)
+                        soup = BeautifulSoup(clean_text, "html.parser")
+                        links = soup.find_all("a", href=True)
+                        lawphil_count = 0
+                        for link in links:
+                            text_val = link.get_text().strip()
+                            href = link["href"]
+                            if href.startswith("/"):
+                                href = "https://lawphil.net" + href
+                            elif not href.startswith("http"):
+                                href = f"https://lawphil.net/statutes/repacts/ra{year}/" + href
+                                
+                            match = re.search(r"((?:Republic Act|R\.A\.)\s*No\.\s*(\d+))", text_val, re.IGNORECASE)
+                            if match:
+                                ra_short = match.group(1).replace("R.A.", "Republic Act").replace("R.A ", "Republic Act ")
+                                ra_short = re.sub(r"\s+", " ", ra_short)
+                                ra_num = match.group(2)
+                                
+                                if not any(x["short_title"] == ra_short for x in scraped_laws):
+                                    scraped_laws.append({
+                                        "title": text_val if len(text_val) > 20 else f"Republic Act No. {ra_num}: {text_val}",
+                                        "short_title": ra_short,
+                                        "description": f"Scraped from Lawphil. Document URL: {href}. Republic Act Number: {ra_num}.",
+                                        "date_passed": f"{year}-01-01",
+                                        "status": "active",
+                                        "provisions": [
+                                            {
+                                                "section_number": "Section 1",
+                                                "title": "Short Title",
+                                                "content": f"This Act shall be known and cited as '{text_val}'."
+                                            }
+                                        ],
+                                        "controversies": []
+                                    })
+                                    lawphil_count += 1
+                        logger.info(f"Scraped {lawphil_count} raw acts from Lawphil year {year} page.")
+            except Exception as e:
+                logger.warning(f"Lawphil crawling failed: {e}")
     except Exception as e:
         logger.warning(f"Legislative crawling failed: {e}")
 

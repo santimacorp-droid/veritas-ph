@@ -704,7 +704,7 @@ async def initialize_database():
                     "publisher_id": "pub1",
                     "source_type": "portal",
                     "publisher_name": "PhilGEPS Public Notices",
-                    "base_url": "https://notices.philgeps.gov.ph",
+                    "base_url": "https://notices.philgeps.gov.ph/GEPSNONPILOT/Tender/SplashOpportunitiesSearchUI.aspx?menuIndex=3&ClickFrom=OpenOpp&Result=3",
                     "parser_type": "philgeps_notice_parser",
                 },
                 {
