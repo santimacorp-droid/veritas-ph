@@ -25,7 +25,7 @@ logger = structlog.get_logger()
 
 # Import task logic directly
 from workers.tasks.law_analyzer import analyze_law
-from workers.tasks.linker import update_supplier_embeddings
+from workers.tasks.linker import update_supplier_embeddings, canonicalize_suppliers, detect_duplicate_documents
 from workers.tasks.risk_engine import analyze_case
 
 
@@ -34,10 +34,18 @@ async def run_analyzer_loop():
 
     while True:
         try:
-            # 1. Generate missing supplier embeddings
+            # 1. Generate missing supplier embeddings and run entity deduplication
             logger.info("Analyzer checking: supplier embeddings...")
             emb_res = await update_supplier_embeddings()
             logger.info("Embeddings check complete", result=emb_res)
+
+            logger.info("Analyzer checking: canonicalizing suppliers...")
+            merge_sup_res = await canonicalize_suppliers()
+            logger.info("Supplier canonicalization complete", result=merge_sup_res)
+
+            logger.info("Analyzer checking: detecting duplicate cases...")
+            merge_case_res = await detect_duplicate_documents()
+            logger.info("Duplicate case detection complete", result=merge_case_res)
 
             # 2. Run risk engine on unanalyzed cases
             async with async_session_maker() as db:

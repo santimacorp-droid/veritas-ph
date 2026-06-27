@@ -28,7 +28,7 @@ from workers.tasks.crawler import download_document, fetch_sources
 from workers.tasks.extractor import process_document
 from workers.tasks.law_analyzer import analyze_law
 from workers.tasks.law_crawler import fetch_laws
-from workers.tasks.linker import update_supplier_embeddings
+from workers.tasks.linker import update_supplier_embeddings, canonicalize_suppliers, detect_duplicate_documents
 from workers.tasks.risk_engine import analyze_case
 
 
@@ -61,10 +61,18 @@ async def run_worker_loop():
                     logger.info(f"Worker running extraction: {doc_id}")
                     await process_document(doc_id)
 
-                # 3. Generate missing supplier embeddings
+                # 3. Generate missing supplier embeddings and run entity deduplication
                 logger.info("Worker checking: supplier embeddings...")
                 emb_res = await update_supplier_embeddings()
                 logger.info("Embeddings check complete", result=emb_res)
+
+                logger.info("Worker checking: canonicalizing suppliers...")
+                merge_sup_res = await canonicalize_suppliers()
+                logger.info("Supplier canonicalization complete", result=merge_sup_res)
+
+                logger.info("Worker checking: detecting duplicate cases...")
+                merge_case_res = await detect_duplicate_documents()
+                logger.info("Duplicate case detection complete", result=merge_case_res)
 
                 # 4. Run risk engine on unanalyzed cases
                 case_sql = text(
