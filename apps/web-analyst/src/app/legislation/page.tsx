@@ -7,8 +7,12 @@ import AddLawForm from '../../components/AddLawForm';
 import FlagProvisionForm from '../../components/FlagProvisionForm';
 import LogRevisionForm from '../../components/LogRevisionForm';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/analyst';
-const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const BASE_API = typeof window === 'undefined'
+  ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
+  : '/api';
+
+const API_URL = `${BASE_API}/analyst`;
+const PUBLIC_API = BASE_API;
 
 interface LawSummary {
   law_id: string;

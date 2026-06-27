@@ -11,7 +11,11 @@ import {
   Severity
 } from '@veritas/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_URL = typeof window === 'undefined'
+  ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
+  : '/api';
+
+const PUBLIC_PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://veritas-ph-web-public.vercel.app';
 
 type AnalystStatus = 'queue' | 'confirmed' | 'published';
 
@@ -98,7 +102,7 @@ function DiscrepancyRow({
           {discrepancy.evidence.map((item) => (
             <a
               key={item.link_id}
-              href={item.document_id ? `http://localhost:3005/documents/${item.document_id}` : item.source_url}
+              href={item.document_id ? `${PUBLIC_PORTAL_URL}/documents/${item.document_id}` : item.source_url}
               target="_blank"
               rel="noreferrer"
               className={`${styles.evidenceLink} font-mono`}
@@ -341,10 +345,10 @@ export default function AnalystDashboard() {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <a href="http://localhost:3005" className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
+          <a href={PUBLIC_PORTAL_URL} className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
             Public Portal
           </a>
-          <a href="http://localhost:8000/api/docs" className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
+          <a href={`${API_URL}/docs`} className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
             API Docs
           </a>
           <div className={`${styles.sessionInfo} font-mono`}>{reviewCount} reviewed this session</div>

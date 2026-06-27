@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_URL = typeof window === 'undefined'
+  ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
+  : '/api';
+
+const PUBLIC_PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://veritas-ph-web-public.vercel.app';
 
 interface AuditLogEntry {
   log_id: string;
@@ -86,10 +90,10 @@ export default function AuditLogPage() {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <a href="http://localhost:3005" className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
+          <a href={PUBLIC_PORTAL_URL} className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
             Public Portal
           </a>
-          <a href="http://localhost:8000/api/docs" className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
+          <a href={`${API_URL}/docs`} className={`${styles.footerLink} font-ui`} target="_blank" rel="noreferrer">
             API Docs
           </a>
         </div>
