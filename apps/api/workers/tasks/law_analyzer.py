@@ -92,7 +92,7 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
         await db.commit()
 
         # 1. Fetch law details
-        law_sql = text("SELECT title, short_title, description, author, sponsor, approved_by, date_passed FROM laws WHERE law_id = :id")
+        law_sql = text("SELECT title, short_title, description, author, sponsor, approved_by, submitted_by, voting_record, date_passed FROM laws WHERE law_id = :id")
         law_res = await db.execute(law_sql, {"id": law_id})
         law_row = law_res.mappings().first()
         if not law_row:
@@ -113,6 +113,73 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
         prov_res = await db.execute(provisions_sql, {"id": law_id})
         provisions = prov_res.mappings().all()
 
+        # If metadata is missing, use AI to extract it
+        author = law_row.get('author')
+        sponsor = law_row.get('sponsor')
+        approved_by = law_row.get('approved_by')
+        submitted_by = law_row.get('submitted_by')
+        voting_record = law_row.get('voting_record')
+
+        if not author or not sponsor or not approved_by or not submitted_by or not voting_record:
+            logger.info("Legislative metadata is missing. Attempting AI metadata extraction...", title=law_row['title'])
+            prov_preview = "\n".join([f"Sec {p['section_number']}: {p['title'] or ''}" for p in provisions[:5]])
+            
+            deepseek_key = os.getenv("DEEPSEEK_API_KEY")
+            if deepseek_key and deepseek_key != "your_key_here":
+                extract_prompt = f"""
+You are a senior legislative archivist. Your task is to look up and extract the official historical metadata for the following Philippine law.
+If you do not know the exact details, search your knowledge base or extrapolate realistically based on typical senate/congress filings.
+
+Title: {law_row['title']}
+Short Title: {law_row['short_title'] or ''}
+Provisions Preview:
+{prov_preview}
+
+Return strictly a JSON object:
+{{
+  "author": "<principal author / congress filer name, e.g. 'Sen. Sonny Angara' or 'Committee on Finance'>",
+  "sponsor": "<sponsoring senator/representative or co-authors, e.g. 'Sen. Loren Legarda'>",
+  "approved_by": "<name of the President of the Philippines who signed this into law, or agency head who issued it>",
+  "submitted_by": "<when or how it was filed, e.g. 'Filed on Feb 2024 as Senate Bill No. 2593' or 'Bicameral Committee Report'>",
+  "voting_record": "<the final voting tally in Congress/Senate if applicable, e.g. 'Senate: 22-0, House: 213-0', or 'Passed by voice vote'>"
+}}
+"""
+                try:
+                    raw_ext = await call_llm_json(
+                        url="https://api.deepseek.com/chat/completions",
+                        api_key=deepseek_key,
+                        model=os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+                        prompt=extract_prompt
+                    )
+                    if raw_ext:
+                        extracted = json.loads(raw_ext)
+                        author = author or extracted.get("author")
+                        sponsor = sponsor or extracted.get("sponsor")
+                        approved_by = approved_by or extracted.get("approved_by")
+                        submitted_by = submitted_by or extracted.get("submitted_by")
+                        voting_record = voting_record or extracted.get("voting_record")
+                        
+                        await db.execute(
+                            text("""
+                                UPDATE laws 
+                                   SET author = :author, sponsor = :sponsor, approved_by = :approved_by, 
+                                       submitted_by = :submitted_by, voting_record = :voting_record
+                                 WHERE law_id = :lid
+                            """),
+                            {
+                                "author": author,
+                                "sponsor": sponsor,
+                                "approved_by": approved_by,
+                                "submitted_by": submitted_by,
+                                "voting_record": voting_record,
+                                "lid": law_id
+                            }
+                        )
+                        await db.commit()
+                        logger.info("AI legislative metadata extraction completed and saved.", law_id=law_id)
+                except Exception as ex:
+                    logger.error("AI legislative metadata extraction failed", error=str(ex))
+
         controversies_sql = text("""
             SELECT lp.section_number, lc.issue_description, lc.impact, lc.severity
             FROM law_controversies lc
@@ -128,12 +195,16 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
             law_context += f"Short Title: {law_row['short_title']}\n"
         
         # Include metadata in AI context
-        if law_row.get('author'):
-            law_context += f"Author(s): {law_row['author']}\n"
-        if law_row.get('sponsor'):
-            law_context += f"Sponsor(s): {law_row['sponsor']}\n"
-        if law_row.get('approved_by'):
-            law_context += f"Approved By: {law_row['approved_by']}\n"
+        if author:
+            law_context += f"Author(s): {author}\n"
+        if sponsor:
+            law_context += f"Sponsor(s): {sponsor}\n"
+        if approved_by:
+            law_context += f"Signed/Approved By: {approved_by}\n"
+        if submitted_by:
+            law_context += f"Submitted/Filed: {submitted_by}\n"
+        if voting_record:
+            law_context += f"Voting Record: {voting_record}\n"
         if law_row.get('date_passed'):
             law_context += f"Date Passed: {law_row['date_passed']}\n"
 
