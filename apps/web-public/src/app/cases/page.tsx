@@ -17,9 +17,10 @@ interface CaseSummary {
   agency_name?: string;
   agency_acronym?: string;
   discrepancy_count?: number;
+  geographic_scope?: string;
 }
 
-async function getCases(filters: { agency_id?: string; method?: string; category?: string; risk_min?: string; year?: string }): Promise<{ total: number; cases: CaseSummary[] }> {
+async function getCases(filters: { agency_id?: string; method?: string; category?: string; risk_min?: string; year?: string; region?: string }): Promise<{ total: number; cases: CaseSummary[] }> {
   try {
     const query = new URLSearchParams();
     query.append('limit', '50');
@@ -28,6 +29,7 @@ async function getCases(filters: { agency_id?: string; method?: string; category
     if (filters.category) query.append('category', filters.category);
     if (filters.risk_min) query.append('risk_min', filters.risk_min);
     if (filters.year) query.append('year', filters.year);
+    if (filters.region) query.append('region', filters.region);
 
     const res = await fetch(`${API_URL}/cases?${query.toString()}`, { next: { revalidate: 30 } });
     if (!res.ok) return { total: 0, cases: [] };
@@ -76,7 +78,7 @@ async function getAgenciesList(): Promise<{ agency_id: string; name: string; acr
 export default async function CasesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ agency_id?: string; method?: string; category?: string; risk_min?: string; year?: string }>;
+  searchParams: Promise<{ agency_id?: string; method?: string; category?: string; risk_min?: string; year?: string; region?: string }>;
 }) {
   const filters = await searchParams;
   const [ { total, cases }, agencies ] = await Promise.all([
@@ -142,6 +144,30 @@ export default async function CasesPage({
               ))}
             </select>
           </div>
+          <div className={styles.filterGroup}>
+            <label className="font-ui">Region</label>
+            <select name="region" defaultValue={filters.region || ""}>
+              <option value="">All Regions</option>
+              <option value="NCR">NCR (National Capital Region)</option>
+              <option value="CAR">CAR (Cordillera)</option>
+              <option value="Region I">Region I (Ilocos)</option>
+              <option value="Region II">Region II (Cagayan Valley)</option>
+              <option value="Region III">Region III (Central Luzon)</option>
+              <option value="Region IV-A">Region IV-A (CALABARZON)</option>
+              <option value="MIMAROPA">MIMAROPA</option>
+              <option value="Region V">Region V (Bicol)</option>
+              <option value="Region VI">Region VI (Western Visayas)</option>
+              <option value="Region VII">Region VII (Central Visayas)</option>
+              <option value="Region VIII">Region VIII (Eastern Visayas)</option>
+              <option value="Region IX">Region IX (Zamboanga)</option>
+              <option value="Region X">Region X (Northern Mindanao)</option>
+              <option value="Region XI">Region XI (Davao)</option>
+              <option value="Region XII">Region XII (SOCCSKSARGEN)</option>
+              <option value="Region XIII">Region XIII (Caraga)</option>
+              <option value="BARMM">BARMM (Bangsamoro)</option>
+              <option value="National">National / Central</option>
+            </select>
+          </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button type="submit" className={`${styles.filterBtn} font-ui`}>Apply</button>
             <Link href="/cases" className={`${styles.clearBtn} font-ui`}>Clear</Link>
@@ -157,6 +183,7 @@ export default async function CasesPage({
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Financials</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Award Date</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Updated</th>
+                <th className={`${styles.th} font-ui`}>Region</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Risk</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Audit Flags</th>
               </tr>
@@ -164,7 +191,7 @@ export default async function CasesPage({
             <tbody>
               {cases.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className={`${styles.emptyCell} font-ui`}>
+                  <td colSpan={8} className={`${styles.emptyCell} font-ui`}>
                     No cases found. Ensure the database is seeded.
                   </td>
                 </tr>
@@ -223,6 +250,9 @@ export default async function CasesPage({
                     </td>
                     <td className={`${styles.td} ${styles.tdNum} font-mono`}>
                       {formatDate(item.updated_at)}
+                    </td>
+                    <td className={`${styles.td} font-body`} style={{ color: 'var(--color-ink-secondary)', fontSize: '12px' }}>
+                      {item.geographic_scope ?? 'National'}
                     </td>
                     <td className={`${styles.td} ${styles.tdNum}`}>
                       <RiskBar score={item.risk_score} />

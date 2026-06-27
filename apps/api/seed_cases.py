@@ -146,6 +146,7 @@ async def seed_cases():
                 "2010-04-12",
                 0.05,
                 "completed",
+                "NCR",
             ),
             # --- 2012 Case ---
             (
@@ -161,6 +162,7 @@ async def seed_cases():
                 "2012-08-20",
                 0.70,
                 "completed",
+                "Region IV-A",
             ),
             # --- 2015 Case ---
             (
@@ -176,6 +178,7 @@ async def seed_cases():
                 "2015-05-18",
                 0.25,
                 "completed",
+                "National",
             ),
             # --- 2018 Case ---
             (
@@ -191,6 +194,7 @@ async def seed_cases():
                 "2018-11-03",
                 0.70,
                 "completed",
+                "National",
             ),
             # --- 2020 Case ---
             (
@@ -206,6 +210,7 @@ async def seed_cases():
                 "2020-04-15",
                 0.95,
                 "completed",
+                "National",
             ),
             # --- 2022 Case ---
             (
@@ -221,6 +226,7 @@ async def seed_cases():
                 "2022-10-24",
                 0.70,
                 "completed",
+                "NCR",
             ),
             # --- 2024 Cases ---
             (
@@ -236,6 +242,7 @@ async def seed_cases():
                 "2024-03-15",
                 0.78,
                 "open",
+                "Region IV-A",
             ),
             (
                 "e8c4b0d5-22f3-56f4-b7c2-1098765432bc",
@@ -250,6 +257,7 @@ async def seed_cases():
                 "2024-04-02",
                 0.85,
                 "open",
+                "NCR",
             ),
             (
                 "f9d5c1e6-33a4-67a5-c8d3-2109876543cd",
@@ -264,6 +272,7 @@ async def seed_cases():
                 "2024-02-18",
                 0.25,
                 "open",
+                "National",
             ),
             (
                 "a0e6d2f7-44b5-78b6-d9e4-3210987654de",
@@ -278,6 +287,7 @@ async def seed_cases():
                 "2024-05-10",
                 0.55,
                 "open",
+                "Region IV-A",
             ),
             (
                 "b1f7e3a8-55c6-89c7-e0f5-4321098765ef",
@@ -292,6 +302,143 @@ async def seed_cases():
                 "2024-03-29",
                 0.62,
                 "open",
+                "National",
+            ),
+            # --- 2025/2026 Cases (Expanded to exactly 20 total cases) ---
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000012",
+                "pub1",
+                DPWH_ID,
+                "PHILGEPS-2025-01012",
+                "Ilocos Norte Flood Control Wall Desilting & Repair",
+                "public_bidding",
+                "infrastructure",
+                45000000.0,
+                44200000.0,
+                "2025-06-12",
+                0.68,
+                "completed",
+                "Region I",
+            ),
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000013",
+                "pub1",
+                DPWH_ID,
+                "PHILGEPS-2025-01013",
+                "Cagayan Valley Agricultural Bypass Bridge Construction",
+                "public_bidding",
+                "infrastructure",
+                62000000.0,
+                61500000.0,
+                "2025-07-20",
+                0.72,
+                "completed",
+                "Region II",
+            ),
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000014",
+                "pub1",
+                DPWH_ID,
+                "PHILGEPS-2025-01014",
+                "Central Luzon Expressway Drainage Expansion Project",
+                "public_bidding",
+                "infrastructure",
+                120000000.0,
+                118500000.0,
+                "2025-08-11",
+                0.81,
+                "completed",
+                "Region III",
+            ),
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000015",
+                "pub1",
+                DOH_ID,
+                "PHILGEPS-2025-01015",
+                "Bicol Regional Hospital ICU Wing Extension Construction",
+                "public_bidding",
+                "infrastructure",
+                85000000.0,
+                84200000.0,
+                "2025-09-02",
+                0.75,
+                "completed",
+                "Region V",
+            ),
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000016",
+                "pub1",
+                DPWH_ID,
+                "PHILGEPS-2025-01016",
+                "Western Visayas Bypass Highway Road Rehabilitation",
+                "public_bidding",
+                "infrastructure",
+                95000000.0,
+                94100000.0,
+                "2025-05-18",
+                0.65,
+                "completed",
+                "Region VI",
+            ),
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000017",
+                "pub1",
+                DPWH_ID,
+                "PHILGEPS-2025-01017",
+                "Central Visayas Waterfront Pier & Wharf Construction",
+                "public_bidding",
+                "infrastructure",
+                150000000.0,
+                149200000.0,
+                "2025-03-24",
+                0.88,
+                "completed",
+                "Region VII",
+            ),
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000018",
+                "pub1",
+                DEPED_ID,
+                "PHILGEPS-2025-01018",
+                "Eastern Visayas School Building Reconstruction Program",
+                "public_bidding",
+                "infrastructure",
+                18000000.0,
+                17900000.0,
+                "2025-04-14",
+                0.45,
+                "completed",
+                "Region VIII",
+            ),
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000019",
+                "pub1",
+                DPWH_ID,
+                "PHILGEPS-2025-01019",
+                "Davao City Coastal Highway Road Embankment",
+                "public_bidding",
+                "infrastructure",
+                210000000.0,
+                209500000.0,
+                "2025-02-18",
+                0.83,
+                "completed",
+                "Region XI",
+            ),
+            (
+                "c025a9c4-11e2-45e3-a6b1-000000000020",
+                "pub1",
+                DEPED_ID,
+                "PHILGEPS-2025-01020",
+                "BARMM Regional Administrative Center Digitization Facilities",
+                "public_bidding",
+                "goods",
+                22000000.0,
+                21800000.0,
+                "2025-10-09",
+                0.35,
+                "completed",
+                "BARMM",
             ),
         ]
 
@@ -308,18 +455,19 @@ async def seed_cases():
             adate,
             risk,
             status,
+            geo_scope,
         ) in cases:
             await session.execute(
                 text("""
                     INSERT INTO procurement_cases (
                         case_id, publisher_id, agency_id, procurement_ref_no, title, 
                         procurement_method, category, planned_amount, awarded_amount, 
-                        award_date, risk_score, status
+                        award_date, risk_score, status, geographic_scope
                     )
                     VALUES (
                         :cid, :pub_id, :agency_id, :ref_no, :title, 
                         :method, :cat, :planned, :awarded, 
-                        :adate, :risk, :status
+                        :adate, :risk, :status, :geo_scope
                     )
                 """),
                 {
@@ -335,6 +483,7 @@ async def seed_cases():
                     "adate": date.fromisoformat(adate) if adate else None,
                     "risk": risk,
                     "status": status,
+                    "geo_scope": geo_scope,
                 },
             )
 

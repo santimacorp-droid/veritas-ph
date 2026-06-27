@@ -187,11 +187,12 @@ async def list_cases(
     category: str | None = Query(None, description="Filter by category"),
     risk_min: float | None = Query(None, description="Filter by minimum risk score"),
     year: int | None = Query(None, description="Filter by award year"),
+    region: str | None = Query(None, description="Filter by geographic region/scope"),
     db: AsyncSession = Depends(get_db),
 ):
     """List procurement cases ordered by risk score."""
     total, cases = await queries.list_cases(
-        db, limit, offset, agency_id, procurement_method, category, risk_min, year
+        db, limit, offset, agency_id, procurement_method, category, risk_min, year, region
     )
     return {"total": total, "cases": cases}
 

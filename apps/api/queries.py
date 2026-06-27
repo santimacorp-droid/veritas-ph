@@ -219,7 +219,8 @@ async def list_cases(
     procurement_method: str | None = None,
     category: str | None = None,
     risk_min: float | None = None,
-    year: int | None = None
+    year: int | None = None,
+    region: str | None = None
 ):
     """List procurement cases ordered by freshness first, then risk and award date."""
     where_clauses = []
@@ -237,6 +238,9 @@ async def list_cases(
     if risk_min is not None:
         where_clauses.append("pc.risk_score >= :risk_min")
         params["risk_min"] = risk_min
+    if region:
+        where_clauses.append("LOWER(pc.geographic_scope) = LOWER(:region)")
+        params["region"] = region
     if year is not None:
         from database import DATABASE_URL
         if "sqlite" in DATABASE_URL:
@@ -258,6 +262,7 @@ async def list_cases(
             pc.procurement_ref_no,
             pc.procurement_method,
             pc.category,
+            pc.geographic_scope,
             pc.planned_amount,
             pc.awarded_amount,
             pc.final_contract_amount,
@@ -277,7 +282,7 @@ async def list_cases(
         {where_sql}
         GROUP BY
             pc.case_id, pc.title, pc.procurement_ref_no, pc.procurement_method,
-            pc.category, pc.planned_amount, pc.awarded_amount, pc.final_contract_amount, pc.award_date, pc.status,
+            pc.category, pc.geographic_scope, pc.planned_amount, pc.awarded_amount, pc.final_contract_amount, pc.award_date, pc.status,
             pc.risk_score, pc.completeness_score, pc.confidence_score,
             pc.updated_at, pc.created_at,
             a.agency_id, a.name, a.acronym
