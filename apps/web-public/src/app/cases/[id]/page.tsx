@@ -103,6 +103,7 @@ async function getDiscrepancies(id: string): Promise<DiscrepancyResponse> {
     return res.json();
   } catch {
     return { discrepancies: [] };
+  }
 }
 
 interface AuditReport {
