@@ -20,9 +20,9 @@ async def main():
             "risk_signals", "discrepancies", "budgets", "audit_findings",
             "project_locations", "projects", "contract_amendments", "contracts",
             "awards", "app_items", "line_items", "procurement_events",
-            "procurement_cases", "supplier_aliases", "suppliers", "extractions",
-            "document_pages", "document_versions", "documents", "crawls",
-            "sources", "agencies", "publishers"
+            "procurement_cases", "corporate_registries", "audit_reports", "supplier_aliases",
+            "suppliers", "extractions", "document_pages", "document_versions",
+            "documents", "crawls", "sources", "agencies", "publishers"
         ]
         
         print("Dropping all existing tables...")
