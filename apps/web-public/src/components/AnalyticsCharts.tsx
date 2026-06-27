@@ -41,17 +41,17 @@ interface SupplierAwardItem {
 
 
 const RISK_COLORS: Record<string, string> = {
-  Low: '#7A7670',      // low-risk gray
-  Medium: '#D4821A',   // medium orange
-  High: '#C0392B',     // high red
+  Low: '#5E6776',      // Low-risk slate gray
+  Medium: '#FF9838',   // Medium orange
+  High: '#FF4D5E',     // High red
 };
 
 const AGENCY_COLORS = [
-  '#2C5F8A', // DPWH (blue)
-  '#8B5CF6', // DepEd (purple)
-  '#C0392B', // DOH (red)
-  '#D4821A', // DBM/Others (orange)
-  '#7A7670', // low gray
+  '#00B0FF', // Neon Blue
+  '#8B5CF6', // Purple
+  '#FF4D5E', // Red
+  '#FF9838', // Orange
+  '#00E676', // Green
 ];
 
 export function RiskDistributionBarChart({ riskData }: { riskData: RiskData[] }) {
@@ -85,14 +85,14 @@ export function RiskDistributionBarChart({ riskData }: { riskData: RiskData[] })
           <BarChart data={orderedData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
             <XAxis
               dataKey="level"
-              stroke="#4A4740"
+              stroke="var(--color-ink-muted)"
               fontSize={11}
               tickLine={false}
               axisLine={false}
               className="font-mono"
             />
             <YAxis
-              stroke="#4A4740"
+              stroke="var(--color-ink-muted)"
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -101,9 +101,9 @@ export function RiskDistributionBarChart({ riskData }: { riskData: RiskData[] })
             />
             <Tooltip
               contentStyle={tooltipStyle}
-              itemStyle={{ color: '#1A1814' }}
-              labelStyle={{ fontWeight: 600, color: '#1A1814' }}
-              cursor={{ fill: 'rgba(200, 196, 187, 0.15)' }}
+              itemStyle={{ color: 'var(--color-ink)' }}
+              labelStyle={{ fontWeight: 600, color: 'var(--color-ink)' }}
+              cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={50}>
               {orderedData.map((entry, index) => (
@@ -232,9 +232,9 @@ export function AgencyCasesRiskChart({ cases }: { cases: CaseSummaryItem[] }) {
       <div style={{ width: '100%', height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
-            <XAxis dataKey="level" stroke="#4A4740" fontSize={11} tickLine={false} axisLine={false} className="font-mono" />
-            <YAxis stroke="#4A4740" fontSize={11} tickLine={false} axisLine={false} className="font-mono" allowDecimals={false} />
-            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(200, 196, 187, 0.15)' }} />
+            <XAxis dataKey="level" stroke="var(--color-ink-muted)" fontSize={11} tickLine={false} axisLine={false} className="font-mono" />
+            <YAxis stroke="var(--color-ink-muted)" fontSize={11} tickLine={false} axisLine={false} className="font-mono" allowDecimals={false} />
+            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
             <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={RISK_COLORS[entry.level] || '#7A7670'} />
@@ -443,10 +443,10 @@ export function SupplierAwardTrendChart({ awards }: { awards: SupplierAwardItem[
       <div style={{ width: '100%', height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
-            <XAxis dataKey="year" stroke="#4A4740" fontSize={11} tickLine={false} axisLine={false} className="font-mono" />
-            <YAxis stroke="#4A4740" fontSize={11} tickLine={false} axisLine={false} className="font-mono" tickFormatter={(v) => formatPesoCompact(v)} />
+            <XAxis dataKey="year" stroke="var(--color-ink-muted)" fontSize={11} tickLine={false} axisLine={false} className="font-mono" />
+            <YAxis stroke="var(--color-ink-muted)" fontSize={11} tickLine={false} axisLine={false} className="font-mono" tickFormatter={(v) => formatPesoCompact(v)} />
             <Tooltip contentStyle={tooltipStyle} formatter={(val: unknown) => [formatPesoCompact(Number(val)), 'Total Awarded']} />
-            <Bar dataKey="amount" fill="#2C5F8A" radius={[4, 4, 0, 0]} maxBarSize={40} />
+            <Bar dataKey="amount" fill="var(--color-data-blue)" radius={[4, 4, 0, 0]} maxBarSize={40} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -456,13 +456,14 @@ export function SupplierAwardTrendChart({ awards }: { awards: SupplierAwardItem[
 
 // Inline Styles
 const chartWrapperStyle: React.CSSProperties = {
-  backgroundColor: 'var(--color-paper-dark, #EDEAE3)',
-  border: '1px solid var(--color-rule, #C8C4BB)',
-  borderRadius: '2px',
+  backgroundColor: 'var(--color-paper-dark)',
+  border: '1px solid var(--color-rule)',
+  borderRadius: '6px',
   padding: '20px',
   display: 'flex',
   flexDirection: 'column',
   gap: '16px',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
 };
 
 const chartTitleStyle: React.CSSProperties = {
@@ -470,14 +471,15 @@ const chartTitleStyle: React.CSSProperties = {
   fontWeight: 600,
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
-  color: 'var(--color-ink, #1A1814)',
+  color: 'var(--color-ink)',
   margin: 0,
 };
 
 const tooltipStyle: React.CSSProperties = {
-  backgroundColor: '#EDEAE3',
-  border: '1px solid #C8C4BB',
-  borderRadius: '2px',
+  backgroundColor: 'var(--color-paper-darker)',
+  border: '1px solid var(--color-rule-strong)',
+  borderRadius: '4px',
   fontSize: '12px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+  color: 'var(--color-ink)',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
 };

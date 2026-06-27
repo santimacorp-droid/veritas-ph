@@ -1,46 +1,47 @@
 /* Veritas — Web Public Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 /* ── Design Tokens ─────────────────────────────────────── */
 :root {
   /* Backgrounds */
-  --color-paper:         #F7F4EF;
-  --color-paper-dark:    #EDEAE3;
-  --color-paper-darker:  #E2DED6;
+  --color-paper:         #08090C;      /* Sleek deep slate black */
+  --color-paper-dark:    #0F1116;      /* Dashboard card background */
+  --color-paper-darker:  #171B22;      /* Interactive hover states */
 
   /* Ink / Text */
-  --color-ink:           #1A1814;
-  --color-ink-secondary: #4A4740;
-  --color-ink-muted:     #7A7670;
-  --color-ink-faint:     #A8A4A0;
+  --color-ink:           #F3F5F9;      /* Clean off-white */
+  --color-ink-secondary: #9BA3B2;      /* Medium contrast text */
+  --color-ink-muted:     #5E6776;      /* Muted tags and labels */
+  --color-ink-faint:     #353B47;      /* Extremely faint borders/placeholders */
 
   /* Structure */
-  --color-rule:          #C8C4BB;
-  --color-rule-strong:   #8A8680;
+  --color-rule:          #161A23;      /* Crisp table/border lines */
+  --color-rule-strong:   #252C3B;      /* Glowing focus borders */
 
-  /* Risk — RESERVED for risk content only */
-  --color-flag:          #C0392B;
-  --color-flag-light:    #F5E6E4;
-  --color-flag-medium:   #E8B4AE;
-  --color-critical:      #8B0000;
-  --color-high:          #C0392B;
-  --color-medium:        #D4821A;
-  --color-medium-light:  #FDF0E0;
-  --color-low:           #7A7670;
-  --color-low-light:     #EDEAE3;
+  /* Risk Signals */
+  --color-flag:          #FF4D5E;      /* Electric Neon Red */
+  --color-flag-light:    rgba(255, 77, 94, 0.08);
+  --color-flag-medium:   rgba(255, 77, 94, 0.25);
+  --color-critical:      #FF2438;      
+  --color-high:          #FF4D5E;
+  --color-medium:        #FF9838;      /* Neon Orange */
+  --color-medium-light:  rgba(255, 152, 56, 0.08);
+  --color-low:           #5E6776;
+  --color-low-light:     #0F1116;
 
-  /* Confirm */
-  --color-confirm:       #1A5C2A;
-  --color-confirm-light: #E4F0E6;
+  /* Confirm / Safe States */
+  --color-confirm:       #00E676;      /* Vibrant Neon Green */
+  --color-confirm-light: rgba(0, 230, 118, 0.08);
 
-  /* Data */
-  --color-data-blue:       #2C5F8A;
-  --color-data-blue-light: #E3EDF5;
+  /* Data Accents */
+  --color-data-blue:       #00B0FF;    /* Vivid Cyber Blue */
+  --color-data-blue-light: rgba(0, 176, 255, 0.08);
 
   /* Typography */
-  --font-display: var(--font-display-next), 'Playfair Display', Georgia, serif;
-  --font-mono:    var(--font-mono-next), 'IBM Plex Mono', 'Courier New', monospace;
-  --font-body:    var(--font-body-next), 'Source Serif 4', Georgia, serif;
-  --font-ui:      var(--font-ui-next), 'IBM Plex Sans Condensed', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono:    'Fira Code', 'IBM Plex Mono', monospace;
+  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-ui:      'Outfit', system-ui, -apple-system, sans-serif;
 
   /* Spacing */
   --space-2:  4px;
@@ -62,6 +63,7 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-paper);
 }
 
 body {
@@ -77,4 +79,8 @@ body {
 .font-body    { font-family: var(--font-body); }
 .font-ui      { font-family: var(--font-ui); }
 
-a { color: inherit; }
+a {
+  color: inherit;
+  transition: color 150ms ease, opacity 150ms ease;
+}
+
