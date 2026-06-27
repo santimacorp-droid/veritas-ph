@@ -7,6 +7,7 @@ Runs structured multi-dimensional legal assessments using DeepSeek V3 & GPT-4o-m
 
 import json
 import os
+import re
 from uuid import uuid4
 from urllib.parse import quote
 
