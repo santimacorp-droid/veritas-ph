@@ -56,30 +56,44 @@ async def fetch_elibrary_law_context(short_title: str) -> str:
             if resp.status_code == 200:
                 res_data = resp.json()
                 rows = res_data.get("data", [])
+                
+                selected_row = None
+                # First pass: try to find the non-IRR row
                 for row in rows:
                     if len(row) >= 3:
-                        # Extract Bookshelf URL
-                        a_soup = BeautifulSoup(row[2], "html.parser")
-                        a_tag = a_soup.find("a")
-                        if a_tag:
-                            href = a_tag.get("href")
-                            # Fetch Bookshelf document details
-                            doc_resp = await client.get(href, headers=headers)
-                            if doc_resp.status_code == 200:
-                                doc_soup = BeautifulSoup(doc_resp.text, "html.parser")
-                                doc_text = doc_soup.get_text()
-                                cleaned_text = re.sub(r'\s+', ' ', doc_text).strip()
-                                
-                                # Search for the consolidation/signature section in the text
-                                match = re.search(r'passed by the Senate|Senate Bill No\.|House Bill No\.|Approved:', cleaned_text, re.IGNORECASE)
-                                if match:
-                                    start = max(0, match.start() - 1000)
-                                    end = min(len(cleaned_text), match.end() + 2500)
-                                    logger.info("Found legislative signature section in document text.")
-                                    return cleaned_text[start:end]
-                                else:
-                                    logger.info("Signature section not matched. Falling back to end of document.")
-                                    return cleaned_text[-5000:]
+                        title_col = str(row[0]).upper()
+                        if "IRR" not in title_col and "IMPLEMENTING" not in title_col:
+                            selected_row = row
+                            break
+                            
+                # Fallback: if no non-IRR row was found, just use the first row
+                if not selected_row and rows:
+                    selected_row = rows[0]
+                    
+                if selected_row:
+                    row = selected_row
+                    # Extract Bookshelf URL
+                    a_soup = BeautifulSoup(row[2], "html.parser")
+                    a_tag = a_soup.find("a")
+                    if a_tag:
+                        href = a_tag.get("href")
+                        # Fetch Bookshelf document details
+                        doc_resp = await client.get(href, headers=headers)
+                        if doc_resp.status_code == 200:
+                            doc_soup = BeautifulSoup(doc_resp.text, "html.parser")
+                            doc_text = doc_soup.get_text()
+                            cleaned_text = re.sub(r'\s+', ' ', doc_text).strip()
+                            
+                            # Search for the consolidation/signature section in the text
+                            match = re.search(r'passed by the Senate|Senate Bill No\.|House Bill No\.|Approved:', cleaned_text, re.IGNORECASE)
+                            if match:
+                                start = max(0, match.start() - 1000)
+                                end = min(len(cleaned_text), match.end() + 2500)
+                                logger.info("Found legislative signature section in document text.")
+                                return cleaned_text[start:end]
+                            else:
+                                logger.info("Signature section not matched. Falling back to end of document.")
+                                return cleaned_text[-5000:]
     except Exception as e:
         logger.warning(f"Failed to fetch E-Library details for RA {ra_num}: {e}")
     return ""
