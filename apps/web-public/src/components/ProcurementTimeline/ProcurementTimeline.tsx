@@ -156,7 +156,7 @@ export function ProcurementTimeline({
                         </a>
                         {event.document_id && (
                           <a
-                            href={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/documents/${event.document_id}/download`}
+                            href={`/api/documents/${event.document_id}/download`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={styles.downloadIconBtn}

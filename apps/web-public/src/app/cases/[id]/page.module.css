@@ -465,3 +465,181 @@
   color: var(--color-flag);
   font-weight: 600;
 }
+
+/* ── Case Dossier Card ────────────────────────────────────── */
+.dossierContainer {
+  background: var(--color-paper-dark);
+  border: 1px dashed var(--color-rule-strong);
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 32px;
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+
+.dossierBadge {
+  background: rgba(0, 176, 255, 0.04);
+  border: 1px solid rgba(0, 176, 255, 0.15);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 120px;
+  flex-shrink: 0;
+  color: var(--color-data-blue);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  border-top: 4px solid var(--color-data-blue);
+}
+
+.dossierBadgeIcon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.dossierBadgeLabel {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.dossierContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.dossierTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dossierTitle {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.dossierStatus {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.statusVerified {
+  background: rgba(0, 230, 118, 0.08);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  color: var(--color-confirm);
+}
+
+.statusPending {
+  background: rgba(255, 152, 56, 0.08);
+  border: 1px solid rgba(255, 152, 56, 0.2);
+  color: var(--color-medium);
+}
+
+.dossierGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dossierItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dossierLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.dossierValue {
+  font-size: 12px;
+  color: var(--color-ink-secondary);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.dossierActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dossierBtn {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  border: 1px solid var(--color-rule-strong);
+  background: var(--color-paper);
+  color: var(--color-ink-secondary);
+  transition: all 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dossierBtn:hover {
+  border-color: var(--color-data-blue);
+  color: var(--color-ink);
+  background: var(--color-paper-darker);
+}
+
+.dossierBtnPrimary {
+  border-color: var(--color-data-blue);
+  background: rgba(0, 176, 255, 0.06);
+  color: var(--color-data-blue);
+}
+
+.dossierBtnPrimary:hover {
+  background: rgba(0, 176, 255, 0.12);
+  color: var(--color-ink);
+}
+
+@media (max-width: 768px) {
+  .dossierContainer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .dossierBadge {
+    width: 100%;
+    height: 60px;
+    flex-direction: row;
+    gap: 12px;
+    border-top: none;
+    border-left: 4px solid var(--color-data-blue);
+  }
+  .dossierBadgeIcon {
+    margin-bottom: 0;
+    font-size: 24px;
+  }
+}
+

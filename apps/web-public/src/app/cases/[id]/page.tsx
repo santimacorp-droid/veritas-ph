@@ -347,6 +347,94 @@ export default async function CaseDetailPage({
             )}
           </div>
         </div>
+        {/* Verified Case Dossier Basis */}
+        {(() => {
+          const primaryDoc = timelineData.timeline.find((ev) => ev.document_id);
+          return (
+            <>
+              <div className={styles.sectionHeader}>
+                <span className="font-ui">📁 Verified Case Dossier Basis</span>
+              </div>
+              <div className={styles.dossierContainer}>
+                <div className={styles.dossierBadge}>
+                  <span className={styles.dossierBadgeIcon}>📜</span>
+                  <span className={styles.dossierBadgeLabel}>Official basis</span>
+                </div>
+                <div className={styles.dossierContent}>
+                  <div className={styles.dossierTitleRow}>
+                    <h3 className={`${styles.dossierTitle} font-ui`}>
+                      {primaryDoc?.document_type
+                        ? primaryDoc.document_type.replace(/_/g, ' ').toUpperCase()
+                        : 'PHILGEPS BID NOTICE'}
+                    </h3>
+                    <span
+                      className={`${styles.dossierStatus} ${
+                        primaryDoc ? styles.statusVerified : styles.statusPending
+                      } font-ui`}
+                    >
+                      {primaryDoc ? '✓ Cryptographically Verified' : '⚠ Syncing from Registry'}
+                    </span>
+                  </div>
+
+                  <div className={styles.dossierGrid}>
+                    <div className={styles.dossierItem}>
+                      <span className={styles.dossierLabel}>Dossier ID / Reference</span>
+                      <span className={styles.dossierValue}>
+                        {primaryDoc?.document_id ?? caseData.procurement_ref_no ?? 'Pending crawl run...'}
+                      </span>
+                    </div>
+                    {primaryDoc?.sha256_hash && (
+                      <div className={styles.dossierItem}>
+                        <span className={styles.dossierLabel}>SHA-256 Checksum (Immutability Proof)</span>
+                        <span className={styles.dossierValue}>{primaryDoc.sha256_hash}</span>
+                      </div>
+                    )}
+                    <div className={styles.dossierItem}>
+                      <span className={styles.dossierLabel}>Registry Source Authority</span>
+                      <span className={styles.dossierValue} style={{ fontFamily: 'var(--font-body)' }}>
+                        Republic of the Philippines Government Procurement System (PhilGEPS)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.dossierActions}>
+                    {primaryDoc?.document_id ? (
+                      <>
+                        <Link
+                          href={`/documents/${primaryDoc.document_id}`}
+                          className={`${styles.dossierBtn} ${styles.dossierBtnPrimary} font-ui`}
+                        >
+                          👁 Read Extracted Text
+                        </Link>
+                        <a
+                          href={`/api/documents/${primaryDoc.document_id}/download`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`${styles.dossierBtn} font-ui`}
+                        >
+                          ⬇ Download PDF / Ingested HTML
+                        </a>
+                      </>
+                    ) : null}
+                    {caseData.procurement_ref_no && (
+                      <a
+                        href={
+                          primaryDoc?.source_url ??
+                          `https://notices.philgeps.gov.ph/GEPSNONPILOT/Tender/SplashBidNoticeAbstractUI.aspx?refID=${caseData.procurement_ref_no}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${styles.dossierBtn} font-ui`}
+                      >
+                        ↗ Open External PhilGEPS Notice
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {/* Advanced Audit Report (DeepSeek) */}
         {auditReport.report_type !== 'none' && (
