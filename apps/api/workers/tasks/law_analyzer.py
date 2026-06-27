@@ -52,27 +52,43 @@ async def call_llm_json(url: str, api_key: str, model: str, prompt: str) -> str 
     return None
 
 
-async def analyze_law(law_id: str, requested_by: str = "system"):
+async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: str = None):
     """
     Ingests law data, provisions, and controversies, performs AI analysis, and updates law_analyses table.
     """
     logger.info(f"Starting AI analysis for law: {law_id}")
-    analysis_id = str(uuid4())
+    if not analysis_id:
+        analysis_id = str(uuid4())
+        is_new = True
+    else:
+        is_new = False
 
     async with async_session_maker() as db:
-        # Create initial pending entry
-        await db.execute(
-            text("""
-                INSERT INTO law_analyses (
-                    analysis_id, law_id, model_used, pros, cons, loopholes, 
-                    suggested_revisions, citizen_summary, analysis_status, requested_by
-                )
-                VALUES (
-                    :aid, :lid, 'pending', '[]', '[]', '[]', '[]', 'Starting...', 'running', :req
-                )
-            """),
-            {"aid": analysis_id, "lid": law_id, "req": requested_by}
-        )
+        if is_new:
+            # Create initial pending entry
+            await db.execute(
+                text("""
+                    INSERT INTO law_analyses (
+                        analysis_id, law_id, model_used, pros, cons, loopholes, 
+                        suggested_revisions, citizen_summary, analysis_status, requested_by
+                    )
+                    VALUES (
+                        :aid, :lid, 'pending', '[]', '[]', '[]', '[]', 'Starting...', 'running', :req
+                    )
+                """),
+                {"aid": analysis_id, "lid": law_id, "req": requested_by}
+            )
+        else:
+            # Update existing pending entry to running
+            await db.execute(
+                text("""
+                    UPDATE law_analyses
+                       SET analysis_status = 'running',
+                           citizen_summary = 'Starting...'
+                     WHERE analysis_id = :aid
+                """),
+                {"aid": analysis_id}
+            )
         await db.commit()
 
         # 1. Fetch law details
