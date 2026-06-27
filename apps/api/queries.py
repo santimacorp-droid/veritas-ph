@@ -258,7 +258,9 @@ async def list_cases(
             pc.procurement_ref_no,
             pc.procurement_method,
             pc.category,
+            pc.planned_amount,
             pc.awarded_amount,
+            pc.final_contract_amount,
             pc.award_date,
             pc.status,
             pc.risk_score,
@@ -275,7 +277,7 @@ async def list_cases(
         {where_sql}
         GROUP BY
             pc.case_id, pc.title, pc.procurement_ref_no, pc.procurement_method,
-            pc.category, pc.awarded_amount, pc.award_date, pc.status,
+            pc.category, pc.planned_amount, pc.awarded_amount, pc.final_contract_amount, pc.award_date, pc.status,
             pc.risk_score, pc.completeness_score, pc.confidence_score,
             pc.updated_at, pc.created_at,
             a.agency_id, a.name, a.acronym

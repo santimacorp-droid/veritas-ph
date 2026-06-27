@@ -7,7 +7,9 @@ interface CaseSummary {
   case_id: string;
   title: string;
   procurement_ref_no?: string;
+  planned_amount?: number;
   awarded_amount?: number;
+  final_contract_amount?: number;
   award_date?: string;
   risk_score?: number;
   updated_at?: string;
@@ -154,7 +156,7 @@ export default async function CasesPage({
               <tr>
                 <th className={`${styles.th} font-ui`}>Case</th>
                 <th className={`${styles.th} font-ui`}>Agency</th>
-                <th className={`${styles.th} ${styles.thNum} font-ui`}>Awarded</th>
+                <th className={`${styles.th} ${styles.thNum} font-ui`}>Financials</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Award Date</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Updated</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Risk</th>
@@ -196,7 +198,27 @@ export default async function CasesPage({
                       )}
                     </td>
                     <td className={`${styles.td} ${styles.tdNum} font-mono`}>
-                      {formatPHP(item.awarded_amount)}
+                      <div className={styles.financialCell}>
+                        {item.planned_amount && (
+                          <div className={styles.abcAmount} title="Approved Budget for Contract (ABC)">
+                            ABC: {formatPHP(item.planned_amount)}
+                          </div>
+                        )}
+                        {item.awarded_amount && (
+                          <div className={styles.awardedAmount}>
+                            Award: {formatPHP(item.awarded_amount)}
+                          </div>
+                        )}
+                        {item.final_contract_amount && (
+                          <div className={`${styles.finalAmount} ${item.final_contract_amount > (item.awarded_amount ?? 0) ? styles.overrun : ''}`}>
+                            Paid: {formatPHP(item.final_contract_amount)}
+                            {item.final_contract_amount > (item.awarded_amount ?? 0) && ' ⚠️'}
+                          </div>
+                        )}
+                        {!item.planned_amount && !item.awarded_amount && !item.final_contract_amount && (
+                          <span className={styles.dash}>-</span>
+                        )}
+                      </div>
                     </td>
                     <td className={`${styles.td} ${styles.tdNum} font-mono`}>
                       {formatDate(item.award_date)}

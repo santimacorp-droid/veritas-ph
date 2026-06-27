@@ -38,6 +38,10 @@ interface CaseDetail {
   award_date?: string;
   risk_components?: Record<string, number> | string;
   linked_laws?: LinkedLaw[];
+  planned_amount?: number;
+  awarded_amount?: number;
+  final_contract_amount?: number;
+  status?: string;
 }
 
 interface TimelineResponse {
@@ -106,6 +110,13 @@ function riskClass(score?: number) {
   if (score >= 0.7) return styles.riskHigh;
   if (score >= 0.4) return styles.riskMedium;
   return styles.riskOk;
+}
+
+function formatPHP(val?: number) {
+  if (val == null) return '—';
+  if (val >= 1_000_000_000) return `₱${(val / 1_000_000_000).toFixed(2)}B`;
+  if (val >= 1_000_000) return `₱${(val / 1_000_000).toFixed(2)}M`;
+  return '₱' + val.toLocaleString('en-PH');
 }
 
 export default async function CaseDetailPage({
@@ -266,6 +277,44 @@ export default async function CaseDetailPage({
           <div className={styles.scoreBlock} style={{ padding: '10px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '180px' }}>
             <div className={`${styles.scoreBlockLabel} font-ui`} style={{ marginBottom: '0' }}>Risk Dimensions</div>
             <RiskRadarChart riskComponents={caseData.risk_components} />
+          </div>
+        </div>
+
+        {/* Financial Summary */}
+        <div className={styles.sectionHeader}>
+          <span className="font-ui">Financial Summary</span>
+        </div>
+        <div className={styles.financialSummaryPanel}>
+          <div className={styles.financialBlock}>
+            <div className={`${styles.financialLabel} font-ui`}>Approved Budget (ABC)</div>
+            <div className={`${styles.financialValue} font-display`}>
+              {caseData.planned_amount ? formatPHP(caseData.planned_amount) : '—'}
+            </div>
+            <div className={`${styles.financialSublabel} font-ui`}>Statutory ceiling for bidding</div>
+          </div>
+
+          <div className={styles.financialBlock}>
+            <div className={`${styles.financialLabel} font-ui`}>Awarded Amount</div>
+            <div className={`${styles.financialValue} font-display`}>
+              {caseData.awarded_amount ? formatPHP(caseData.awarded_amount) : '—'}
+            </div>
+            {caseData.award_date && (
+              <div className={`${styles.financialSublabel} font-ui`}>Award Date: {caseData.award_date}</div>
+            )}
+          </div>
+
+          <div className={styles.financialBlock}>
+            <div className={`${styles.financialLabel} font-ui`}>Final Paid Amount</div>
+            <div className={`${styles.financialValue} ${caseData.final_contract_amount && caseData.awarded_amount && caseData.final_contract_amount > caseData.awarded_amount ? styles.overrunText : ''} font-display`}>
+              {caseData.final_contract_amount ? formatPHP(caseData.final_contract_amount) : '—'}
+            </div>
+            {caseData.final_contract_amount && caseData.awarded_amount && caseData.final_contract_amount > caseData.awarded_amount ? (
+              <div className={`${styles.financialSublabel} ${styles.warningText} font-ui`}>
+                ⚠️ Cost Overrun of {(((caseData.final_contract_amount - caseData.awarded_amount) / caseData.awarded_amount) * 100).toFixed(1)}% detected
+              </div>
+            ) : (
+              <div className={`${styles.financialSublabel} font-ui`}>Actual expenditure at completion</div>
+            )}
           </div>
         </div>
 

@@ -149,6 +149,8 @@ class CaseList(CaseBase):
     agency_id: UUID | None = None
     agency_name: str | None = None
     agency_acronym: str | None = None
+    planned_amount: Decimal | None = None
+    final_contract_amount: Decimal | None = None
     updated_at: datetime | None = None
     created_at: datetime
     discrepancy_count: int = 0

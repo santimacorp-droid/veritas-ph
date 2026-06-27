@@ -132,3 +132,27 @@
 .clearBtn:hover {
   background: var(--color-paper);
 }
+
+.financialCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.abcAmount {
+  font-size: 10px;
+  color: var(--color-ink-muted);
+}
+.awardedAmount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.finalAmount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-confirm);
+}
+.overrun {
+  color: var(--color-flag);
+}
