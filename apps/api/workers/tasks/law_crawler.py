@@ -133,6 +133,16 @@ async def fetch_laws() -> dict:
     Scrapes the Official Gazette for Republic Acts, parses them, and populates the database.
     Falls back to curated real legislation to guarantee successful execution.
     """
+    # Check if there is an active backlog of pending audits
+    async with async_session_maker() as session:
+        backlog_sql = text("SELECT COUNT(*) FROM law_analyses WHERE analysis_status IN ('pending', 'running')")
+        backlog_res = await session.execute(backlog_sql)
+        backlog_count = backlog_res.scalar() or 0
+        
+        if backlog_count > 0:
+            logger.info("Legislative crawler paused: backlog of pending audits in progress", backlog=backlog_count)
+            return {"status": "paused", "reason": f"backlog_of_{backlog_count}_pending_audits"}
+
     logger.info("Automated Law Crawler starting: legislative discovery phase")
     discovered_count = 0
     scraped_laws = []
@@ -212,6 +222,8 @@ async def fetch_laws() -> dict:
                         res_data = response_post.json()
                         elib_count = 0
                         for row in res_data.get("data", []):
+                            if len(scraped_laws) >= 100:
+                                break
                             if len(row) >= 3:
                                 raw_short_title = row[0]
                                 date_passed = row[1]
@@ -258,6 +270,8 @@ async def fetch_laws() -> dict:
             try:
                 current_year = date.today().year
                 for year in [current_year - 1, current_year]:
+                    if len(scraped_laws) >= 100:
+                        break
                     url_lawphil = f"https://lawphil.net/statutes/repacts/ra{year}/ra{year}.html"
                     logger.info(f"Crawling Lawphil Republic Acts for year {year}...", url=url_lawphil)
                     response = await client.get(url_lawphil, headers=headers, follow_redirects=True)
@@ -267,6 +281,8 @@ async def fetch_laws() -> dict:
                         links = soup.find_all("a", href=True)
                         lawphil_count = 0
                         for link in links:
+                            if len(scraped_laws) >= 100:
+                                break
                             text_val = link.get_text().strip()
                             href = link["href"]
                             if href.startswith("/"):
