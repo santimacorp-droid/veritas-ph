@@ -4,7 +4,7 @@
 VENV = .venv_linux
 PYTHON = $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
-export NEXT_PUBLIC_API_URL=http://localhost:8000
+# Note: set NEXT_PUBLIC_API_URL in your environment before running make dev on EC2
 
 # Help target
 help:
@@ -64,7 +64,7 @@ seed-cases:
 
 # Start FastAPI API server
 api:
-	cd apps/api && ../../$(PYTHON) -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+	cd apps/api && ../../$(PYTHON) -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 # Start local worker
 worker:
