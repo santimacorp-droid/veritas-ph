@@ -8,13 +8,58 @@ Runs structured multi-dimensional legal assessments using DeepSeek V3 & GPT-4o-m
 import json
 import os
 from uuid import uuid4
+from urllib.parse import quote
 
 import httpx
 import structlog
+from bs4 import BeautifulSoup
 from database import async_session_maker
 from sqlalchemy import text
 
 logger = structlog.get_logger()
+
+
+async def search_web_snippets(query: str) -> str:
+    """
+    Autonomously searches the web via DuckDuckGo and scrapes official/reputable snippets.
+    Provides verifiable proof context to the LLM extractor.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    }
+    # 1. Try html.duckduckgo.com
+    url = f"https://html.duckduckgo.com/html/?q={quote(query)}"
+    try:
+        async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, "html.parser")
+                snippets = []
+                for a in soup.find_all("a", class_="result__snippet"):
+                    snippets.append(a.get_text().strip())
+                if snippets:
+                    logger.info("Search snippets retrieved successfully from DDG HTML.", count=len(snippets))
+                    return "\n---\n".join(snippets[:5])
+    except Exception as e:
+        logger.warning(f"DDG HTML search failed: {e}")
+        
+    # 2. Try lite.duckduckgo.com fallback
+    url_lite = "https://lite.duckduckgo.com/lite/"
+    try:
+        async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
+            resp = await client.post(url_lite, data={"q": query}, headers=headers)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, "html.parser")
+                snippets = []
+                for td in soup.find_all("td", class_="result-snippet"):
+                    snippets.append(td.get_text().strip())
+                if snippets:
+                    logger.info("Search snippets retrieved successfully from DDG Lite.", count=len(snippets))
+                    return "\n---\n".join(snippets[:5])
+    except Exception as e:
+        logger.warning(f"DDG Lite search failed: {e}")
+        
+    return ""
 
 
 async def call_llm_json(url: str, api_key: str, model: str, prompt: str) -> str | None:
@@ -124,27 +169,42 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
             logger.info("Legislative metadata is missing. Attempting AI metadata extraction...", title=law_row['title'])
             prov_preview = "\n".join([f"Sec {p['section_number']}: {p['title'] or ''}" for p in provisions[:5]])
             
+            # Autonomously search the web for the official law history and bill filings
+            search_query = f'"{law_row["short_title"] or law_row["title"]}" "Senate Bill" OR "House Bill" OR "Bicameral" OR "voting" site:gov.ph'
+            logger.info("Running autonomous search query...", query=search_query)
+            search_context = await search_web_snippets(search_query)
+            if not search_context:
+                # Try a broader search query if the site-restricted one yielded nothing
+                search_query_broad = f'"{law_row["short_title"] or law_row["title"]}" "Senate Bill" OR "House Bill" "signed by"'
+                logger.info("Running broader autonomous search query...", query=search_query_broad)
+                search_context = await search_web_snippets(search_query_broad)
+
             deepseek_key = os.getenv("DEEPSEEK_API_KEY")
             if deepseek_key and deepseek_key != "your_key_here":
                 extract_prompt = f"""
-You are a senior legislative archivist. Your task is to look up and extract the official historical metadata for the following Philippine law.
+You are a senior legislative archivist. Your task is to extract the official historical metadata for the following Philippine law.
+You have been provided with real-time official Search Verification Context crawled from the web.
 
-CRITICAL REQUIREMENT:
-If you are unsure of any detail, lack the exact historical record, or cannot verify the information with absolute certainty, you MUST return null for that field. 
-DO NOT guess, estimate, approximate, extrapolate, or generate plausible fallbacks. We do not permit any fake or unverified information. Accuracy and absolute truth are mandatory.
+CRITICAL REQUIREMENT FOR SUBMITTED / FILED AS AND VOTING DETAILS:
+- You must ONLY populate "submitted_by" (e.g. bill number / origin) and "voting_record" if they are explicitly mentioned or supported by the provided Search Verification Context.
+- If the Search Verification Context is empty, does not contain the exact bill numbers/filing details, or if you are in any way unsure, you MUST return null for those fields.
+- DO NOT guess, approximate, extrapolate, or generate plausible fallbacks. Absolute truth and accuracy are mandatory.
 
 Title: {law_row['title']}
 Short Title: {law_row['short_title'] or ''}
 Provisions Preview:
 {prov_preview}
 
+Official Search Verification Context:
+{search_context or "No search context retrieved."}
+
 Return strictly a JSON object:
 {{
   "author": "<principal author/congress filer name, or null if not 100% verified>",
   "sponsor": "<sponsoring senator/representative or co-authors, or null if not 100% verified>",
   "approved_by": "<name of the President of the Philippines who signed this into law, or null if not 100% verified>",
-  "submitted_by": "<filing details/bill number, or null if not 100% verified>",
-  "voting_record": "<the final voting tally in Congress/Senate if 100% verified, otherwise null>"
+  "submitted_by": "<the verified filing details/bill number (e.g. 'Senate Bill No. 2593' or 'House Bill No. 9710'), or null if not verified in search context>",
+  "voting_record": "<the verified final voting tally in Congress/Senate (e.g. 'Senate: 22-0, House: 184-0'), or null if not verified in search context>"
 }}
 """
                 try:
