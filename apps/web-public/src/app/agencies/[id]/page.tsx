@@ -71,27 +71,6 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div>
-      {/* Header */}
-      <header className={styles.siteHeader}>
-        <div className={styles.topbar}>
-          <Link href="/" className={styles.siteLogo}>
-            <span className={`${styles.logoName} font-display`}>Veritas</span>
-            <span className={`${styles.logoTagline} font-ui`}>Philippines Procurement Transparency</span>
-          </Link>
-        </div>
-        <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
-            <Link
-              key={item}
-              href={`/${item.toLowerCase()}`}
-              className={`${styles.navLink} ${item === 'Agencies' ? styles.navActive : ''} font-ui`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
-      </header>
-
       <main className={styles.pageContent}>
         {/* Breadcrumb */}
         <nav className={`${styles.breadcrumb} font-ui`}>
@@ -227,9 +206,6 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
           </table>
         </div>
 
-        <footer className={`${styles.disclaimer} font-ui`}>
-          Risk signals are anomaly indicators. Not legal determinations.
-        </footer>
       </main>
     </div>
   );

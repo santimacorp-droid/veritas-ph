@@ -137,6 +137,20 @@ export default async function DocumentViewerPage({ params }: PageProps) {
               {meta.language ?? 'en'}
             </div>
           </div>
+          <div>
+            <div className={`${styles.metaLabel} font-ui`}>Factual Proof (Verified Version)</div>
+            <div className={`${styles.metaValue} font-mono`}>
+              <a
+                href={`${API_URL}/documents/${id}/download`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.metaValueLink}
+                style={{ color: 'var(--color-confirm)', fontWeight: 600 }}
+              >
+                View Original Ingested Page (PDF/HTML) &nearr;
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Text Reader */}

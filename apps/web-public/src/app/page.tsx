@@ -123,6 +123,27 @@ export default async function Home() {
           <span className={styles.statLabel}>Total value indexed</span>
         </div>
       </section>
+      
+      {/* Donation/Support Banner */}
+      <section className={styles.donationBanner}>
+        <div className={styles.donationContent}>
+          <div className={styles.donationIcon}>☕</div>
+          <div className={styles.donationText}>
+            <h3 className={`${styles.donationTitle} font-display`}>Support Veritas Philippines</h3>
+            <p className={`${styles.donationDesc} font-body`}>
+              Help us keep our database storage, API hosting, and bot-bypass crawlers running. Your contributions power public procurement accountability.
+            </p>
+          </div>
+        </div>
+        <a 
+          href="https://ko-fi.com/santima" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className={`${styles.donationBtn} font-ui`}
+        >
+          Support on Ko-fi
+        </a>
+      </section>
 
       {/* Analytics Dashboard Section */}
       <section className={styles.chartsGrid}>

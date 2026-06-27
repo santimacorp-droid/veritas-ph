@@ -143,36 +143,6 @@ export default async function CaseDetailPage({
 
   return (
     <div>
-      {/* ── Site Header ────────────────────────────────────────── */}
-      <header className={styles.siteHeader}>
-        <div className={styles.topbar}>
-          <Link href="/" className={styles.siteLogo}>
-            <span className={`${styles.logoName} font-display`}>Veritas</span>
-            <span className={`${styles.logoTagline} font-ui`}>
-              Philippines Procurement Transparency
-            </span>
-          </Link>
-          <div className={styles.headerSearch}>
-            <input
-              id="case-search"
-              className={`${styles.searchInput} font-mono`}
-              type="search"
-              placeholder="Search cases, agencies, suppliers..."
-            />
-          </div>
-        </div>
-        <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
-            <Link
-              key={item}
-              href={`/${item.toLowerCase()}`}
-              className={`${styles.navLink} font-ui`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
-      </header>
 
       {/* ── Page Content ──────────────────────────────────────── */}
       <main className={styles.pageContent}>
@@ -383,6 +353,44 @@ export default async function CaseDetailPage({
             ))}
           </div>
         )}
+
+        {/* Public Integrity Action Hub */}
+        <div className={styles.actionHub}>
+          <div className={styles.actionHubHeader}>
+            <span className={styles.actionHubTitle}>📢 Citizen Action Hub — How to Use This Case</span>
+          </div>
+          <div className={styles.actionHubBody}>
+            <p className="font-body">
+              This case contains verified statistical anomalies. As a citizen, journalist, or public watchdog, you can take concrete steps to verify, investigate, and report these findings:
+            </p>
+            <div className={styles.actionGrid}>
+              <div className={styles.actionItem}>
+                <h4 className="font-ui">1. Inspect Source Proof</h4>
+                <p className="font-body">
+                  Click on the visual citations under "Source Evidence" to inspect the raw government files (PDFs/HTML pages) scraped directly from PhilGEPS. Check original dates and amounts.
+                </p>
+              </div>
+              <div className={styles.actionItem}>
+                <h4 className="font-ui">2. File an FOI Request</h4>
+                <p className="font-body">
+                  Use the Philippine Government FOI portal (foi.gov.ph) to request the missing documents (e.g. Bid Abstracts, Project NTPs, or BAC Resolutions). Reference PhilGEPS ID: <strong>{caseData.procurement_ref_no ?? 'N/A'}</strong>.
+                </p>
+              </div>
+              <div className={styles.actionItem}>
+                <h4 className="font-ui">3. Report to COA</h4>
+                <p className="font-body">
+                  Submit a formal complaint or tip-off to the Commission on Audit (COA) Citizen Desk (coa.gov.ph) highlighting the cost overruns or single-bidder patterns flagged here.
+                </p>
+              </div>
+              <div className={styles.actionItem}>
+                <h4 className="font-ui">4. Download Dossier</h4>
+                <p className="font-body">
+                  Export the full machine-readable structured JSON or CSV data file of this audit trail using the download buttons below to share with local media or watchdogs.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Page Actions */}
         <div className={styles.pageActions}>

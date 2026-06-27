@@ -85,26 +85,6 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
 
   return (
     <div>
-      <header className={styles.siteHeader}>
-        <div className={styles.topbar}>
-          <Link href="/" className={styles.siteLogo}>
-            <span className={`${styles.logoName} font-display`}>Veritas</span>
-            <span className={`${styles.logoTagline} font-ui`}>Philippines Procurement Transparency</span>
-          </Link>
-        </div>
-        <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
-            <Link
-              key={item}
-              href={`/${item.toLowerCase()}`}
-              className={`${styles.navLink} ${item === 'Suppliers' ? styles.navActive : ''} font-ui`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
-      </header>
-
       <main className={styles.pageContent}>
         <nav className={`${styles.breadcrumb} font-ui`}>
           <Link href="/suppliers">Suppliers</Link>
@@ -266,9 +246,6 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
           </table>
         </div>
 
-        <footer className={`${styles.disclaimer} font-ui`}>
-          Supplier pages summarize only awards currently linked to procurement cases in Veritas.
-        </footer>
       </main>
     </div>
   );

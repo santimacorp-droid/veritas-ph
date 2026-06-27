@@ -115,7 +115,7 @@ async def seed_legislation():
                     suggested_revisions, citizen_summary, analysis_status, completed_at
                 )
                 VALUES (
-                    :aid, :lid, 'seed', 7.2, 6.8, :loops, :pros, :cons, :revisions, :summary, 'completed', :completed
+                    :aid, :lid, 'seed', 72.0, 68.0, :loops, :pros, :cons, :revisions, :summary, 'completed', :completed
                 )
             """),
             {
@@ -200,7 +200,7 @@ async def seed_legislation():
                     suggested_revisions, citizen_summary, analysis_status, completed_at
                 )
                 VALUES (
-                    :aid, :lid, 'seed', 8.5, 7.5, :loops, :pros, :cons, :revisions, :summary, 'completed', :completed
+                    :aid, :lid, 'seed', 85.0, 75.0, :loops, :pros, :cons, :revisions, :summary, 'completed', :completed
                 )
             """),
             {
@@ -267,7 +267,7 @@ async def seed_legislation():
                     suggested_revisions, citizen_summary, analysis_status, completed_at
                 )
                 VALUES (
-                    :aid, :lid, 'seed', 5.0, 6.0, :loops, :pros, :cons, :revisions, :summary, 'completed', :completed
+                    :aid, :lid, 'seed', 50.0, 60.0, :loops, :pros, :cons, :revisions, :summary, 'completed', :completed
                 )
             """),
             {
@@ -334,7 +334,7 @@ async def seed_legislation():
                     suggested_revisions, citizen_summary, analysis_status, completed_at
                 )
                 VALUES (
-                    :aid, :lid, 'seed', 8.0, 7.8, :loops, :pros, :cons, :revisions, :summary, 'completed', :completed
+                    :aid, :lid, 'seed', 80.0, 78.0, :loops, :pros, :cons, :revisions, :summary, 'completed', :completed
                 )
             """),
             {

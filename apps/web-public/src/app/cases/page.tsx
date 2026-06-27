@@ -62,13 +62,27 @@ function formatDate(value?: string) {
   return value ? value.slice(0, 10) : '-';
 }
 
+async function getAgenciesList(): Promise<{ agency_id: string; name: string; acronym?: string }[]> {
+  try {
+    const res = await fetch(`${API_URL}/agencies?limit=100`, { next: { revalidate: 30 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.agencies ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function CasesPage({
   searchParams,
 }: {
   searchParams: Promise<{ agency_id?: string; method?: string; category?: string; risk_min?: string; year?: string }>;
 }) {
   const filters = await searchParams;
-  const { total, cases } = await getCases(filters);
+  const [ { total, cases }, agencies ] = await Promise.all([
+    getCases(filters),
+    getAgenciesList(),
+  ]);
 
   return (
     <div>
@@ -86,6 +100,11 @@ export default async function CasesPage({
             <label className="font-ui">Agency</label>
             <select name="agency_id" defaultValue={filters.agency_id || ""}>
               <option value="">All Agencies</option>
+              {agencies.map((a) => (
+                <option key={a.agency_id} value={a.agency_id}>
+                  {a.acronym ? `${a.acronym} — ${a.name}` : a.name}
+                </option>
+              ))}
             </select>
           </div>
           <div className={styles.filterGroup}>
