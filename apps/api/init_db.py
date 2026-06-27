@@ -483,6 +483,10 @@ CREATE TABLE IF NOT EXISTS laws (
     description     TEXT,
     date_passed     DATE,
     status          TEXT DEFAULT 'active',
+    author          TEXT,
+    sponsor         TEXT,
+    approved_by     TEXT,
+    category        TEXT DEFAULT 'republic_act',
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
