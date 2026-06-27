@@ -28,74 +28,71 @@ export default function MethodologyPage() {
 
       <main className={styles.pageContent} style={{ maxWidth: '960px', paddingBottom: '120px' }}>
         
-        {/* Academic Paper Header */}
-        <div style={{ textAlign: 'center', marginTop: '48px', marginBottom: '40px' }}>
-          <h1 className="font-display" style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1.25', margin: '0 0 12px 0', color: 'var(--color-ink)' }}>
-            Algorithmic Auditing of Public Procurement:<br />
-            An Evidence-First Framework for Statutory and Operational Risk Scoring
+        {/* Title Block */}
+        <div className={styles.pageHead} style={{ marginBottom: '36px' }}>
+          <h1 className={`${styles.pageTitle} font-display`} style={{ fontSize: '32px' }}>
+            System Methodology & Auditing Engine
           </h1>
-          <p className="font-ui" style={{ fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px 0', color: 'var(--color-ink-secondary)' }}>
-            Veritas Technical Working Group
-          </p>
-          <p className="font-body" style={{ fontSize: '12px', fontStyle: 'italic', margin: '0 0 24px 0', color: 'var(--color-ink-muted)' }}>
-            Civic Technology & Public Policy Research Initiative, Philippines
-          </p>
-          <div style={{ width: '80px', height: '1px', background: 'var(--color-rule-strong)', margin: '0 auto' }}></div>
-        </div>
-
-        {/* Paper Abstract */}
-        <div style={{ 
-          background: 'var(--color-paper-dark)', 
-          border: '1px solid var(--color-rule)', 
-          padding: '24px 32px', 
-          borderRadius: '4px',
-          margin: '0 0 48px 0' 
-        }}>
-          <h3 className="font-ui" style={{ 
-            fontSize: '11px', 
-            fontWeight: '700', 
-            textTransform: 'uppercase', 
-            letterSpacing: '0.12em', 
-            textAlign: 'center', 
-            margin: '0 0 12px 0',
-            color: 'var(--color-ink)'
-          }}>
-            Abstract
-          </h3>
-          <p className="font-body" style={{ 
-            fontSize: '13.5px', 
-            lineHeight: '1.75', 
-            fontStyle: 'italic', 
-            textAlign: 'justify',
-            margin: 0,
-            color: 'var(--color-ink-secondary)'
-          }}>
-            This paper presents the algorithmic methodology behind the Veritas platform, a computational auditing system designed for public sector procurement in the Philippines. We formalize a dual-layer auditing model that connects upstream statutory vulnerabilities (legislative policy analysis) with downstream operational execution anomalies (procurement case records). We detail the mathematical formulations for fourteen diagnostic compliance checks aligned with the Government Procurement Reform Act (Republic Act 9184) and the New Government Procurement Act (Republic Act 12009). Further, we define a weighted severity risk aggregation model, a five-dimensional corruption risk vector, and a cryptographic citation protocol mapping extracted anomalies back to verifiable coordinates in official source publications. By resolving unstructured tender and statutory texts into structured indices, this framework provides an open-source, reproducible tool for public oversight, journalist investigation, and civic accountability.
+          <p className={`${styles.pageSubtitle} font-ui`}>
+            Technical blueprint of our data ingestion pipeline, extraction schemas, and risk calculations
           </p>
         </div>
 
-        {/* Section 1: Introduction */}
+        <div className={styles.prose}>
+          <p className="font-body" style={{ fontSize: '15.5px', lineHeight: '1.75' }}>
+            Veritas runs a continuous, multi-pass auditing pipeline connecting upstream statutory policies with downstream operational procurement. By combining rule-based compliance checks, statistical anomaly detection, and AI-driven legislative audit models, the platform translates raw, unstructured government registries into traceable risk metrics.
+          </p>
+        </div>
+
+        {/* SECTION 1: DATA INGESTION PIPELINE */}
         <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>1. Introduction & Statutory Context</h2>
+          <h2 className={`${styles.sectionTitle} font-ui`}>1. Data Ingestion & Crawling</h2>
           <div className={styles.prose}>
             <p className="font-body">
-              Public procurement accounts for a substantial percentage of the national budget of developing economies. In the Philippines, the procurement landscape has historically been governed by the Government Procurement Reform Act (GPRA, Republic Act No. 9184), enacted in 2003 to consolidate laws, standardize processes, and introduce competitive public bidding as the default acquisition mechanism. Recently, the New Government Procurement Act (NGPA, Republic Act No. 12009) was legislated to modernize procurement operations, introduce value-for-money metrics, and enhance public observation channels.
+              The ingestion pipeline extracts records from primary government publications through scheduled crawler tasks:
             </p>
-            <p className="font-body">
-              Despite these legislative frameworks, systemic vulnerabilities persist due to two distinct vectors: (1) <strong>Upstream Policy Loopholes</strong>, where statutory texts incorporate overly subjective exception clauses, discretionary bidding thresholds, or vague reporting rules that diminish public accountability, and (2) <strong>Downstream Operational Deviations</strong>, where procuring entities utilize alternative non-competitive methods (e.g., Small Value Procurement, emergency negotiated awards) or timeline compressions to bypass competitive checks.
-            </p>
-            <p className="font-body">
-              Veritas bridges this gap by deploying a computational pipeline that parses, indexes, and audits procurement notices, contract documents, and legal acts. The system operates on a <em>zero-trust verification model</em>: every detected flag must be traceable back to an exact, cryptographically verified source document, preventing false claims and providing an explainable audit trail.
-            </p>
+            <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
+              <li>
+                <strong>PhilGEPS Procurement Portal:</strong> The crawler queries the open tenders search registry, scraping active and completed procurement postings, bid abstracts, notices of award (NOA), and notices to proceed (NTP).
+              </li>
+              <li>
+                <strong>Legislative Registries:</strong> Crawlers scan legal indices (including Lawphil.net and the Official Gazette) to discover newly passed Republic Acts, executive orders, and administrative directives.
+              </li>
+              <li>
+                <strong>Verification Checkpoints:</strong> During crawls, documents are instantly hashed (SHA-256) and recorded in the database to prevent duplicate ingestion and enforce historical immutability.
+              </li>
+            </ul>
           </div>
         </section>
 
-        {/* Section 2: Mathematical Formulations */}
+        {/* SECTION 2: DATA EXTRACTION & PROVENANCE */}
         <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>2. Downstream Procurement Audit: The 14 Anomaly Rules</h2>
+          <h2 className={`${styles.sectionTitle} font-ui`}>2. Data Extraction & Provenance Tracking</h2>
           <div className={styles.prose}>
             <p className="font-body">
-              Downstream operational risk is analyzed by checking every contract award and tender notice against fourteen specialized algorithmic checks. Below, we provide the formal mathematical formulation, operational thresholds, and statutory citations for each rule.
+              Once raw text and PDF attachments are ingested, they pass through the data extraction and linking pipelines:
+            </p>
+            <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
+              <li>
+                <strong>Entity Extraction:</strong> An NLP pipeline parses the text using rule-based Named Entity Recognition (NER) to isolate critical dates (deadlines, awards, publications), values (budget ceilings, final bids), and organizations (procuring agencies, winning contractors).
+              </li>
+              <li>
+                <strong>Visual Provenance Coordination:</strong> To prevent extraction errors, every extracted parameter is linked to its exact coordinate offset within the source text:
+                <div style={{ background: 'var(--color-paper-darker)', padding: '12px 18px', borderRadius: '4px', margin: '12px 0', fontSize: '13px' }} className="font-mono">
+                  Coordinates = &#123; SHA256(Document), Page_Number, Character_Start, Character_End &#125;
+                </div>
+                This allows analysts to click any flag on the website and view the exact highlight in the original text.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* SECTION 3: DOWNSTREAM PROCUREMENT ANOMALY RULES */}
+        <section className={styles.methodologySection}>
+          <h2 className={`${styles.sectionTitle} font-ui`}>3. Downstream Case Auditing (14 Compliance Rules)</h2>
+          <div className={styles.prose}>
+            <p className="font-body">
+              Downstream operational risk is analyzed by checking every contract award and tender notice against fourteen specialized algorithmic checks. Below, we document the mathematical model and statutory rationale for each rule:
             </p>
           </div>
 
@@ -108,20 +105,16 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Competition</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags open competitive tenders valued above a critical threshold that yield only a single bidder. A high frequency of single-bid awards indicates potential specification tailoring, pre-arranged collusion, or barrier-to-entry manipulation.
+                Flags open competitive tenders valued above a critical threshold that yield only a single bidder. A high frequency of single-bid awards indicates potential specification tailoring or pre-arranged collusion.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_001(c) = 1 &nbsp;if&nbsp; [ N_bidders(c) = 1 &nbsp;&and;&nbsp; V_award(c) &ge; &theta;_val ]
-                  {"\n"}where:
-                  {"\n"}  - N_bidders(c) is the count of qualified bidders for case c.
-                  {"\n"}  - V_award(c) is the final awarded contract amount in PHP.
-                  {"\n"}  - &theta;_val = 10,000,000 PHP (Statutory High-Value Threshold).
+                  Trigger = True &nbsp;if&nbsp; [ Bidders_Count = 1 &nbsp;&and;&nbsp; Award_Value &ge; 10,000,000 PHP ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 36 (Governing Single Calculated/Rated Responsive Bid requirements).
+                  RA 9184 Section 36 (Single Calculated Responsive Bid standards).
                 </p>
               </div>
             </div>
@@ -136,18 +129,16 @@ export default function MethodologyPage() {
                 Identifies clusters of alternative (non-competitive) contract awards executed by the same procuring entity within close temporal proximity that aggregate to a value exceeding public bidding thresholds.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  Let C = &#123; c_i &#125; be a set of contracts executed by Agency A, using SVP or Shopping, where:
-                  {"\n"}  - |t(c_i) - t(c_j)| &le; 30 days (Temporal window).
-                  {"\n"}  - Category(c_i) = Category(c_j) (Same category code).
-                  {"\n"}  - JaroWinkler(Title(c_i), Title(c_j)) &ge; 0.40 (High title overlap).
-                  {"\n"}  - &sum; V_award(c_i) &ge; &theta;_split (Aggregate value exceeds limit).
-                  {"\n"}R_002(c_i) = 1 &nbsp;for all&nbsp; c_i &in; C. (&theta;_split = 1,000,000 PHP).
+                  Let C = &#123; contracts &#125; by same Agency, same Category, using SVP or Shopping where:
+                  {"\n"}  - |Date(c_i) - Date(c_j)| &le; 30 days
+                  {"\n"}  - TitleSimilarity(c_i, c_j) &ge; 0.40
+                  {"\n"}  - &sum; Award_Value(c_i) &ge; 1,000,000 PHP
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 54.1 & COA Circulars detailing the strict prohibition of budget splitting.
+                  RA 9184 Section 54.1 (Prohibition against splitting of contracts to bypass public bidding).
                 </p>
               </div>
             </div>
@@ -155,24 +146,21 @@ export default function MethodologyPage() {
             {/* Rule 3 */}
             <div className={styles.methodologyCard}>
               <div className={styles.cardHeader}>
-                <h3 className={`${styles.cardTitle} font-ui`}>RULE-003: Short Advertisement/Posting Window</h3>
+                <h3 className={`${styles.cardTitle} font-ui`}>RULE-003: Short Advertisement Window</h3>
                 <span className={`${styles.cardPill} font-ui`}>Timeline</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags procurement events where the duration between the public advertisement date and the bid closing date falls below the legal minimum, hindering non-collusive external bidding.
+                Flags procurement events where the duration between the public advertisement date and the bid closing date falls below the legal minimum, limiting fair competition.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_003(c) = 1 &nbsp;if&nbsp; [ t_close(c) - t_publish(c) &lt; &tau;_min(Method(c)) ]
-                  {"\n"}where:
-                  {"\n"}  - t_close(c) is the timestamp of bid submission closing.
-                  {"\n"}  - t_publish(c) is the timestamp of PhilGEPS advertisement publication.
-                  {"\n"}  - &tau;_min = 20 calendar days for competitive bidding; 7 days for Shopping/SVP.
+                  Trigger = True &nbsp;if&nbsp; [ (Closing_Date - Date_Published) &lt; Method_Posting_Threshold ]
+                  {"\n"}  - Threshold: 20 calendar days for competitive bidding; 7 days for Shopping/SVP.
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 21.2.1(a) (Advertisement and Posting of Invitation to Bid guidelines).
+                  RA 9184 Section 21.2.1(a) (Notice posting requirements).
                 </p>
               </div>
             </div>
@@ -184,20 +172,16 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Financial</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags contracts where the awarded contract amount exceeds the Approved Budget for the Contract (ABC) or the planned budget limit, indicating massive cost projection failures.
+                Flags contracts where the awarded contract amount exceeds the Approved Budget for the Contract (ABC) or the planned budget limit.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_004(c) = 1 &nbsp;if&nbsp; [ V_award(c) &gt; V_abc(c) &times; 1.20 ]
-                  {"\n"}where:
-                  {"\n"}  - V_award(c) is the final contract amount.
-                  {"\n"}  - V_abc(c) is the Approved Budget for the Contract.
-                  {"\n"}  - (Note: Standard bids exceeding V_abc are legally disqualified; an overshoot indicates post-qualification inflation).
+                  Trigger = True &nbsp;if&nbsp; [ Award_Value &gt; Planned_Budget_ABC &times; 1.20 ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 31 (Approved Budget for the Contract serving as the absolute ceiling for bid prices).
+                  RA 9184 Section 31 (Budget ceiling limitations).
                 </p>
               </div>
             </div>
@@ -212,17 +196,13 @@ export default function MethodologyPage() {
                 Flags contract modifications and amendments executed post-award that increase the total project cost by a margin exceeding statutory limitations.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_005(c) = 1 &nbsp;if&nbsp; [ &sum; &Delta;V_amendment(c) &gt; V_original(c) &times; &theta;_vo ]
-                  {"\n"}where:
-                  {"\n"}  - &sum; &Delta;V_amendment(c) is the sum of value increases across all amendment orders.
-                  {"\n"}  - V_original(c) is the original contract award value.
-                  {"\n"}  - &theta;_vo = 0.10 (10% Statutory cumulative ceiling).
+                  Trigger = True &nbsp;if&nbsp; [ Cumulative_Amendment_Value_Increase &gt; Original_Contract_Value &times; 10% ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Annex E Section 1.3 (Detailing limits and justification requirements for contract Variation Orders).
+                  RA 9184 Annex E Section 1.3 (Cumulative Variation Orders capped at 10% of original price).
                 </p>
               </div>
             </div>
@@ -230,22 +210,20 @@ export default function MethodologyPage() {
             {/* Rule 6 */}
             <div className={styles.methodologyCard}>
               <div className={styles.cardHeader}>
-                <h3 className={`${styles.cardTitle} font-ui`}>RULE-006: Annual Procurement Plan (APP) Mismatch</h3>
+                <h3 className={`${styles.cardTitle} font-ui`}>RULE-006: APP-Tender Mismatch</h3>
                 <span className={`${styles.cardPill} font-ui`}>Transparency</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags projects launched dynamically by agencies without corresponding schedule listings in the approved annual plan, highlighting potential off-budget or arbitrary spending.
+                Flags projects launched dynamically by agencies without corresponding schedule listings in the approved Annual Procurement Plan (APP).
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_006(c) = 1 &nbsp;if&nbsp; [ N_linked_app_items(c) = 0 ]
-                  {"\n"}where:
-                  {"\n"}  - N_linked_app_items(c) is the count of matches found in the agency's registered APP for fiscal year of t_publish(c).
+                  Trigger = True &nbsp;if&nbsp; [ Linked_APP_Items_Count = 0 ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 7.2 (No procurement shall be undertaken by any procuring entity unless it is in accordance with the approved APP).
+                  RA 9184 Section 7.2 (Procurement must conform with the approved Annual Procurement Plan).
                 </p>
               </div>
             </div>
@@ -257,19 +235,16 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Competition</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags wins by contractors whose commercial registration, history, or industry sector classification falls entirely outside the scope of the bid (e.g., an IT software developer winning a civil building contract).
+                Flags wins by contractors whose commercial registration, history, or industry sector classification falls entirely outside the scope of the bid.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_007(c) = 1 &nbsp;if&nbsp; [ Category(c) &notin; Specialties(Supplier(c)) ]
-                  {"\n"}where:
-                  {"\n"}  - Category(c) represents the PSIC (Philippine Standard Industrial Classification) code of project c.
-                  {"\n"}  - Specialties(Supplier(c)) is the set of sector capabilities extracted from the supplier's PCAB licenses or registration profiles.
+                  Trigger = True &nbsp;if&nbsp; [ Project_Category_Code &notin; Supplier_Specialization_Registry ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 23 (Defining eligibility criteria, financial statements, and technical competence standards).
+                  RA 9184 Section 23 (Contractor technical eligibility and licensing benchmarks).
                 </p>
               </div>
             </div>
@@ -281,20 +256,16 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Timeline</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Detects deviations where the date of issuance for the Notice to Proceed lags significantly behind the Notice of Award, suggesting delayed project kickoffs, bribery negotiations, or contract signing disruptions.
+                Detects deviations where the date of issuance for the Notice to Proceed lags significantly behind the Notice of Award.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_008(c) = 1 &nbsp;if&nbsp; [ t_ntp(c) - t_award(c) &gt; &theta;_ntp &nbsp;&or;&nbsp; t_ntp(c) &lt; t_award(c) ]
-                  {"\n"}where:
-                  {"\n"}  - t_ntp(c) is the timestamp of the Notice to Proceed.
-                  {"\n"}  - t_award(c) is the timestamp of the Notice of Award.
-                  {"\n"}  - &theta;_ntp = 15 calendar days (combined limit of contract signing & approval).
+                  Trigger = True &nbsp;if&nbsp; [ (NTP_Date - Award_Date) &gt; 15 days &nbsp;&or;&nbsp; NTP_Date &lt; Award_Date ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 37.4.1 (Mandating Notice to Proceed issuance within 7 calendar days from approval of the contract).
+                  RA 9184 Section 37.4.1 (Mandated Notice to Proceed timelines).
                 </p>
               </div>
             </div>
@@ -306,19 +277,16 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Transparency</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags completed or awarded tenders that fail to publish the standard Abstract of Bids, preventing independent verify-and-match audits on final pricing calculations.
+                Flags completed or awarded tenders that fail to publish the standard Abstract of Bids, preventing independent verify-and-match audits.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_009(c) = 1 &nbsp;if&nbsp; [ HasAward(c) = True &nbsp;&and;&nbsp; N_abstract_docs(c) = 0 ]
-                  {"\n"}where:
-                  {"\n"}  - HasAward(c) indicates if the procurement has transitioned to an award state.
-                  {"\n"}  - N_abstract_docs(c) is the count of published Abstract files attached to the PhilGEPS index.
+                  Trigger = True &nbsp;if&nbsp; [ Has_Award = True &nbsp;&and;&nbsp; Abstract_Attachments_Count = 0 ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 37 (Specifying documentation transparency rules).
+                  RA 9184 Section 37 (Public disclosure rules).
                 </p>
               </div>
             </div>
@@ -330,18 +298,16 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Compliance</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Flags cases initiated by agencies that currently have outstanding or unresolved notices of suspension, disallowance, or material findings published by the Commission on Audit (COA) for the corresponding fiscal period.
+                Flags cases initiated by agencies that currently have outstanding or unresolved notices of suspension, disallowance, or material findings published by the Commission on Audit (COA).
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_010(c) = 1 &nbsp;if&nbsp; [ N_coa_findings(Agency(c), Year(t_publish(c))) &gt; 0 ]
-                  {"\n"}where:
-                  {"\n"}  - N_coa_findings is the count of unresolved adverse observations in the published COA Annual Audit Report.
+                  Trigger = True &nbsp;if&nbsp; [ COA_Adverse_Findings(Agency, Fiscal_Year) &gt; 0 ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  1987 Philippine Constitution Article IX-D Section 2 (Granting the Commission on Audit the authority to define auditing regulations).
+                  1987 Philippine Constitution Article IX-D Section 2 (COA auditing jurisdiction).
                 </p>
               </div>
             </div>
@@ -353,19 +319,16 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Timeline</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Detects severe chronological corruption where a contract award date is officially logged prior to the closing deadline for public bid submission, indicating predetermined selection.
+                Detects chronological anomalies where a contract award date is officially logged prior to the closing deadline for public bid submission.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_011(c) = 1 &nbsp;if&nbsp; [ t_award(c) &lt; t_close(c) ]
-                  {"\n"}where:
-                  {"\n"}  - t_award(c) is the timestamp of Notice of Award publication.
-                  {"\n"}  - t_close(c) is the deadline timestamp for bid submission.
+                  Trigger = True &nbsp;if&nbsp; [ Award_Date &lt; Bid_Closing_Deadline ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  RA 9184 Section 37 (Outlining the chronological sequence from bid evaluation and post-qualification to award approval).
+                  RA 9184 Section 37 (Evaluation and award chronology).
                 </p>
               </div>
             </div>
@@ -380,19 +343,14 @@ export default function MethodologyPage() {
                 Flags contract awards executed within a market category and agency region that exhibits extreme supplier monopolization, measured using the Herfindahl-Hirschman Index (HHI).
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  HHI_k = &sum;_&#123;s &in; S_k&#125; ( (V_award(s, k) / V_total(k)) &times; 100 )^2
-                  {"\n"}R_012(c) = 1 &nbsp;if&nbsp; [ HHI_&#123;Category(c)&#125; &gt; &theta;_hhi ]
-                  {"\n"}where:
-                  {"\n"}  - S_k is the set of suppliers winning contracts in category k.
-                  {"\n"}  - V_award(s, k) is the sum of awards won by supplier s in category k.
-                  {"\n"}  - V_total(k) is the total market volume of category k.
-                  {"\n"}  - &theta;_hhi = 2,500 (Highly concentrated market threshold).
+                  HHI_category = &sum;_&#123;s &in; Suppliers&#125; ( (Supplier_Category_Wins / Total_Category_Volume) &times; 100 )^2
+                  {"\n"}Trigger = True &nbsp;if&nbsp; [ HHI_category &gt; 2,500 ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  Philippine Competition Act (RA 10667) & GPPB Anti-Collusion Guidelines.
+                  Philippine Competition Act (RA 10667) & GPPB Anti-Collusion standards.
                 </p>
               </div>
             </div>
@@ -404,21 +362,16 @@ export default function MethodologyPage() {
                 <span className={`${styles.cardPill} font-ui`}>Financial</span>
               </div>
               <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '16px' }}>
-                Detects overpricing by executing statistical outlier checks on specific itemized unit prices against the historical baseline distribution of identical goods across the registry.
+                Detects overpricing by executing statistical outlier checks on specific itemized unit prices against the historical baseline distribution of identical goods.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_013(item) = 1 &nbsp;if&nbsp; [ p_unit(item) &gt; &mu;_k + z &times; &sigma;_k ]
-                  {"\n"}where:
-                  {"\n"}  - p_unit(item) is the unit price of the audited item.
-                  {"\n"}  - &mu;_k is the historical mean unit price of category k.
-                  {"\n"}  - &sigma;_k is the standard deviation of category k unit prices.
-                  {"\n"}  - z = 2.0 (Confidence coefficient for statistical anomaly).
+                  Trigger = True &nbsp;if&nbsp; [ Item_Unit_Price &gt; Category_Mean_Price + 2 &times; Standard_Deviation ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  COA Guidelines on detecting overpriced public commodities & Value-for-Money Audits.
+                  COA Guidelines on Overpricing audits.
                 </p>
               </div>
             </div>
@@ -433,16 +386,13 @@ export default function MethodologyPage() {
                 Flags infrastructure projects awarded to suppliers whose registered office address or PCAB license regional classification codes mismatch the actual geographic location of the project.
               </p>
               <div style={{ background: 'var(--color-paper-darker)', padding: '16px', borderRadius: '4px', borderLeft: '3px solid var(--color-flag)' }}>
-                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Mathematical Model</span>
+                <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginBottom: '8px' }}>Calculation Model</span>
                 <code className="font-mono" style={{ fontSize: '13px', display: 'block', whiteSpace: 'pre-wrap', color: 'var(--color-ink)' }}>
-                  R_014(c) = 1 &nbsp;if&nbsp; [ RegCode(c) &notin; AllowedRegions(Supplier(c)) ]
-                  {"\n"}where:
-                  {"\n"}  - RegCode(c) is the Philippine Standard Geographic Code (PSGC) region of the project.
-                  {"\n"}  - AllowedRegions(Supplier(c)) is the set of regions authorized by the supplier's PCAB certificate.
+                  Trigger = True &nbsp;if&nbsp; [ Project_Region_Code &notin; Supplier_PCAB_Allowed_Regions ]
                 </code>
                 <span className="font-ui" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-ink-muted)', display: 'block', marginTop: '12px', marginBottom: '4px' }}>Statutory Link</span>
                 <p className="font-body" style={{ fontSize: '12.5px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                  Philippine Contractors Accreditation Board (PCAB) License Guidelines & RA 4566.
+                  Philippine Contractors Accreditation Board (PCAB) licensing requirements.
                 </p>
               </div>
             </div>
@@ -450,39 +400,36 @@ export default function MethodologyPage() {
           </div>
         </section>
 
-        {/* Section 3: Risk Score Aggregation */}
+        {/* SECTION 4: RISK SCORE AGGREGATION MODEL */}
         <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>3. Case-Level Risk Score Aggregation Model</h2>
+          <h2 className={`${styles.sectionTitle} font-ui`}>4. Case-Level Risk Score Aggregation</h2>
           <div className={styles.prose}>
             <p className="font-body">
-              Rather than employing a simple count of triggered anomalies—which ignores the variance in severe non-compliance—Veritas utilizes a <strong>Weighted Severity Aggregation Model</strong> ($R(c)$). This model maps case risk to a closed interval $[0.0, 1.0]$.
-            </p>
-            <p className="font-body">
-              Let $F(c)$ be the set of rules that fired on case $c$, and let $W_i$ be the weight associated with the severity level of rule $i$. The aggregated case risk $R(c)$ is defined as:
+              To aggregate multiple flags into a unified case risk rating, Veritas maps active anomalies to a closed interval between <code>0.0</code> (No Risk) and <code>1.0</code> (Critical Risk):
             </p>
 
             <div style={{ background: 'var(--color-paper-darker)', padding: '24px', borderRadius: '4px', textAlign: 'center', margin: '20px 0' }}>
               <p className="font-mono" style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 12px 0', color: 'var(--color-ink)' }}>
-                R(c) = min(1.0, &sum;_(i &in; F(c)) W_i)
+                Risk_Score = min(1.0, &sum; Weight_i)
               </p>
               <p className="font-body" style={{ fontSize: '13px', margin: 0, color: 'var(--color-ink-secondary)' }}>
-                Subject to the hard boundary constraint:
+                If any <strong>Critical</strong> severity rule triggers, the final risk score is automatically constrained:
               </p>
               <p className="font-mono" style={{ fontSize: '14px', margin: '8px 0 0 0', fontWeight: 'bold', color: 'var(--color-flag)' }}>
-                R(c) &ge; 0.80 &nbsp;if&nbsp; &#123; i &in; F(c) | Severity(i) = &apos;critical&apos; &#125; &ne; &empty;
+                Risk_Score &ge; 0.80
               </p>
             </div>
 
             <p className="font-body">
-              The severity levels and their corresponding scalar weights ($W_i$) are defined below:
+              The individual rule weights are determined by severity level:
             </p>
 
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', marginTop: '16px', marginBottom: '24px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--color-rule-strong)', background: 'var(--color-paper-dark)' }}>
                   <th style={{ textAlign: 'left', padding: '12px 16px' }} className="font-ui">Severity Level</th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px' }} className="font-ui">Weight ($W_i$)</th>
-                  <th style={{ textAlign: 'left', padding: '12px 16px' }} className="font-ui">Auditing Operational Definition</th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px' }} className="font-ui">Weight</th>
+                  <th style={{ textAlign: 'left', padding: '12px 16px' }} className="font-ui">Auditing Standard Definition</th>
                 </tr>
               </thead>
               <tbody>
@@ -490,28 +437,28 @@ export default function MethodologyPage() {
                   <td style={{ padding: '12px 16px', color: 'var(--color-critical)', fontWeight: 'bold' }} className="font-mono">🛑 Critical</td>
                   <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 'bold' }} className="font-mono">1.0</td>
                   <td style={{ padding: '12px 16px', color: 'var(--color-ink-secondary)' }} className="font-body">
-                    Severe, categorical timeline or procedural breach that establishes prima facie evidence of pre-selection (e.g., RULE-011: Award Before Bid Deadline).
+                    Statutory violation that indicates bid rigging or pre-selection (e.g., Award before Bid Deadline).
                   </td>
                 </tr>
                 <tr style={{ borderBottom: '1px solid var(--color-rule)' }}>
                   <td style={{ padding: '12px 16px', color: 'var(--color-flag)', fontWeight: 'bold' }} className="font-mono">🟠 High</td>
                   <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 'bold' }} className="font-mono">0.6</td>
                   <td style={{ padding: '12px 16px', color: 'var(--color-ink-secondary)' }} className="font-body">
-                    Substantial competition bypass or financial outlier indicating active evasion of competitive checks (e.g., RULE-002: Budget Splitting, RULE-005: Variation Order Abuse).
+                    Substantial competition bypass or financial budget manipulation (e.g., Budget Splitting).
                   </td>
                 </tr>
                 <tr style={{ borderBottom: '1px solid var(--color-rule)' }}>
                   <td style={{ padding: '12px 16px', color: 'var(--color-medium)', fontWeight: 'bold' }} className="font-mono">🟡 Medium</td>
                   <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 'bold' }} className="font-mono">0.3</td>
                   <td style={{ padding: '12px 16px', color: 'var(--color-ink-secondary)' }} className="font-body">
-                    Timeline and posting compressions or procedural gaps (e.g., RULE-003: Short Posting Window, RULE-008: Late Notice to Proceed).
+                    Timeline compressions or procedural delays (e.g., Short Posting Window).
                   </td>
                 </tr>
                 <tr style={{ borderBottom: '1px solid var(--color-rule)' }}>
                   <td style={{ padding: '12px 16px', color: 'var(--color-confirm)', fontWeight: 'bold' }} className="font-mono">🔵 Low</td>
                   <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 'bold' }} className="font-mono">0.1</td>
                   <td style={{ padding: '12px 16px', color: 'var(--color-ink-secondary)' }} className="font-body">
-                    Minor reporting delays, minor registry discrepancies, or secondary cross-referenced indicators.
+                    Minor documentation inconsistencies or delayed timestamps.
                   </td>
                 </tr>
               </tbody>
@@ -521,132 +468,71 @@ export default function MethodologyPage() {
               The Five-Dimensional Compliance Vector (V_risk)
             </h3>
             <p className="font-body" style={{ margin: '0 0 16px 0' }}>
-              To categorize the type of risk rather than just its severity, every case is mapped to a column vector representing five distinct risk domains:
+              Every procurement case records a five-dimensional risk vector mapped to specific vulnerability indexes:
             </p>
             <div style={{ background: 'var(--color-paper-darker)', padding: '16px 24px', borderRadius: '4px', margin: '16px 0' }} className="font-mono">
-              V_risk = [ C_comp, C_time, C_fin, C_trans, C_compl ]^T
+              V_risk = [ Competition, Timeline, Financial, Transparency, Compliance ]^T
             </div>
             <p className="font-body">
-              The individual dimension scores are computed as the maximum weight of the rules triggered within that specific domain:
+              Each vector dimension is computed as the maximum weight of the triggered rules in that category:
             </p>
             <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
-              <li><strong>Competition (C_comp):</strong> Max severity weight of &#123;RULE-001, RULE-007, RULE-012&#125;.</li>
-              <li><strong>Timeline (C_time):</strong> Max severity weight of &#123;RULE-003, RULE-008, RULE-011&#125;.</li>
-              <li><strong>Financial (C_fin):</strong> Max severity weight of &#123;RULE-002, RULE-004, RULE-005, RULE-013&#125;.</li>
-              <li><strong>Transparency (C_trans):</strong> Max severity weight of &#123;RULE-006, RULE-009&#125;.</li>
-              <li><strong>Compliance (C_compl):</strong> Max severity weight of &#123;RULE-010, RULE-014&#125;.</li>
+              <li><strong>Competition Score:</strong> Max weight of &#123;RULE-001, RULE-007, RULE-012&#125;.</li>
+              <li><strong>Timeline Score:</strong> Max weight of &#123;RULE-003, RULE-008, RULE-011&#125;.</li>
+              <li><strong>Financial Score:</strong> Max weight of &#123;RULE-002, RULE-004, RULE-005, RULE-013&#125;.</li>
+              <li><strong>Transparency Score:</strong> Max weight of &#123;RULE-006, RULE-009&#125;.</li>
+              <li><strong>Compliance Score:</strong> Max weight of &#123;RULE-010, RULE-014&#125;.</li>
             </ul>
           </div>
         </section>
 
-        {/* Section 4: AI Statutory Indexing */}
+        {/* SECTION 5: UPSTREAM LEGISLATIVE AUDITING */}
         <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>4. Upstream Legislative Vulnerability Auditing</h2>
+          <h2 className={`${styles.sectionTitle} font-ui`}>5. Upstream Legislative Vulnerability Auditing</h2>
           <div className={styles.prose}>
             <p className="font-body">
-              To identify systemic vulnerabilities prior to operational procurement phases, Veritas audits statutory legal texts (such as Republic Acts, Executive Orders, and GPPB Implementing Rules and Regulations) utilizing legal LLMs (DeepSeek V3 / GPT-4o-mini). The model parses legal sections to compute two core indices.
+              Upstream legislative audits evaluate the text of Republic Acts and IRRs for systemic corruption loopholes before procurement starts. Our LLM-powered engine computes two primary metrics:
             </p>
 
             <div className={styles.methodologyGrid}>
               
               <div className={styles.methodologyCard}>
                 <div className={styles.cardHeader}>
-                  <h3 className={`${styles.cardTitle} font-ui`}>Integrity Index ($I_L$)</h3>
-                  <span className={`${styles.cardPill} ${styles.cardPillBlue} font-ui`}>Statutory Tightness</span>
+                  <h3 className={`${styles.cardTitle} font-ui`}>Integrity Index (I_L)</h3>
+                  <span className={`${styles.cardPill} ${styles.cardPillBlue} font-ui`}>Statutory Score</span>
                 </div>
                 <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '12px' }}>
-                  Measures the legislative resistance to loopholes. Broadly worded exemption clauses, discretionary authority grants without checks, or subjective emergency qualifications reduce the score.
+                  Rates the tightness of the law. Broad exceptions or vague procurement categories lower this index.
                 </p>
                 <div style={{ background: 'var(--color-paper-darker)', padding: '12px', borderRadius: '4px', fontSize: '12.5px' }} className="font-mono">
-                  I_L = max( 0, 100 - &sum;_(i &in; Loopholes) w_i )
-                  {"\n"}where loophole weights w_i are:
-                  {"\n"}  - Critical Loophole: 20
-                  {"\n"}  - High Risk Loophole: 15
-                  {"\n"}  - Medium Risk Loophole: 8
-                  {"\n"}  - Low Risk Loophole: 3
+                  I_L = max( 0, 100 - &sum; Loophole_Weights )
+                  {"\n"}Loophole Weights:
+                  {"\n"}  - Critical Loophole: -20
+                  {"\n"}  - High Risk: -15
+                  {"\n"}  - Medium Risk: -8
+                  {"\n"}  - Low Risk: -3
                 </div>
               </div>
 
               <div className={styles.methodologyCard}>
                 <div className={styles.cardHeader}>
-                  <h3 className={`${styles.cardTitle} font-ui`}>Oversight Score ($O_L$)</h3>
-                  <span className={`${styles.cardPill} ${styles.cardPillBlue} font-ui`}>Governance Strength</span>
+                  <h3 className={`${styles.cardTitle} font-ui`}>Oversight Score (O_L)</h3>
+                  <span className={`${styles.cardPill} ${styles.cardPillBlue} font-ui`}>Governance Score</span>
                 </div>
                 <p className={`${styles.cardBody} font-body`} style={{ marginBottom: '12px' }}>
-                  Evaluates the presence of positive accountability criteria defined explicitly in the legal text, such as monitoring mandates, public disclosures, and observation channels.
+                  Evaluates the presence of monitoring, public disclosure rules, and observation channels.
                 </p>
                 <div style={{ background: 'var(--color-paper-darker)', padding: '12px', borderRadius: '4px', fontSize: '12.5px' }} className="font-mono">
-                  O_L = &sum;_(j &in; Factors) f_j
-                  {"\n"}where oversight factors f_j are:
+                  O_L = &sum; Oversight_Factors
+                  {"\n"}Oversight Factors:
                   {"\n"}  - CS Observers Mandated: +25
-                  {"\n"}  - Open Data Publishing Required: +25
-                  {"\n"}  - Explicit Punitive/Penal Clauses: +25
-                  {"\n"}  - Independent Audits Mandated: +25
+                  {"\n"}  - Open Data Required: +25
+                  {"\n"}  - Clear Penal Clauses: +25
+                  {"\n"}  - Independent Auditing: +25
                 </div>
               </div>
 
             </div>
-
-            <h3 className="font-ui" style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-ink)', margin: '24px 0 10px' }}>
-              Loophole Severity Classification
-            </h3>
-            <ul className="font-body" style={{ paddingLeft: '20px', lineHeight: '1.8', color: 'var(--color-ink-secondary)' }}>
-              <li>
-                <strong>Critical (Weight = 20):</strong> Structural provisions allowing complete circumvention of competitive public bidding without requiring BAC (Bids and Awards Committee) resolutions or alternative registry postings.
-              </li>
-              <li>
-                <strong>High (Weight = 15):</strong> Subjective clauses granting discretionary powers to heads of procuring entities (HOPE) to approve exceptions based on undefined parameters (e.g., &quot;in the interest of the service&quot;).
-              </li>
-              <li>
-                <strong>Medium (Weight = 8):</strong> Weak transparency rules, such as allowing paper-only bidding submissions or delaying contract publication beyond standard 30-day limits.
-              </li>
-              <li>
-                <strong>Low (Weight = 3):</strong> Minor administrative ambiguities, outdated terminology, or references to deprecated departments.
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Section 5: Data Provenance */}
-        <section className={styles.methodologySection}>
-          <h2 className={`${styles.sectionTitle} font-ui`}>5. Data Provenance & Verification Protocol</h2>
-          <div className={styles.prose}>
-            <p className="font-body">
-              To guarantee that all computed metrics represent verifiable facts, Veritas implements a cryptographic citation protocol called <strong>Visual Provenance Tracking</strong>. This prevents arbitrary AI hallucinations or database corruptions.
-            </p>
-            <p className="font-body">
-              Every data node parsed into the database is anchored to an immutable coordinate object defined as:
-            </p>
-            <div style={{ background: 'var(--color-paper-darker)', padding: '16px 24px', borderRadius: '4px', margin: '16px 0' }} className="font-mono">
-              Provenance(x) = &#123; SHA256(Doc), Page_Number, Char_Start, Char_End &#125;
-            </div>
-            <p className="font-body">
-              When an analyst views a case anomaly or a statutory controversy on the portal, the frontend retrieves the coordinate object, downloads the SHA-256 hashed text or PDF document from the decentralized/local document storage (PocketBase), and renders the highlighted target string. This ensures absolute reproducibility of all findings.
-            </p>
-          </div>
-        </section>
-
-        {/* Section 6: References */}
-        <section className={styles.methodologySection} style={{ borderTop: '1px solid var(--color-rule-strong)', paddingTop: '32px', marginTop: '64px' }}>
-          <h2 className="font-ui" style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-ink)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px' }}>
-            References & Standards
-          </h2>
-          <div className="font-body" style={{ fontSize: '13px', lineHeight: '1.75', color: 'var(--color-ink-muted)' }}>
-            <p style={{ marginBottom: '12px', textAlign: 'justify', textIndent: '-24px', paddingLeft: '24px' }}>
-              [1] Fazekas, M., Tóth, I. J., & King, L. P. (2016). Anatomy of grand corruption: A composite corruption risk index in public procurement. <em>International Journal of Public Administration</em>, 39(13), 1056-1070.
-            </p>
-            <p style={{ marginBottom: '12px', textAlign: 'justify', textIndent: '-24px', paddingLeft: '24px' }}>
-              [2] OECD. (2021). <em>Preventing Corruption in Public Procurement: Advisory Standards for Transparency and Auditability</em>. OECD Publishing.
-            </p>
-            <p style={{ marginBottom: '12px', textAlign: 'justify', textIndent: '-24px', paddingLeft: '24px' }}>
-              [3] Government Procurement Policy Board (GPPB). (2003). <em>Implementing Rules and Regulations of Republic Act No. 9184</em>. National Printing Office.
-            </p>
-            <p style={{ marginBottom: '12px', textAlign: 'justify', textIndent: '-24px', paddingLeft: '24px' }}>
-              [4] Commission on Audit (COA). (2020). <em>Guide on the Audit of Procurement Contracts and Financial Transactions</em>. Commonwealth Ave., Quezon City.
-            </p>
-            <p style={{ marginBottom: '12px', textAlign: 'justify', textIndent: '-24px', paddingLeft: '24px' }}>
-              [5] World Bank. (2018). <em>Procurement Guidance: Risk Mitigation and Detection of Collusive Tendering Patterns</em>. World Bank Group.
-            </p>
           </div>
         </section>
 
