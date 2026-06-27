@@ -11,7 +11,7 @@ export default function VeritasLogo({ size = 32, showText = false, animated = tr
   const scaleRatio = size / 32;
 
   return (
-    <div className={styles.logoWrapper} style={{ gap: `${8 * scaleRatio}px` }}>
+    <div className={styles.logoWrapper} style={{ gap: `${10 * scaleRatio}px` }}>
       <div 
         className={`${styles.logoIcon} ${animated ? styles.animateLogo : ''}`}
         style={{ width: `${size}px`, height: `${size}px` }}
@@ -23,21 +23,21 @@ export default function VeritasLogo({ size = 32, showText = false, animated = tr
           className={styles.svg}
         >
           <defs>
-            {/* Cyber Blue Gradient */}
-            <linearGradient id="cyberBlue" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00E676" /> {/* Neon green/truth */}
-              <stop offset="100%" stopColor="#00B0FF" /> {/* Vivid cyber blue */}
-            </linearGradient>
-            
-            {/* Neon Red/Orange Risk Gradient */}
-            <linearGradient id="neonRisk" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FF9838" /> {/* Neon orange */}
-              <stop offset="100%" stopColor="#FF4D5E" /> {/* Electric neon red */}
+            {/* Cyber Gradient: Blue to Green */}
+            <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#00B0FF" /> {/* Cyber Blue */}
+              <stop offset="100%" stopColor="#00E676" /> {/* Neon Green */}
             </linearGradient>
 
-            {/* Glow Filter */}
-            <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="1.5" result="blur" />
+            {/* Risk Gradient: Red to Orange */}
+            <linearGradient id="riskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FF4D5E" /> {/* Electric Red */}
+              <stop offset="100%" stopColor="#FF9838" /> {/* Neon Orange */}
+            </linearGradient>
+
+            {/* Premium Radial Glow */}
+            <filter id="premiumGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -45,54 +45,35 @@ export default function VeritasLogo({ size = 32, showText = false, animated = tr
             </filter>
           </defs>
 
-          {/* Outer Shield / Shield Trim */}
+          {/* Futuristic Minimalist "V" (Chevron Ribbon Concept) */}
+          {/* Left Ribbon Wing */}
           <path
-            d="M16 2L28 7V16C28 23.5 22.8 28.7 16 30C9.2 28.7 4 23.5 4 16V7L16 2Z"
-            stroke="url(#cyberBlue)"
-            strokeWidth="1.5"
+            d="M5 6L13.5 25.5C14.2 27.1 15.8 27.1 16.5 25.5L25 6"
+            stroke="url(#cyberGrad)"
+            strokeWidth="4"
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.25"
-            className={styles.shieldOutline}
+            filter="url(#premiumGlow)"
+            className={styles.chevronLeft}
           />
 
-          {/* Glowing Left Scale Plate (Statutory Rules) */}
-          <circle cx="9" cy="13" r="1.5" fill="url(#cyberBlue)" filter="url(#neonGlow)" />
-          <line x1="9" y1="13" x2="16" y2="9" stroke="url(#cyberBlue)" strokeWidth="1" strokeDasharray="1 1" />
-
-          {/* Glowing Right Scale Plate (AI Auditor / Risk) */}
-          <circle cx="23" cy="13" r="1.5" fill="url(#neonRisk)" filter="url(#neonGlow)" />
-          <line x1="23" y1="13" x2="16" y2="9" stroke="url(#neonRisk)" strokeWidth="1" strokeDasharray="1 1" />
-
-          {/* Main Balance Axis / Horizon line */}
-          <line x1="9" y1="9" x2="23" y2="9" stroke="url(#cyberBlue)" strokeWidth="1.5" strokeLinecap="round" />
-
-          {/* The Scale Pillar (Tower of Integrity) */}
+          {/* Overlapping Right Accent Ribbon (Truth/Risk balance) */}
           <path
-            d="M16 7V25"
-            stroke="url(#cyberBlue)"
-            strokeWidth="1.5"
+            d="M17.5 16.5L21.5 7.5"
+            stroke="url(#riskGrad)"
+            strokeWidth="3.5"
             strokeLinecap="round"
+            className={styles.chevronRight}
           />
-
-          {/* Outer Ring / Network Node Connectors */}
-          <path
-            d="M8 20C11 23 13 24 16 24C19 24 21 23 24 20"
-            stroke="url(#neonRisk)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            opacity="0.75"
-          />
-
-          {/* Sharp Geometric "V" (Veritas / Truth / Victory) */}
-          <path
-            d="M10 8L16 20L22 8"
-            stroke="url(#cyberBlue)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            filter="url(#neonGlow)"
-            className={styles.veritasV}
+          
+          {/* Center Audit Node */}
+          <circle 
+            cx="16" 
+            cy="15" 
+            r="1.8" 
+            fill="#F3F5F9" 
+            filter="url(#premiumGlow)"
+            className={styles.centerNode} 
           />
         </svg>
       </div>
@@ -100,10 +81,10 @@ export default function VeritasLogo({ size = 32, showText = false, animated = tr
       {showText && (
         <div className={styles.brandText}>
           <span className={`${styles.logoName} font-display`}>
-            VERITAS<span className={styles.accentDot}>.PH</span>
+            VERITAS<span className={styles.accentDot}>PH</span>
           </span>
           <span className={`${styles.logoTagline} font-ui`}>
-            PHILIPPINES PROCUREMENT TRANSPARENCY
+            Procurement Intelligence Platform
           </span>
         </div>
       )}

@@ -9,86 +9,72 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .svg {
   width: 100%;
   height: 100%;
-  overflow: visible;
 }
 
 .brandText {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .logoName {
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 800;
   color: var(--color-ink);
   letter-spacing: 0.08em;
   line-height: 1;
-  text-shadow: 0 0 20px rgba(0, 176, 255, 0.2);
-  transition: text-shadow 0.3s ease;
+  transition: color 0.3s ease;
 }
 
 .accentDot {
   color: var(--color-data-blue);
-  text-shadow: 0 0 10px rgba(0, 176, 255, 0.6);
+  font-weight: 900;
 }
 
 .logoTagline {
-  font-size: 8px;
-  letter-spacing: 0.16em;
+  font-size: 7.5px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-ink-muted);
-  font-weight: 500;
+  font-weight: 600;
+  margin-top: 2px;
 }
 
-/* Animations & Micro-interactions */
-.animateLogo:hover .veritasV {
-  animation: bounceScale 0.6s ease-in-out;
+/* Premium micro-animations */
+.chevronLeft, .chevronRight, .centerNode {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
 }
 
-.animateLogo:hover .shieldOutline {
-  stroke-dasharray: 100;
-  animation: drawOutline 1.2s ease forwards;
+/* Hover effects */
+.logoWrapper:hover .chevronLeft {
+  transform: translateY(-0.5px) scale(1.02);
 }
 
-@keyframes bounceScale {
-  0%, 100% {
-    transform: scale(1) translate(0, 0);
-  }
-  50% {
-    transform: scale(1.05) translate(0, -0.5px);
-  }
+.logoWrapper:hover .chevronRight {
+  transform: translateY(0.5px) translateX(-0.5px);
 }
 
-@keyframes drawOutline {
-  from {
-    stroke-dashoffset: 100;
-    opacity: 0.25;
-  }
-  50% {
-    opacity: 0.8;
-  }
-  to {
-    stroke-dashoffset: 0;
-    opacity: 0.25;
-  }
+.logoWrapper:hover .centerNode {
+  transform: scale(1.15);
+  fill: var(--color-data-blue);
 }
 
 /* Continuous breathing glow animation for the whole icon */
 .animateLogo {
-  animation: breathingGlow 3s ease-in-out infinite;
+  animation: breathingGlow 4s ease-in-out infinite;
 }
 
 @keyframes breathingGlow {
   0%, 100% {
-    filter: drop-shadow(0 0 2px rgba(0, 176, 255, 0.15)) drop-shadow(0 0 6px rgba(0, 176, 255, 0.05));
+    filter: drop-shadow(0 0 1px rgba(0, 176, 255, 0.1)) drop-shadow(0 0 4px rgba(0, 176, 255, 0.03));
   }
   50% {
-    filter: drop-shadow(0 0 6px rgba(0, 176, 255, 0.35)) drop-shadow(0 0 12px rgba(0, 176, 255, 0.15));
+    filter: drop-shadow(0 0 4px rgba(0, 176, 255, 0.25)) drop-shadow(0 0 8px rgba(0, 176, 255, 0.1));
   }
 }
