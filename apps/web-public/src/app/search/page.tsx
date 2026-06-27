@@ -158,28 +158,6 @@ export default function SearchPage() {
 
   return (
     <div>
-      {/* ── Header ──────────────────────────────────────────── */}
-      <header className={styles.siteHeader}>
-        <div className={styles.topbar}>
-          <Link href="/" className={styles.siteLogo}>
-            <span className={`${styles.logoName} font-display`}>Veritas</span>
-            <span className={`${styles.logoTagline} font-ui`}>
-              Philippines Procurement Transparency
-            </span>
-          </Link>
-        </div>
-        <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
-            <Link
-              key={item}
-              href={`/${item.toLowerCase()}`}
-              className={`${styles.navLink} ${item === 'Cases' ? styles.navActive : ''} font-ui`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
-      </header>
 
       <main className={styles.pageContent}>
         {/* ── Page Title ──────────────────────────────────── */}
@@ -313,11 +291,6 @@ export default function SearchPage() {
           )}
         </div>
 
-        {/* ── Disclaimer ──────────────────────────────────── */}
-        <footer className={`${styles.disclaimer} font-ui`}>
-          All data sourced from public Philippine government records. Risk signals are anomaly
-          indicators, not legal determinations. Human review is required before any publication.
-        </footer>
       </main>
     </div>
   );

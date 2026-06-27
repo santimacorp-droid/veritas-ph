@@ -52,28 +52,6 @@ export default async function AgenciesPage() {
 
   return (
     <div>
-      {/* ── Header ──────────────────────────────────────────── */}
-      <header className={styles.siteHeader}>
-        <div className={styles.topbar}>
-          <Link href="/" className={styles.siteLogo}>
-            <span className={`${styles.logoName} font-display`}>Veritas</span>
-            <span className={`${styles.logoTagline} font-ui`}>
-              Philippines Procurement Transparency
-            </span>
-          </Link>
-        </div>
-        <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
-            <Link
-              key={item}
-              href={`/${item.toLowerCase()}`}
-              className={`${styles.navLink} ${item === 'Agencies' ? styles.navActive : ''} font-ui`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
-      </header>
 
       <main className={styles.pageContent}>
         {/* Page Head */}
@@ -145,10 +123,6 @@ export default async function AgenciesPage() {
           </table>
         </div>
 
-        <footer className={`${styles.disclaimer} font-ui`}>
-          All data sourced from public Philippine government records. Risk scores are
-          statistical anomaly indicators, not assessments of misconduct.
-        </footer>
       </main>
     </div>
   );

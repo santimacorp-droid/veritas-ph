@@ -79,24 +79,27 @@ export default async function Home() {
 
   return (
     <main className={styles.main}>
-      <header className={styles.header}>
-        <div className={styles.wordmark}>
-          <h1 className={`${styles.wordmarkTitle} font-display`}>VERITAS</h1>
-          <p className={`${styles.wordmarkSub} font-ui`}>
-            Philippines Procurement Transparency
+      <section className={styles.heroSection}>
+        <div className={styles.heroContent}>
+          <h1 className={`${styles.heroTitle} font-display`}>
+            Evidence-First <span className={styles.highlight}>Procurement Intelligence</span>
+          </h1>
+          <p className={`${styles.heroDesc} font-body`}>
+            Veritas automatically audits public bidding registries, tracks agency spend overruns, and extracts legislative loopholes to expose transparency anomalies in the Philippines.
           </p>
+          <div className={styles.searchBox}>
+            <form action="/search" method="GET" className={styles.searchForm}>
+              <input 
+                type="text" 
+                name="q" 
+                placeholder="Search by supplier name, procuring agency, or case title..." 
+                className={`${styles.heroSearchInput} font-body`}
+              />
+              <button type="submit" className={`${styles.heroSearchBtn} font-ui`}>Search Registry</button>
+            </form>
+          </div>
         </div>
-        <nav className={styles.nav}>
-          <Link href="/search" className={`${styles.navLink} font-ui`}>Search</Link>
-          <Link href="/cases" className={`${styles.navLink} font-ui`}>Cases</Link>
-          <Link href="/agencies" className={`${styles.navLink} font-ui`}>Agencies</Link>
-          <Link href="/suppliers" className={`${styles.navLink} font-ui`}>Suppliers</Link>
-          <Link href="/scorecard" className={`${styles.navLink} font-ui`}>Scorecard</Link>
-          <Link href="/map" className={`${styles.navLink} font-ui`}>Map</Link>
-          <Link href="/laws" className={`${styles.navLink} font-ui`}>Laws</Link>
-          <Link href="/about" className={`${styles.navLink} font-ui`}>About</Link>
-        </nav>
-      </header>
+      </section>
 
       <section className={styles.statsBar}>
         <div className={`${styles.stat} font-mono`}>

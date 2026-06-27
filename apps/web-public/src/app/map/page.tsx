@@ -207,28 +207,6 @@ export default function MapPage() {
 
   return (
     <div className={styles.pageShell}>
-      {/* Header */}
-      <header className={styles.siteHeader}>
-        <div className={styles.topbar}>
-          <Link href="/" className={styles.siteLogo}>
-            <span className={`${styles.logoName} font-display`}>Veritas</span>
-            <span className={`${styles.logoTagline} font-ui`}>
-              Philippines Procurement Transparency
-            </span>
-          </Link>
-        </div>
-        <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology', 'About'].map((item) => (
-            <Link
-              key={item}
-              href={`/${item.toLowerCase() === 'scorecard' ? 'scorecard' : item.toLowerCase() === 'map' ? 'map' : item.toLowerCase()}`}
-              className={`${styles.navLink} ${item === 'Map' ? styles.navActive : ''} font-ui`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
-      </header>
 
       {/* Main Layout Container */}
       <div className={styles.contentWrap}>

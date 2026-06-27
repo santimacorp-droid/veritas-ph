@@ -64,28 +64,6 @@ export default async function ScorecardPage({
 
   return (
     <div>
-      {/* Header */}
-      <header className={styles.siteHeader}>
-        <div className={styles.topbar}>
-          <Link href="/" className={styles.siteLogo}>
-            <span className={`${styles.logoName} font-display`}>Veritas</span>
-            <span className={`${styles.logoTagline} font-ui`}>
-              Philippines Procurement Transparency
-            </span>
-          </Link>
-        </div>
-        <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology', 'About'].map((item) => (
-            <Link
-              key={item}
-              href={`/${item.toLowerCase() === 'scorecard' ? 'scorecard' : item.toLowerCase() === 'map' ? 'map' : item.toLowerCase()}`}
-              className={`${styles.navLink} ${item === 'Scorecard' ? styles.navActive : ''} font-ui`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
-      </header>
 
       <main className={styles.pageContent}>
         {/* Page Head */}
@@ -212,9 +190,6 @@ export default async function ScorecardPage({
           </table>
         </div>
 
-        <footer className={`${styles.disclaimer} font-ui`}>
-          Disclaimer: Veritas is an educational, evidence-first audit helper. Anomaly signals and risk scores represent statistical flags (such as timeline compression or single-bid bidding patterns) and do not constitute legal proof of corruption.
-        </footer>
       </main>
     </div>
   );

@@ -6,53 +6,100 @@
   padding: 0 var(--space-6, 24px) var(--space-16, 64px);
 }
 
-/* ── Header ─────────────────────────────────────────────── */
-.header {
+/* ── Hero Section ───────────────────────────────────────── */
+.heroSection {
+  padding: 80px 0 48px;
+  text-align: center;
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 32px 0 20px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   border-bottom: 1px solid var(--color-rule);
-  gap: 24px;
-  flex-wrap: wrap;
 }
 
-.wordmark { display: flex; flex-direction: column; gap: 4px; }
+.heroContent {
+  max-width: 720px;
+}
 
-.wordmarkTitle {
-  font-size: 32px;
+.heroTitle {
+  font-size: 40px;
   font-weight: 800;
+  line-height: 1.15;
   letter-spacing: -0.02em;
-  margin: 0;
-  background: linear-gradient(135deg, #FFF 30%, var(--color-data-blue) 100%);
+  margin-bottom: 16px;
+  color: var(--color-ink);
+}
+
+.highlight {
+  background: linear-gradient(135deg, var(--color-data-blue) 0%, #00E676 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  display: inline-block;
 }
 
-.wordmarkSub {
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+.heroDesc {
+  font-size: 15px;
+  color: var(--color-ink-secondary);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.searchBox {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.searchForm {
+  display: flex;
+  gap: 8px;
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-rule-strong);
+  padding: 6px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.searchForm:focus-within {
+  border-color: var(--color-data-blue);
+  box-shadow: 0 0 16px rgba(0, 176, 255, 0.15);
+}
+
+.heroSearchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 10px 16px;
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.heroSearchInput::placeholder {
   color: var(--color-ink-muted);
-  margin: 0;
 }
 
-.nav { display: flex; gap: 20px; align-items: center; }
-
-.navLink {
+.heroSearchBtn {
+  background: var(--color-data-blue);
+  color: #08090C;
+  border: none;
+  outline: none;
+  padding: 0 20px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--color-ink-secondary);
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  transition: color 150ms ease, background 150ms ease;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 100ms ease;
 }
-.navLink:hover {
-  color: var(--color-ink);
-  background: var(--color-paper-darker);
+
+.heroSearchBtn:hover {
+  opacity: 0.9;
+}
+.heroSearchBtn:active {
+  transform: scale(0.98);
 }
 
 /* ── Stats Bar ──────────────────────────────────────────── */

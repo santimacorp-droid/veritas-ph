@@ -36,27 +36,6 @@ export default async function SuppliersPage() {
 
   return (
     <div>
-      <header className={styles.siteHeader}>
-        <div className={styles.topbar}>
-          <Link href="/" className={styles.siteLogo}>
-            <span className={`${styles.logoName} font-display`}>Veritas</span>
-            <span className={`${styles.logoTagline} font-ui`}>
-              Philippines Procurement Transparency
-            </span>
-          </Link>
-        </div>
-        <nav className={styles.navStrip}>
-          {['Cases', 'Agencies', 'Suppliers', 'Scorecard', 'Map', 'Laws', 'Methodology'].map((item) => (
-            <Link
-              key={item}
-              href={`/${item.toLowerCase()}`}
-              className={`${styles.navLink} ${item === 'Suppliers' ? styles.navActive : ''} font-ui`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
-      </header>
 
       <main className={styles.pageContent}>
         <div className={styles.pageHead}>
@@ -120,9 +99,6 @@ export default async function SuppliersPage() {
           </table>
         </div>
 
-        <footer className={`${styles.disclaimer} font-ui`}>
-          Supplier profiles aggregate only publicly visible awards already ingested into Veritas.
-        </footer>
       </main>
     </div>
   );
