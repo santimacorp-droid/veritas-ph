@@ -1,15 +1,14 @@
-import hashlib
-import os
 import asyncio
+import hashlib
 import urllib.robotparser
 from urllib.parse import urlparse
 from uuid import uuid4
 
 import structlog
-from playwright.async_api import async_playwright
 from database import async_session_maker
+from playwright.async_api import async_playwright
 from sqlalchemy import text
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 logger = structlog.get_logger()
 
@@ -23,7 +22,12 @@ logger = structlog.get_logger()
 async def fetch_page_content_simple(url: str) -> str:
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
-        page = await browser.new_page()
+        context = await browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080}
+        )
+        page = await context.new_page()
+        await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         await page.goto(url, timeout=30000)
         text_result = await page.inner_text("body")
         await browser.close()
@@ -134,9 +138,14 @@ async def fetch_sources():
             discovered_count = 0
             try:
                 async with async_playwright() as p:
-                    logger.info("Launching headless Chromium...")
+                    logger.info("Launching headless Chromium with stealth profile...")
                     browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
-                    page = await browser.new_page()
+                    context = await browser.new_context(
+                        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                        viewport={"width": 1920, "height": 1080}
+                    )
+                    page = await context.new_page()
+                    await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
                     logger.info(f"Navigating to source URL: {target_url}")
                     await asyncio.sleep(1.0) # Rate limiting
@@ -220,7 +229,7 @@ async def fetch_sources():
                         logger.info(f"Generic crawl found {len(links)} links for {source_id}")
                         async with async_session_maker() as db:
                             discovered_count = 0
-                            for title, href in links[:5]:
+                            for _title, href in links[:5]:
                                 result = await db.execute(
                                     text("SELECT document_id, sha256_hash, storage_path FROM documents WHERE source_url = :href"),
                                     {"href": href}
@@ -292,8 +301,13 @@ async def download_document(document_id: str):
         async def fetch_page_content(url: str) -> str:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
-                page = await browser.new_page()
-                logger.info("Loading notice detail page...", url=url)
+                context = await browser.new_context(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                    viewport={"width": 1920, "height": 1080}
+                )
+                page = await context.new_page()
+                await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                logger.info("Loading notice detail page with stealth profile...", url=url)
                 await asyncio.sleep(1.0) # Rate limiting
                 await page.goto(url, timeout=30000)
                 # Extract inner text of the body
@@ -323,7 +337,7 @@ async def download_document(document_id: str):
                     {"hash": new_hash, "size": len(text_bytes), "did": document_id}
                 )
                 await db.commit()
-            except Exception as e:
+            except Exception:
                 # E.g. sqlalchemy.exc.IntegrityError in case of hash clash
                 await db.rollback()
                 logger.warning(
