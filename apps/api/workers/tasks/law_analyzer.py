@@ -92,7 +92,7 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
         await db.commit()
 
         # 1. Fetch law details
-        law_sql = text("SELECT title, short_title, description FROM laws WHERE law_id = :id")
+        law_sql = text("SELECT title, short_title, description, author, sponsor, approved_by, date_passed FROM laws WHERE law_id = :id")
         law_res = await db.execute(law_sql, {"id": law_id})
         law_row = law_res.mappings().first()
         if not law_row:
@@ -126,6 +126,17 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
         law_context = f"Law Title: {law_row['title']}\n"
         if law_row['short_title']:
             law_context += f"Short Title: {law_row['short_title']}\n"
+        
+        # Include metadata in AI context
+        if law_row.get('author'):
+            law_context += f"Author(s): {law_row['author']}\n"
+        if law_row.get('sponsor'):
+            law_context += f"Sponsor(s): {law_row['sponsor']}\n"
+        if law_row.get('approved_by'):
+            law_context += f"Approved By: {law_row['approved_by']}\n"
+        if law_row.get('date_passed'):
+            law_context += f"Date Passed: {law_row['date_passed']}\n"
+
         law_context += f"Overview: {law_row['description'] or ''}\n\n"
         
         law_context += "=== PROVISIONS ===\n"
@@ -140,6 +151,7 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
         prompt = f"""
 Analyze the following Philippine law and produce a structured assessment JSON object.
 Ensure your analysis is comprehensive, legal-expert grade, and citizen-friendly.
+Specifically evaluate the role of the Authors, Sponsors, Approvers, and the Voting/Approval Timeline for potential conflicts of interest, lobbying influence, or compromised oversight, and document these findings in your pros/cons, loopholes, or citizen summary as applicable.
 
 {law_context}
 
