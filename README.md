@@ -1,51 +1,84 @@
 # ⚖️ Veritas — Philippines Procurement Transparency Platform
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<div align="center">
+
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://opensource.org/licenses/AGPL-3.0)
 [![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![Node: 20+](https://img.shields.io/badge/Node-20+-green.svg)](https://nodejs.org)
 [![Framework: FastAPI](https://img.shields.io/badge/Framework-FastAPI-009688.svg)](https://fastapi.tiangolo.com)
 [![Framework: Next.js](https://img.shields.io/badge/Framework-Next.js-black.svg)](https://nextjs.org)
+[![Database: PostgreSQL/Supabase](https://img.shields.io/badge/Database-PostgreSQL%2F%20Supabase-31859C.svg)](https://supabase.com)
 
-> **"Evidence before narrative. Every flag is explainable. Every claim is traceable."**
+**"Evidence before narrative. Every flag is explainable. Every claim is traceable."**
 
-Veritas is an open-source, evidence-first procurement intelligence platform that collects, normalizes, and cross-links public government documents (PhilGEPS, COA, DBM, GPPB) in the Philippines. It implements statutory auditing formulas, statistical risk models, and legislative AI scoring to surface procurement anomalies, assisting journalists, civil society watchdogs, and citizens in monitoring government contracts.
+*Veritas is a community-driven, open-source civic technology platform for public procurement auditing and legislative transparency in the Philippines.*
 
-**Veritas does not accuse. It surfaces anomalies and lets humans decide.**
+[Key Features](#-key-features) • [Architecture](#-system-architecture) • [Quick Start](#-quick-start) • [Audit Rules](#-procurement-anomaly-engine-14-audit-rules) • [Math Models](#-case-risk-scoring--math-models) • [License](#-license)
+
+</div>
+
+---
+
+Veritas acts as an **evidence-first intelligence pipeline**. It automatically ingests, normalizes, and cross-links public government documents (PhilGEPS opportunities, COA Annual Audit Reports, DBM circulars, and GPPB laws). By combining rule-based statutory checks, statistical risk modeling, and LLM-driven legislative vulnerability analysis, Veritas surfaces risks for civil society watchdogs, investigative journalists, and public administrators.
+
+> [!NOTE]
+> **Veritas does not accuse.** It detects statistical anomalies, highlights statutory deviations, and provides absolute traceability back to official documents, leaving final determinations to human reviewers.
+
+---
+
+## 🚀 Key Features
+
+* **Upstream Legislative Auditing:** Evaluates legal texts (Republic Acts, IRR) for vulnerabilities, outputting an **Integrity Index** and **Oversight Score** based on ambiguous scopes or mandated civil society observers.
+* **Downstream Procurement Auditing:** Scans active bids and tenders using **14 specialized mathematical checks** aligned with the Government Procurement Reform Act (**RA 9184**) and the New Government Procurement Act (**RA 12009**).
+* **Traceable Visual Provenance:** Anchors extracted data points directly to specific coordinates `[page_number, char_start, char_end]` on SHA256-hashed source documents.
+* **Citizen Portal & Analyst Console:** Next.js portals offering public discovery of procurement risks alongside a secure workspace for civil society annotations and audits.
 
 ---
 
 ## 🗺️ System Architecture
 
-Veritas follows a phased data lifecycle: **Ingest → Extract → Link → Risk Engine → Audit → Disclosure**.
-
 ```mermaid
 graph TD
+    classDef layer fill:#f9f9f9,stroke:#333,stroke-width:1px;
+    classDef db fill:#e1f5fe,stroke:#0288d1,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef worker fill:#fff3e0,stroke:#f57c00,stroke-width:1px;
+
+    subgraph Sources [Government Portals & Legal Indices]
+        PhilGEPS[PhilGEPS Portals]
+        ELib[Judiciary E-Library]
+        Lawphil[Lawphil.net]
+    end
+
     subgraph Ingestion [1. Ingestion Layer]
-        Crawler[Crawler Worker] --> Docs[(PocketBase Storage)]
-        Crawler --> Metadata[(SQLite / Postgres)]
+        Crawler[Crawler Worker]:::worker --> Docs[PocketBase Doc Storage]:::db
+        Crawler --> MetadataDB[(Supabase / SQLite)]:::db
     end
 
     subgraph Processing [2. Processing Pipeline]
-        Extractor[Extractor Worker] --> Docs
-        Extractor --> Extractions[(JSONB Schema)]
-        Linker[Linker Worker] --> Extractions
-        Linker --> CrossRefs[(Entity Resolution Graph)]
+        Extractor[Extractor Worker]:::worker --> Docs
+        Extractor --> Extractions[(JSONB Extracted Schema)]:::db
+        Linker[Linker Worker]:::worker --> Extractions
+        Linker --> CrossRefs[(Entity Resolution Graph)]:::db
     end
 
     subgraph Risk [3. Audit Engine]
-        RiskEngine[Risk Engine] --> Extractions
-        RiskEngine --> Discrepancies[(Discrepancies Table)]
+        RiskEngine[Risk Engine]:::worker --> Extractions
+        RiskEngine --> Discrepancies[(Discrepancies Table)]:::db
+        LawAnalyzer[AI Law Auditor]:::worker --> MetadataDB
     end
 
     subgraph API [4. Gateway Layer]
-        FastAPI[FastAPI Backend] --> SQLite[(Database)]
+        FastAPI[FastAPI Backend] --> MetadataDB
         FastAPI --> Docs
     end
 
     subgraph UI [5. Frontend Layer]
-        PublicWeb[Public Citizen Next.js] --> FastAPI
-        AnalystWeb[Analyst Console Next.js] --> FastAPI
+        PublicWeb[Citizen Next.js Portal] --> FastAPI
+        AnalystWeb[Analyst Admin Console] --> FastAPI
     end
+
+    Sources --> Crawler
+    class Ingestion,Processing,Risk,API,UI layer;
 ```
 
 ### 📁 Repository Layout
@@ -53,118 +86,105 @@ graph TD
 veritas-ph/
 ├── apps/
 │   ├── web-public/         # Next.js citizen portal (Port 3005)
-│   ├── web-analyst/        # Next.js analyst console (Port 3001)
-│   └── api/                # FastAPI backend + Alembic migrations (Port 8000)
+│   ├── web-analyst/        # Next.js analyst workspace (Port 3001)
+│   └── api/                # FastAPI backend + crawler tasks (Port 8000)
 ├── packages/
-│   ├── config/             # Shared ESLint, TS configs
-│   ├── types/              # Shared TypeScript definitions
-│   └── ui/                 # Reusable UI component library (Citations, Badges)
-├── pb_bin/                 # PocketBase local server binary (Document Store)
+│   ├── config/             # Shared ESLint, TS, and Prettier configurations
+│   ├── types/              # Unified TypeScript definitions (Discrepancy, Law)
+│   └── ui/                 # Shared UI badges, indicators, and citation components
+├── pb_bin/                 # PocketBase binary directory (Document store)
 ├── pb_data/                # PocketBase local files & document storage
-├── docs/                   # System design, legal standards, and architectural blueprints
-├── Makefile                # Master automation script
-├── pyproject.toml          # Python package config (Ruff/Pytest settings)
-└── package.json            # npm workspaces root
+├── docs/                   # Architectural blueprints and legal standards
+└── Makefile                # Master automation script
 ```
 
 ---
 
-## ⚡ Zero-Docker Quick Start
+## ⚡ Quick Start
 
-Veritas features a **Zero-Docker development environment** designed for light, fast local runs using SQLite and PocketBase.
+Veritas is designed with a **Zero-Docker development loop** for fast, native local execution using SQLite and PocketBase.
 
-### 1. Prerequisites
-Ensure you have the following installed on your host system:
-* **Python 3.11+**
-* **Node.js 20+** and `npm`
-
-### 2. Setup & Installation
-Run the master installer from the root directory to set up both Node workspaces and the Python virtual environment (`.venv_linux`):
+### 1. Setup & Installation
+Ensure you have **Python 3.11+** and **Node.js 20+** on your system. Install all node workspaces and Python virtual dependencies with:
 ```bash
 make install
 ```
 
-### 3. Initialize PocketBase (Document Store)
-Download and configure PocketBase as a local filesystem document store:
+### 2. Configure PocketBase (Local Document Store)
+Download and set up the local document storage server:
 ```bash
 make pb-install
 ```
 
-### 4. Database Setup & Seeding
-Initialize the SQLite database and seed the government agency registry, controversial laws, and mock case records:
+### 3. Initialize & Seed Database
+Configure local SQLite tables and seed them with government agency registries, controversial laws, and mock case records:
 ```bash
 make init-db
 ```
 
-### 5. Launch All Services (Development)
-Run all backend, worker, and frontend services concurrently in one terminal window:
+### 4. Run Development Workspace
+Concurrently launch the FastAPI backend, the background worker processes, and both Next.js applications in a unified workspace:
 ```bash
 make dev
 ```
-Once launched, the services will run at:
-* 🌐 **Public Citizen Portal:** [http://localhost:3005](http://localhost:3005)
-* 💼 **Analyst Admin Console:** [http://localhost:3001](http://localhost:3001)
-* ⚙️ **FastAPI REST API:** [http://localhost:8000](http://localhost:8000)
-* 📘 **API Documentation:** [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+Access the services at:
+* 🌐 **Citizen Portal:** [http://localhost:3005](http://localhost:3005)
+* 💼 **Analyst Workspace:** [http://localhost:3001](http://localhost:3001)
+* ⚙️ **FastAPI Gateway:** [http://localhost:8000](http://localhost:8000)
+* 📘 **Swagger UI API Docs:** [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
 * 📦 **PocketBase Admin:** [http://localhost:8090/_/](http://localhost:8090/_/)
 
 ---
 
 ## 🔍 Procurement Anomaly Engine (14 Audit Rules)
 
-Veritas runs fourteen specialized mathematical audits on every contract award and tender notice to detect anomalies corresponding to the Philippine Government Procurement Reform Act (**RA 9184**) and the New Government Procurement Act (**RA 12009**).
+Veritas runs fourteen specialized compliance and statistical audits on every contract award and tender notice.
 
-| Rule ID | Name | Severity | Risk Type | Formula / Logic | Statutory Reference |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **RULE-001** | Single Bidder on High-Value Contract | High | Competition | `Bidders == 1` AND `Contract Value >= 10M PHP` | RA 9184 Sec. 36 |
-| **RULE-002** | Potential Budget Splitting | High | Financial | Multiple SVP/Shopping awards by same Agency & Category within $\pm30$ days exceeding $1\text{M PHP}$ total | RA 9184 Sec. 54.1 & COA Guidelines |
-| **RULE-003** | Short Posting Window | Medium | Procedural | `Notice Window < Minimum Posting Days` (e.g., <20 days public bidding) | RA 9184 Sec. 21.2.1 |
-| **RULE-004** | Award-to-Budget Overshoot | High | Financial | `Award Value > Planned ABC * 1.20` | RA 9184 Sec. 31 (ABC ceiling) |
-| **RULE-005** | Variation Order Abuse | High | Financial | Cumulative amendments/variations $> 10\%$ of original contract | RA 9184 Annex E Sec. 1.3 |
-| **RULE-006** | APP-Tender Mismatch | Medium | Transparency | `Count(linked_app_items) == 0` | RA 9184 Sec. 7.2 |
-| **RULE-007** | Unrelated Supplier Win | High | Competition | Supplier wins contract completely outside of registered specialized sectors | RA 9184 Sec. 23 |
-| **RULE-008** | Late Notice to Proceed (NTP) | Medium | Timeline | `NTP Date - Award Date > 15 days` OR `NTP Date < Award Date` | RA 9184 Sec. 37.4.1 |
-| **RULE-009** | Missing Bid Abstract | High | Transparency | `Has Award == True` AND `Count(Abstract Docs) == 0` | RA 9184 Sec. 37 |
-| **RULE-010** | Active COA Audit Findings | Medium | Compliance | Agency has unresolved COA findings for the award's fiscal year | 1987 Constitution Art. IX-D |
-| **RULE-011** | Award Before Bid Deadline | Critical | Timeline | `Award Date < Bid Closing Deadline` | RA 9184 Sec. 37 |
-| **RULE-012** | HHI Market Concentration Anomaly | High | Competition | Sector Herfindahl-Hirschman Index $HHI > 2500$ (indicating potential cartels) | RA 10667 (Competition Act) |
-| **RULE-013** | Price Benchmark Anomaly | High | Financial | `Unit Price > Historical Mean + 2 * StdDev` | COA Value-for-Money Audits |
-| **RULE-014** | Geographic Mismatch | Medium | Compliance | Project location is outside the contractor's registered license regions | PCAB Accreditation Rules |
+| Rule ID | Anomaly / Check | Severity | Risk Dimension | Statutory / Auditing Reference |
+| :--- | :--- | :--- | :--- | :--- |
+| **RULE-001** | Single Bidder on High-Value Contract | High | Competition | RA 9184 Sec. 36 (requires active market pricing) |
+| **RULE-002** | Potential Budget Splitting / Alternative Overuse | High | Financial | RA 9184 Sec. 54.1 & COA Guidelines (bypassing public bidding) |
+| **RULE-003** | Short Posting Window | Medium | Procedural | RA 9184 Sec. 21.2.1 (minimum advertisement calendar days) |
+| **RULE-004** | Award-to-Budget Overshoot | High | Financial | RA 9184 Sec. 31 (ABC serves as absolute bid ceiling) |
+| **RULE-005** | Variation Order Abuse | High | Financial | RA 9184 Annex E Sec. 1.3 (max 10% contract value modification) |
+| **RULE-006** | APP-Tender Mismatch | Medium | Transparency | RA 9184 Sec. 7.2 (procurement must align with approved APP) |
+| **RULE-007** | Unrelated Supplier Win | High | Competition | RA 9184 Sec. 23 (requires matching specialized business licenses) |
+| **RULE-008** | Late Notice to Proceed (NTP) | Medium | Timeline | RA 9184 Sec. 37.4.1 (NTP must issue within 7 days of approval) |
+| **RULE-009** | Missing Bid Abstract | High | Transparency | RA 9184 Sec. 37 (requires publication of evaluation totals) |
+| **RULE-010** | Active COA Audit Findings | Medium | Compliance | 1987 Philippine Constitution Art. IX-D (COA report cross-ref) |
+| **RULE-011** | Award Before Bid Deadline | Critical | Timeline | RA 9184 Sec. 37 (award can only occur post bid-qualification) |
+| **RULE-012** | HHI Market Concentration Anomaly | High | Competition | RA 10667 Competition Act (monopoly / collusive cartel patterns) |
+| **RULE-013** | Price Benchmark Anomaly | High | Financial | COA Value-for-Money Audits (outlier unit pricing against benchmarks) |
+| **RULE-014** | Geographic Mismatch | Medium | Compliance | PCAB Accreditation Rules (contractor regional address mismatch) |
 
 ---
 
 ## ⚖️ Case Risk Scoring & Math Models
 
 ### 1. Weighted Severity Scoring
-Instead of simply counting anomalies, Veritas weights flags by severity using a standard **weighted severity scoring model** ($R$):
+Veritas aggregates anomalies into a combined risk index ($R$) bounded between $0.0$ and $1.0$:
 
 $$R = \min\left(1.0, \sum W_i\right)$$
 
-Where the discrepancy weights ($W_i$) are defined as:
-* 🛑 **Critical** ($W = 1.0$): Severe statutory violations (e.g., *Award Before Bid Deadline*). If any Critical rule triggers, the final risk score is **hard-constrained to $\ge 0.80$**.
-* 🟠 **High** ($W = 0.6$): Major competition/budget flags (e.g., *Budget Splitting*).
-* 🟡 **Medium** ($W = 0.3$): Procedural/timeline deviations (e.g., *Short Posting Window*).
-* 🔵 **Low** ($W = 0.1$): Minor timeline delays.
+Where discrepancy severity weights ($W_i$) are defined as:
+* 🛑 **Critical** ($W_i = 1.0$): Hard-constrains case risk to $\ge 0.80$ (e.g., *Award Before Bid Deadline*).
+* 🟠 **High** ($W_i = 0.6$): Severe competition/financial checks (e.g., *Budget Splitting*).
+* 🟡 **Medium** ($W_i = 0.3$): Timeline or compliance deviations (e.g., *Short Posting Window*).
+* 🔵 **Low** ($W_i = 0.1$): Minor record inconsistencies.
 
 ### 2. Five-Dimensional Risk Vector ($V_{\text{risk}}$)
-Every dossier records a risk profile component vector mapping specific compliance paths:
+Every case maps to a risk vector indicating specific compliance vulnerabilities:
 
 $$V_{\text{risk}} = [C_{\text{comp}}, C_{\text{time}}, C_{\text{fin}}, C_{\text{trans}}, C_{\text{compl}}]$$
-
-* **Competition ($C_{\text{comp}}$)** = $\max(\text{RULE-001}, \text{RULE-007}, \text{RULE-012})$
-* **Timeline ($C_{\text{time}}$)** = $\max(\text{RULE-003}, \text{RULE-008}, \text{RULE-011})$
-* **Financial ($C_{\text{fin}}$)** = $\max(\text{RULE-002}, \text{RULE-004}, \text{RULE-005}, \text{RULE-013})$
-* **Transparency ($C_{\text{trans}}$)** = $\max(\text{RULE-006}, \text{RULE-009})$
-* **Compliance ($C_{\text{compl}}$)** = $\max(\text{RULE-010}, \text{RULE-014})$
 
 ---
 
 ## 📜 Legislative Vulnerability Auditing (AI Engine)
 
-To audit vulnerabilities upstream in legal texts, Veritas utilizes Large Language Models (DeepSeek V3 / GPT-4o-mini) to scan, classify, and score statutory loopholes.
+Upstream statutory vulnerabilities are evaluated by scanning legal texts (Republic Acts and IRRs) for loopholes.
 
 ### Integrity Index ($I_L$)
-Evaluates the statutory tightness of the law. Discretionary exemption clauses or ambiguous scopes reduce the index:
+Measures the statutory tighteness of a law. Loopholes and vague exceptions decrease the index:
 
 $$I_L = 100 - \sum \text{Vulnerability\_Weight}_i$$
 
@@ -174,7 +194,7 @@ $$I_L = 100 - \sum \text{Vulnerability\_Weight}_i$$
 * **Low Vulnerability** ($-3$)
 
 ### Oversight Score ($O_L$)
-Evaluates monitoring mechanisms, transparency obligations, CS observer presence, and penalties:
+Measures the transparency, monitoring, and penalty clauses mandated by the statute:
 
 $$O_L = \sum \text{Oversight\_Factor}_j$$
 
@@ -185,32 +205,11 @@ $$O_L = \sum \text{Oversight\_Factor}_j$$
 
 ---
 
-## 🛠️ Makefile Reference
-
-| Target | Description |
-| :--- | :--- |
-| `make install` | Installs npm workspaces and Python pip packages inside `.venv_linux` |
-| `make pb-install` | Downloads and installs the PocketBase binary under `./pb_bin` |
-| `make pb-start` | Starts PocketBase service locally on port 8090 |
-| `make init-db` | Configures and seeds local SQLite database schemas |
-| `make api` | Launches backend FastAPI web server with reload flag |
-| `make worker` | Runs the Python ingestion, extraction, and linking worker processes |
-| `make dev` | Concurrently launches API, background worker, and both Next.js applications |
-| `make test` | Executes the entire pytest suite |
-| `make lint` | Validates styles using Ruff (Python) and ESLint (JS/TS) |
-| `make format` | Reformats Python source code using Ruff |
-
----
-
-## 🛡️ Guiding Principles
-
-1. **Evidence Before Narrative**: We never auto-accuse. Veritas highlights discrepancy patterns and lets human journalists and investigators trace them.
-2. **Immutable Provenance**: Every extraction is linked to coordinates `[page, char_start, char_end]` on a hashed, immutable source document.
-3. **Public Data Only**: We strictly ingest public files. No unverified leaks or non-public personal information.
-4. **Explainable Audits**: Every flag fires with explainable metadata (`why_fired`, thresholds, rules applied).
-5. **Human in the Loop**: Analysts review, annotate, and verify all cases prior to publishing dossiers to the citizen portal.
-
----
-
 ## 📄 License
-This repository is licensed under the **MIT License**. See [LICENSE](file:///media/santima/Storage/Projects/veritas-ph/LICENSE) for details.
+
+Veritas is licensed under the **GNU Affero General Public License v3 (AGPL-3.0)**. 
+
+### Why AGPL-3.0?
+Veritas is civic-tech software meant for public good, accountability, and transparency. The AGPL-3.0 license protects this mission by ensuring that **any modifications or enhancements made to Veritas—even if run purely as a cloud/web service—must be released as open-source code under the same license**. This prevents proprietary closed forks and ensures the community's work remains public forever.
+
+For details, see the [LICENSE](LICENSE) file.
