@@ -241,10 +241,6 @@ export default async function CasesPage({
           </table>
         </div>
 
-        <footer className={`${styles.disclaimer} font-ui`}>
-          Cases are listed from public records only. Flags shown elsewhere in Veritas are
-          audit anomaly indicators and not legal determinations.
-        </footer>
       </main>
     </div>
   );
