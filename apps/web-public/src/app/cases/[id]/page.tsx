@@ -250,6 +250,28 @@ export default async function CaseDetailPage({
           </div>
         </div>
 
+        {/* Score Glossary / Interpretation */}
+        <div style={{ background: 'var(--color-paper-dark)', border: '1px solid var(--color-rule)', padding: '16px 20px', borderRadius: '4px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px', marginTop: '16px' }}>
+          <div>
+            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600 }} className="font-ui">🔴 Risk Score</h4>
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-ink-secondary)', lineHeight: 1.5 }} className="font-body">
+              Calculated based on red flag rules (e.g. single-bidder loops, compressed timelines, or cost overruns). A higher score indicates higher exposure to integrity risks.
+            </p>
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600 }} className="font-ui">🔵 Confidence Score</h4>
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-ink-secondary)', lineHeight: 1.5 }} className="font-body">
+              Measures reliability and linkage depth. High scores indicate the presence of verifiable cryptographic hashes linked directly to PhilGEPS source records.
+            </p>
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600 }} className="font-ui">🟢 Timeline Completeness</h4>
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-ink-secondary)', lineHeight: 1.5 }} className="font-body">
+              Tracks transparency across the 5 statutory procurement stages: Planning (APP), Tender (ITB), Award (NOA), Contract, and Implementation (NTP).
+            </p>
+          </div>
+        </div>
+
         {/* Financial Summary */}
         <div className={styles.sectionHeader}>
           <span className="font-ui">Financial Summary</span>

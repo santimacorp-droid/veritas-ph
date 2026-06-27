@@ -457,17 +457,33 @@ async def seed_cases():
             status,
             geo_scope,
         ) in cases:
+            # Generate realistic completeness, confidence and risk components based on the risk score
+            completeness = 1.0
+            confidence = 0.95 if risk < 0.7 else 0.85
+            
+            # Risk dimensions matching the risk score
+            risk_val = risk if risk is not None else 0.0
+            r_comp = {
+                "competition": min(1.0, max(0.1, risk_val * 1.1)) if method in ('negotiated', 'shopping') or risk_val > 0.5 else 0.1,
+                "timeline": min(1.0, max(0.1, risk_val * 1.2)) if risk_val > 0.4 else 0.1,
+                "financial": min(1.0, max(0.1, risk_val * 0.95)) if planned and awarded and awarded > planned * 0.95 else 0.1,
+                "transparency": min(1.0, max(0.1, risk_val * 1.05)) if risk_val > 0.6 else 0.1,
+                "compliance": min(1.0, max(0.1, risk_val * 0.85)) if risk_val > 0.3 else 0.1
+            }
+
             await session.execute(
                 text("""
                     INSERT INTO procurement_cases (
                         case_id, publisher_id, agency_id, procurement_ref_no, title, 
                         procurement_method, category, planned_amount, awarded_amount, 
-                        award_date, risk_score, status, geographic_scope
+                        award_date, risk_score, status, geographic_scope,
+                        completeness_score, confidence_score, risk_components
                     )
                     VALUES (
                         :cid, :pub_id, :agency_id, :ref_no, :title, 
                         :method, :cat, :planned, :awarded, 
-                        :adate, :risk, :status, :geo_scope
+                        :adate, :risk, :status, :geo_scope,
+                        :completeness, :confidence, :components
                     )
                 """),
                 {
@@ -484,6 +500,9 @@ async def seed_cases():
                     "risk": risk,
                     "status": status,
                     "geo_scope": geo_scope,
+                    "completeness": completeness,
+                    "confidence": confidence,
+                    "components": json.dumps(r_comp),
                 },
             )
 
@@ -599,6 +618,115 @@ async def seed_cases():
                 {"prohibited": True},
                 "confirmed",
             ),
+            # --- 2025/2026 Discrepancies ---
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000012",
+                "single_bidder_loophole",
+                "high",
+                "Only a single bidder participated in this flood control desilting. Specific equipment requirements matched a single local supplier.",
+                "RULE-001",
+                "1.0",
+                {"bidder_count": 1},
+                {"min_bidders_recommended": 3},
+                "confirmed",
+            ),
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000013",
+                "negotiated_procurement_overuse",
+                "high",
+                "Negotiated procurement used under emergency exemption for a standard pre-planned bridge project, bypassing open competitive bidding.",
+                "RULE-002",
+                "1.0",
+                {"procurement_method": "negotiated"},
+                {"permitted_methods": ["public_bidding"]},
+                "confirmed",
+            ),
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000014",
+                "short_posting_window",
+                "high",
+                "The PhilGEPS invitation to bid was posted for only 3 days instead of the statutory 7 calendar days.",
+                "RULE-002",
+                "1.0",
+                {"days_posted": 3},
+                {"min_required": 7},
+                "confirmed",
+            ),
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000015",
+                "single_bidder_loophole",
+                "high",
+                "Standard building construction received only a single bidder after specialized specs excluded local competitors.",
+                "RULE-001",
+                "1.0",
+                {"bidder_count": 1},
+                {"min_bidders_recommended": 3},
+                "confirmed",
+            ),
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000016",
+                "budget_splitting",
+                "high",
+                "Project divided into 3 identical road clearing contracts awarded within a 10-day window to standard contractor, bypassing thresholds.",
+                "RULE-005",
+                "1.2",
+                {"overlap_days": 10, "sibling_contracts": 3},
+                {"max_window_days": 30},
+                "confirmed",
+            ),
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000017",
+                "negotiated_procurement_overuse",
+                "critical",
+                "Negotiated emergency procurement used to award a major commercial pier construction contract without competitive bidding.",
+                "RULE-009",
+                "1.0",
+                {"procurement_method": "negotiated"},
+                {"permitted_methods": ["public_bidding"]},
+                "confirmed",
+            ),
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000018",
+                "short_posting_window",
+                "medium",
+                "The PhilGEPS bidding post was available for only 5 days before closing.",
+                "RULE-002",
+                "1.0",
+                {"days_posted": 5},
+                {"min_required": 7},
+                "confirmed",
+            ),
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000019",
+                "single_bidder_loophole",
+                "high",
+                "Bid invitation requirements specified patented marine filling material exclusive to a single supplier.",
+                "RULE-001",
+                "1.0",
+                {"bidder_count": 1},
+                {"min_bidders_recommended": 3},
+                "confirmed",
+            ),
+            (
+                str(uuid.uuid4()),
+                "c025a9c4-11e2-45e3-a6b1-000000000020",
+                "short_posting_window",
+                "medium",
+                "Digital equipment posting period was shortened to 4 days.",
+                "RULE-002",
+                "1.0",
+                {"days_posted": 4},
+                {"min_required": 7},
+                "confirmed",
+            ),
         ]
 
         for did, cid, dtype, sev, exp, rule, rver, why, thresh, rstatus in discrepancies:
@@ -642,6 +770,16 @@ async def seed_cases():
             (str(uuid.uuid4()), "f9d5c1e6-33a4-67a5-c8d3-2109876543cd", NORTHERN_ID, "2024-02-18", 14500000.0, 4, 0),
             (str(uuid.uuid4()), "a0e6d2f7-44b5-78b6-d9e4-3210987654de", NORTHERN_ID, "2024-05-10", 9800000.0, 1, 1),
             (str(uuid.uuid4()), "b1f7e3a8-55c6-89c7-e0f5-4321098765ef", ALLIED_ID, "2024-03-29", 29200000.0, 2, 0),
+            # 2025/2026 awards
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000012", SUNRISE_ID, "2025-06-12", 44200000.0, 1, 1),
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000013", PACIFIC_ID, "2025-07-20", 61500000.0, 1, 1),
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000014", PACIFIC_ID, "2025-08-11", 118500000.0, 1, 1),
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000015", SUNRISE_ID, "2025-09-02", 84200000.0, 1, 1),
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000016", SUNRISE_ID, "2025-05-18", 94100000.0, 1, 1),
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000017", PACIFIC_ID, "2025-03-24", 149200000.0, 1, 1),
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000018", SUNRISE_ID, "2025-04-14", 17900000.0, 2, 0),
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000019", PACIFIC_ID, "2025-02-18", 209500000.0, 1, 1),
+            (str(uuid.uuid4()), "c025a9c4-11e2-45e3-a6b1-000000000020", NORTHERN_ID, "2025-10-09", 21800000.0, 3, 0),
         ]
         for aid, cid, sid, adate, amt, bcount, sbid in awards:
             await session.execute(
@@ -675,7 +813,17 @@ async def seed_cases():
             ("proj2", "e8c4b0d5-22f3-56f4-b7c2-1098765432bc", "Pasig River Bypass Bridge", "Bridge construction project", "active"),
             ("proj3", "f9d5c1e6-33a4-67a5-c8d3-2109876543cd", "Elem Textbooks Distribution", "Textbooks distribution to schools", "active"),
             ("proj4", "a0e6d2f7-44b5-78b6-d9e4-3210987654de", "Calabarzon IT Supply", "IT equipment delivery for schools", "active"),
-            ("proj5", "b1f7e3a8-55c6-89c7-e0f5-4321098765ef", "Pediatric Vaccines Supply", "Vaccine distribution program", "active")
+            ("proj5", "b1f7e3a8-55c6-89c7-e0f5-4321098765ef", "Pediatric Vaccines Supply", "Vaccine distribution program", "active"),
+            # 2025/2026 projects
+            ("proj12", "c025a9c4-11e2-45e3-a6b1-000000000012", "Ilocos Norte Flood Control Repair", "Flood control wall desilting and repair", "completed"),
+            ("proj13", "c025a9c4-11e2-45e3-a6b1-000000000013", "Cagayan Valley Agricultural Bridge", "Agricultural bypass bridge construction", "completed"),
+            ("proj14", "c025a9c4-11e2-45e3-a6b1-000000000014", "Central Luzon Expressway Drainage Expansion", "Expressway drainage expansion project", "completed"),
+            ("proj15", "c025a9c4-11e2-45e3-a6b1-000000000015", "Bicol Regional Hospital ICU Wing Extension", "ICU wing extension construction", "completed"),
+            ("proj16", "c025a9c4-11e2-45e3-a6b1-000000000016", "Western Visayas Bypass Highway Rehabilitation", "Bypass highway road rehabilitation", "completed"),
+            ("proj17", "c025a9c4-11e2-45e3-a6b1-000000000017", "Central Visayas Waterfront Pier & Wharf", "Waterfront pier and wharf construction", "completed"),
+            ("proj18", "c025a9c4-11e2-45e3-a6b1-000000000018", "Eastern Visayas School Building Reconstruction", "School building reconstruction program", "completed"),
+            ("proj19", "c025a9c4-11e2-45e3-a6b1-000000000019", "Davao City Coastal Highway Embankment", "Coastal highway road embankment", "completed"),
+            ("proj20", "c025a9c4-11e2-45e3-a6b1-000000000020", "BARMM Regional Administrative Center Digitization", "Digitization facilities supply", "completed"),
         ]
         for pid, cid, name, desc, status in projects:
             await session.execute(
@@ -701,7 +849,17 @@ async def seed_cases():
             ("loc2", "proj2", "130000000", "NCR", "Metro Manila", "Pasig", "Bani", 14.5621, 121.0583),
             ("loc3", "proj3", "130000000", "NCR", "Metro Manila", "Pasig", "Oran", 14.5772, 121.0664),
             ("loc4", "proj4", "040000000", "Region IV-A", "Cavite", "Calabarzon", "Regional", 14.2152, 121.1559),
-            ("loc5", "proj5", "130000000", "NCR", "Metro Manila", "Manila", "Tayuman", 14.6155, 120.9806)
+            ("loc5", "proj5", "130000000", "NCR", "Metro Manila", "Manila", "Tayuman", 14.6155, 120.9806),
+            # 2025/2026 locations
+            ("loc12", "proj12", "010000000", "Region I", "Ilocos Norte", "Laoag", "Barangay 1", 18.1960, 120.5927),
+            ("loc13", "proj13", "020000000", "Region II", "Cagayan", "Tuguegarao", "Barangay 2", 17.6132, 121.7270),
+            ("loc14", "proj14", "030000000", "Region III", "Pampanga", "San Fernando", "Barangay 3", 15.0333, 120.6833),
+            ("loc15", "proj15", "050000000", "Region V", "Albay", "Legazpi", "Barangay 5", 13.1372, 123.7438),
+            ("loc16", "proj16", "060000000", "Region VI", "Iloilo", "Iloilo City", "Barangay 6", 10.6969, 122.5644),
+            ("loc17", "proj17", "070000000", "Region VII", "Cebu", "Cebu City", "Waterfront", 10.2931, 123.9015),
+            ("loc18", "proj18", "080000000", "Region VIII", "Leyte", "Tacloban", "Barangay 8", 11.2444, 125.0038),
+            ("loc19", "proj19", "110000000", "Region XI", "Davao del Sur", "Davao City", "Coastal", 7.0731, 125.6128),
+            ("loc20", "proj20", "150000000", "BARMM", "Maguindanao", "Cotabato City", "Administrative", 7.2236, 124.2464),
         ]
         for lid, pid, psgc, region, prov, city, brgy, lat, lon in locations:
             await session.execute(
@@ -712,6 +870,50 @@ async def seed_cases():
                 """),
                 {"lid": lid, "pid": pid, "psgc": psgc, "region": region, "prov": prov, "city": city, "brgy": brgy, "lat": lat, "lon": lon}
             )
+
+        # 8. Seed Procurement Events (Timelines) for all cases
+        print("Seeding procurement timeline events...")
+        for (
+            cid,
+            pub_id,
+            agency_id,
+            ref_no,
+            title,
+            method,
+            cat,
+            planned,
+            awarded,
+            adate,
+            risk,
+            status,
+            geo_scope,
+        ) in cases:
+            if adate:
+                from datetime import datetime, timedelta
+                aw_date = date.fromisoformat(adate)
+                events_to_seed = [
+                    (str(uuid.uuid4()), cid, "planning", "app_entry", aw_date - timedelta(days=60), planned),
+                    (str(uuid.uuid4()), cid, "tender", "bid_notice", aw_date - timedelta(days=30), planned),
+                    (str(uuid.uuid4()), cid, "award", "noa", aw_date, awarded),
+                    (str(uuid.uuid4()), cid, "contract", "contract", aw_date + timedelta(days=10), awarded),
+                    (str(uuid.uuid4()), cid, "implementation", "ntp", aw_date + timedelta(days=15), awarded),
+                ]
+                for ev_id, case_id, stage, ev_type, ev_date, amt in events_to_seed:
+                    await session.execute(
+                        text("""
+                            INSERT INTO procurement_events (event_id, case_id, stage, event_type, event_date, amount)
+                            VALUES (:ev_id, :case_id, :stage, :ev_type, :ev_date, :amt)
+                            ON CONFLICT(event_id) DO NOTHING
+                        """),
+                        {
+                            "ev_id": ev_id,
+                            "case_id": case_id,
+                            "stage": stage,
+                            "ev_type": ev_type,
+                            "ev_date": ev_date,
+                            "amt": amt,
+                        }
+                    )
 
         await session.commit()
         print("Procurement cases seeding completed successfully!")
