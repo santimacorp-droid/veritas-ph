@@ -114,3 +114,57 @@
 }
 .thNum { text-align: right; }
 .tdNum { text-align: right; }
+
+/* ── Search & Filters ────────────────────────────────────── */
+.filtersContainer {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 280px;
+  padding: 9px 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule-strong);
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color 150ms;
+}
+
+.searchInput:focus {
+  border-color: var(--color-data-blue);
+}
+
+.filterSelect {
+  padding: 9px 14px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-rule-strong);
+  color: var(--color-ink);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 150ms;
+}
+
+.filterSelect:focus {
+  border-color: var(--color-data-blue);
+}
+
+.resultsCount {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-muted);
+}
+

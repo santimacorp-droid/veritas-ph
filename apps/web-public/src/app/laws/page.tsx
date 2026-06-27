@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './page.module.css';
 
@@ -16,22 +19,77 @@ interface LawSummary {
   loophole_count?: number;
 }
 
-async function getLaws(): Promise<{ total: number; laws: LawSummary[] }> {
-  try {
-    const res = await fetch(`${API_URL}/laws?limit=50`, { cache: 'no-store' });
-    if (!res.ok) return { total: 0, laws: [] };
-    return res.json();
-  } catch {
-    return { total: 0, laws: [] };
-  }
-}
-
 function formatDate(value?: string) {
   return value ? value.slice(0, 10) : '-';
 }
 
-export default async function LawsPage() {
-  const { total, laws } = await getLaws();
+export default function LawsPage() {
+  const [laws, setLaws] = useState<LawSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [auditFilter, setAuditFilter] = useState('all');
+  const [riskFilter, setRiskFilter] = useState('all');
+
+  useEffect(() => {
+    async function loadLaws() {
+      try {
+        const res = await fetch(`${API_URL}/laws?limit=1000`);
+        if (res.ok) {
+          const data = await res.json();
+          // Filter out any laws that have dummy/placeholder data
+          const rawLaws = (data.laws || []) as LawSummary[];
+          const cleanedLaws = rawLaws.filter(l => 
+            !l.title.toLowerCase().includes("dummy") && 
+            !l.title.toLowerCase().includes("placeholder") &&
+            !(l.short_title && l.short_title.toLowerCase().includes("mock"))
+          );
+          setLaws(cleanedLaws);
+        }
+      } catch (err) {
+        console.error("Failed to load laws", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadLaws();
+  }, []);
+
+  const filteredLaws = laws.filter(item => {
+    // 1. Search query match
+    const query = search.toLowerCase();
+    const titleMatch = item.title.toLowerCase().includes(query);
+    const shortMatch = item.short_title?.toLowerCase().includes(query) ?? false;
+    const descMatch = item.description?.toLowerCase().includes(query) ?? false;
+    const matchesSearch = !search || titleMatch || shortMatch || descMatch;
+
+    // 2. Status match (active vs repealed)
+    const matchesStatus = statusFilter === 'all' || item.status.toLowerCase() === statusFilter;
+
+    // 3. Audit status match (audited vs not audited)
+    const isAudited = item.integrity_score != null;
+    const matchesAudit = auditFilter === 'all' || 
+      (auditFilter === 'audited' && isAudited) || 
+      (auditFilter === 'not_audited' && !isAudited);
+
+    // 4. Risk / Integrity Score match
+    let matchesRisk = true;
+    if (riskFilter !== 'all') {
+      if (!isAudited) {
+        matchesRisk = false;
+      } else if (item.integrity_score != null) {
+        if (riskFilter === 'critical') {
+          matchesRisk = item.integrity_score < 40;
+        } else if (riskFilter === 'warn') {
+          matchesRisk = item.integrity_score >= 40 && item.integrity_score < 70;
+        } else if (riskFilter === 'low') {
+          matchesRisk = item.integrity_score >= 70;
+        }
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesAudit && matchesRisk;
+  });
 
   return (
     <div>
@@ -61,7 +119,7 @@ export default async function LawsPage() {
         <div className={styles.pageHead}>
           <h1 className={`${styles.pageTitle} font-display`}>Legislation Audits & Vulnerabilities</h1>
           <p className={`${styles.pageSubtitle} font-ui`}>
-            {total} laws tracked and audited for structural flaws and corruption loopholes
+            {filteredLaws.length} of {laws.length} laws filtered · Audited for structural flaws and corruption loopholes
           </p>
         </div>
 
@@ -71,9 +129,55 @@ export default async function LawsPage() {
           <div className={styles.bannerContent}>
             <h3 className="font-display">Automated Law Crawler & AI Vulnerability Auditing</h3>
             <p className="font-body">
-              Veritas automatically crawls public legislative registries (such as the Official Gazette) for republic acts and directives. 
+              Veritas automatically crawls public legislative registries (such as the Official Gazette and Lawphil) for republic acts and directives. 
               Our multi-pass AI engine scans the legislation section-by-section to identify systemic loopholes, rate oversight strengths, and suggest concrete revisions to block corruption.
             </p>
+          </div>
+        </div>
+
+        {/* Search and Filters panel */}
+        <div className={styles.filtersContainer}>
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search by title, Republic Act number, or description..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          <select
+            className={styles.filterSelect}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="repealed">Repealed</option>
+          </select>
+
+          <select
+            className={styles.filterSelect}
+            value={auditFilter}
+            onChange={(e) => setAuditFilter(e.target.value)}
+          >
+            <option value="all">All Audit Statuses</option>
+            <option value="audited">Audited</option>
+            <option value="not_audited">Not Audited</option>
+          </select>
+
+          <select
+            className={styles.filterSelect}
+            value={riskFilter}
+            onChange={(e) => setRiskFilter(e.target.value)}
+          >
+            <option value="all">All Risk Levels</option>
+            <option value="critical">Critical Risk (&lt;40)</option>
+            <option value="warn">Medium Risk (40-69)</option>
+            <option value="low">Low Risk (70+)</option>
+          </select>
+
+          <div className={styles.resultsCount}>
+            Showing {filteredLaws.length} laws
           </div>
         </div>
 
@@ -90,22 +194,23 @@ export default async function LawsPage() {
               </tr>
             </thead>
             <tbody>
-              {laws.length === 0 ? (
+              {loading ? (
                 <tr>
                   <td colSpan={6} className={`${styles.emptyCell} font-ui`}>
-                    No laws found. Ensure the database is seeded.
+                    Loading laws from database...
+                  </td>
+                </tr>
+              ) : filteredLaws.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className={`${styles.emptyCell} font-ui`}>
+                    No laws match the selected search or filters.
                   </td>
                 </tr>
               ) : (
-                laws.map((item) => {
-                  const scoreCls = (score?: number) => {
-                    if (score == null) return '';
-                    return score >= 70 ? styles.badgeLow : score >= 40 ? styles.badgeWarn : styles.badgeCritical;
-                  };
-
+                filteredLaws.map((item) => {
                   return (
                     <tr key={item.law_id} className={styles.tr}>
-                      <td className={styles.td} style={{ maxWidth: '400px' }}>
+                      <td className={styles.td} style={{ maxWidth: '450px' }}>
                         <Link href={`/laws/${item.law_id}`} className={styles.lawLink}>
                           <span className={`${styles.lawTitle} font-body`}>{item.title}</span>
                           {item.short_title && (
