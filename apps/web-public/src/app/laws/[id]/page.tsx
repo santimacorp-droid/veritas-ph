@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import styles from './page.module.css';
-import TriggerAnalysisButton from '@/components/TriggerAnalysisButton';
 
 const API_URL = typeof window === 'undefined'
   ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
@@ -146,7 +145,6 @@ export default async function LawDetailPage({ params }: { params: Promise<{ id: 
             <h2 className={`${styles.aiTitle} font-display`}>
               🔬 AI Integrity & Governance Assessment
             </h2>
-            <TriggerAnalysisButton lawId={id} apiUrl={API_URL} />
           </div>
 
           {!analysis ? (
