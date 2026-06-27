@@ -52,11 +52,11 @@ async def run_crawler_loop():
                 doc_res = await db.execute(doc_sql)
                 pending_docs = [str(r["document_id"]) for r in doc_res.mappings().all()]
 
-                for doc_id in pending_docs:
-                    logger.info(f"Crawler downloading document: {doc_id}")
-                    await download_document(doc_id)
-                    logger.info(f"Crawler running extraction: {doc_id}")
-                    await process_document(doc_id)
+            for doc_id in pending_docs:
+                logger.info(f"Crawler downloading document: {doc_id}")
+                await download_document(doc_id)
+                logger.info(f"Crawler running extraction: {doc_id}")
+                await process_document(doc_id)
 
         except Exception as e:
             logger.error("Error in crawler worker loop", error=str(e))

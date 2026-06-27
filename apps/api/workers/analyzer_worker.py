@@ -34,24 +34,25 @@ async def run_analyzer_loop():
 
     while True:
         try:
-            async with async_session_maker() as db:
-                # 1. Generate missing supplier embeddings
-                logger.info("Analyzer checking: supplier embeddings...")
-                emb_res = await update_supplier_embeddings()
-                logger.info("Embeddings check complete", result=emb_res)
+            # 1. Generate missing supplier embeddings
+            logger.info("Analyzer checking: supplier embeddings...")
+            emb_res = await update_supplier_embeddings()
+            logger.info("Embeddings check complete", result=emb_res)
 
-                # 2. Run risk engine on unanalyzed cases
+            # 2. Run risk engine on unanalyzed cases
+            async with async_session_maker() as db:
                 case_sql = text(
                     "SELECT case_id FROM procurement_cases WHERE risk_score IS NULL LIMIT 10"
                 )
                 case_res = await db.execute(case_sql)
                 pending_cases = [str(r["case_id"]) for r in case_res.mappings().all()]
 
-                for case_id in pending_cases:
-                    logger.info(f"Analyzer scoring risk for case: {case_id}")
-                    await analyze_case(case_id)
+            for case_id in pending_cases:
+                logger.info(f"Analyzer scoring risk for case: {case_id}")
+                await analyze_case(case_id)
 
-                # 3. Run Law Analyzer on pending analyses (prioritize newest first)
+            # 3. Run Law Analyzer on pending analyses (prioritize newest first)
+            async with async_session_maker() as db:
                 law_sql = text("""
                     SELECT la.analysis_id, la.law_id 
                     FROM law_analyses la
@@ -63,9 +64,9 @@ async def run_analyzer_loop():
                 law_res = await db.execute(law_sql)
                 pending_items = [(str(r["analysis_id"]), str(r["law_id"])) for r in law_res.mappings().all()]
 
-                for analysis_id, law_id in pending_items:
-                    logger.info(f"Analyzer auditing law: {law_id} (analysis: {analysis_id})")
-                    await analyze_law(law_id, analysis_id=analysis_id)
+            for analysis_id, law_id in pending_items:
+                logger.info(f"Analyzer auditing law: {law_id} (analysis: {analysis_id})")
+                await analyze_law(law_id, analysis_id=analysis_id)
 
         except Exception as e:
             logger.error("Error in analyzer worker loop", error=str(e))
