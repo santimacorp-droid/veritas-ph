@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation';
 import styles from './page.module.css';
 import TriggerAnalysisButton from '@/components/TriggerAnalysisButton';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_URL = typeof window === 'undefined'
+  ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
+  : '/api';
 
 interface Controversy {
   controversy_id: string;
