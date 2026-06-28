@@ -454,13 +454,15 @@ Return exactly a JSON object conforming to this schema:
 }}
 """
 
-        # Call APIs (DeepSeek -> OpenAI)
+        # Call APIs (DeepSeek is the primary heavy lifter)
         model_used = "pending"
         raw_response = None
 
         deepseek_key = os.getenv("DEEPSEEK_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+
         if deepseek_key and deepseek_key != "your_key_here":
-            logger.info("Attempting DeepSeek for law analysis...")
+            logger.info("Attempting DeepSeek for primary heavy-lifting law analysis...")
             deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
             raw_response = await call_llm_json(
                 url="https://api.deepseek.com/chat/completions",
@@ -471,10 +473,10 @@ Return exactly a JSON object conforming to this schema:
             if raw_response:
                 model_used = deepseek_model
 
+        # Fallback to OpenAI for heavy lifting ONLY if DeepSeek failed or is missing
         if not raw_response:
-            openai_key = os.getenv("OPENAI_API_KEY")
             if openai_key and openai_key != "your_key_here":
-                logger.info("Attempting OpenAI for law analysis fallback...")
+                logger.info("DeepSeek unavailable or failed. Falling back to OpenAI for primary heavy-lifting law analysis...")
                 raw_response = await call_llm_json(
                     url="https://api.openai.com/v1/chat/completions",
                     api_key=openai_key,
@@ -483,6 +485,38 @@ Return exactly a JSON object conforming to this schema:
                 )
                 if raw_response:
                     model_used = "gpt-4o-mini"
+
+        # Confirmation & Audit layer using OpenAI (only if OpenAI key is present and primary response succeeded)
+        if raw_response and openai_key and openai_key != "your_key_here":
+            logger.info("Running OpenAI audit layer to confirm section references and improve information integrity...")
+            audit_prompt = f"""
+You are a senior legal auditor. Your task is to verify and audit an initial AI-generated analysis of a Philippine law.
+You are given the FULL TEXT of the law (all sections), and the initial AI analysis in JSON format.
+
+Please audit the initial analysis and return a final, corrected JSON version by checking:
+1. Section References: Verify that every section cited in "cons", "loopholes", or "suggested_revisions" matches the actual text. For example, if the initial analysis says "Section 28 requires beneficial ownership" but beneficial ownership is actually in Section 81 and 82, you MUST correct the section reference to Section 81 and 82 and update the corresponding wording.
+2. Metadata Integrity: Check the authors, sponsors, and voting record. If they are generic committee names (e.g. Finance Committee) or seem unverified/hallucinated, replace them with accurate details or set them to null/unverified. Do not output generic or fake congressional statistics.
+3. Tone & Factuality: Ensure that weaknesses, loopholes, and suggested revisions are framed as "AI policy assessments" or analysis, not as established judicial facts.
+4. Refine the integrity_score and governance_score based on your audit. If you corrected section references or removed hallucinations, adjust the score to represent the true state.
+
+FULL TEXT OF THE LAW:
+{law_context}
+
+INITIAL AI ANALYSIS (JSON):
+{raw_response}
+
+Return the audited and corrected JSON conforming strictly to the original schema.
+"""
+            audited_response = await call_llm_json(
+                url="https://api.openai.com/v1/chat/completions",
+                api_key=openai_key,
+                model="gpt-4o-mini",
+                prompt=audit_prompt
+            )
+            if audited_response:
+                logger.info("OpenAI audit layer completed successfully.")
+                raw_response = audited_response
+                model_used = f"{model_used} + OpenAI Audit"
 
         if not raw_response:
             logger.error("No LLM API keys available or call failed.")

@@ -43,6 +43,16 @@ async def seed_cases():
         await session.execute(text("DELETE FROM procurement_cases"))
         await session.execute(text("DELETE FROM corporate_registries"))
 
+        # 0.5 Seed default publisher
+        print("Seeding default publisher...")
+        await session.execute(
+            text("""
+                INSERT INTO publishers (publisher_id, name, slug, website, publisher_type)
+                VALUES ('pub1', 'Republic of the Philippines', 'ph-gov', 'https://www.gov.ph', 'national_agency')
+                ON CONFLICT(publisher_id) DO NOTHING
+            """)
+        )
+
         # 1. Seed Agencies
         print("Seeding agencies...")
         agencies = [
