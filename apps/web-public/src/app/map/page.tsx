@@ -175,7 +175,7 @@ export default function MapPage() {
               RISK: ${(score * 100).toFixed(0)}%
             </span>
             <a href="/cases/${loc.case_id}" style="font-size: 11px; font-weight: 600; color: var(--color-data-blue); text-decoration: underline;">
-              View Case &rarr;
+              View Project &rarr;
             </a>
           </div>
         </div>

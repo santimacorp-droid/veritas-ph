@@ -129,7 +129,7 @@ export default async function ScorecardPage({
                 <th className={`${styles.th} font-ui`}>Agency Name</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Average Risk</th>
                 <th className={`${styles.th} font-ui`}>Severity Band</th>
-                <th className={`${styles.th} ${styles.thNum} font-ui`}>High Risk Cases</th>
+                <th className={`${styles.th} ${styles.thNum} font-ui`}>High Risk Projects</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Total Signals</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Total Awarded</th>
               </tr>
