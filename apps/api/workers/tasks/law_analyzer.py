@@ -375,8 +375,8 @@ Return strictly a JSON object:
                 "Marking as skipped_incomplete."
             )
             await db.execute(
-                text("UPDATE law_analyses SET analysis_status = 'skipped_incomplete', "
-                     "citizen_summary = 'Insufficient law text available for analysis.' "
+                text("UPDATE law_analyses SET analysis_status = 'failed', "
+                     "citizen_summary = 'Skipped: Insufficient law text available for analysis.' "
                      "WHERE analysis_id = :aid"),
                 {"aid": analysis_id}
             )
