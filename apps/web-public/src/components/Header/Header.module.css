@@ -46,20 +46,21 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .navLink {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-ink-secondary);
-  padding: 8px 16px;
+  padding: 6px 10px;
   border-radius: 4px;
   text-decoration: none;
   transition: all 150ms ease;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .navLink:hover {
