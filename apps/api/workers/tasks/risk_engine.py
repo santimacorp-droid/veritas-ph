@@ -152,6 +152,7 @@ async def generate_explanation(
     Generate a citizen-friendly explanation of the anomaly using DeepSeek V3 (primary)
     with a fallback to OpenAI GPT-4o-mini, and a final local rule fallback.
     """
+    amt = awarded_amount or 0.0
     prompt = (
         f"You are a civic watchdog and procurement audit assistant. Explain the following public procurement anomaly "
         f"in a citizen-friendly, clear, and objective tone. Do not use jargon. Limit the response to 2 to 3 sentences.\n\n"
@@ -159,7 +160,7 @@ async def generate_explanation(
         f"Rule ID: {rule_id}\n"
         f"Project Title: {case_title}\n"
         f"Procuring Agency: {agency_name or 'Unknown Agency'}\n"
-        f"Contract Value: {awarded_amount:,.2f} PHP (if applicable)\n"
+        f"Contract Value: {amt:,.2f} PHP (if applicable)\n"
         f"Technical details: {json.dumps(why_fired)}\n\n"
         f"Response:"
     )
@@ -1471,18 +1472,21 @@ async def generate_advanced_audit_report(db, case_id: str):
     is_completed = case["status"] == "completed"
     report_type = "post_mortem" if is_completed else "predictive"
     
+    p_amt = case.get("planned_amount") or 0.0
+    a_amt = case.get("awarded_amount") or 0.0
     prompt = (
         f"You are a senior forensic auditor and civic watchdog specializing in public procurement corruption and contract padding.\\n\\n"
         f"Audit Type: {report_type.upper()}\\n"
         f"Project Name: {case['title']}\\n"
         f"Procuring Agency: {case['agency_name'] or 'Unknown Agency'}\\n"
         f"Supplier: {case['supplier_name']}\\n"
-        f"Approved Budget (ABC): {case['planned_amount']:,.2f} PHP\\n"
-        f"Awarded Contract Price: {case['awarded_amount']:,.2f} PHP\\n"
+        f"Approved Budget (ABC): {p_amt:,.2f} PHP\\n"
+        f"Awarded Contract Price: {a_amt:,.2f} PHP\\n"
     )
     
     if is_completed:
-        prompt += f"Final Paid Amount: {case['final_contract_amount']:,.2f} PHP\\n"
+        f_amt = case.get("final_contract_amount") or 0.0
+        prompt += f"Final Paid Amount: {f_amt:,.2f} PHP\\n"
         prompt += f"Completed Project Timeline:\\n{timeline_str}\\n\\n"
         prompt += (
             "Task: Audit this completed project and identify if there is evidence of historical corruption, "
@@ -1490,7 +1494,8 @@ async def generate_advanced_audit_report(db, case_id: str):
             "Keep the analysis professional, citizen-friendly, and limit it to 4-5 sentences."
         )
     else:
-        prompt += f"Historical Relationship Context: This supplier has won {history_count} previous completed contracts with this agency, with an average cost overrun of {avg_overrun:,.2f} PHP.\\n\\n"
+        avg_ovr = avg_overrun or 0.0
+        prompt += f"Historical Relationship Context: This supplier has won {history_count} previous completed contracts with this agency, with an average cost overrun of {avg_ovr:,.2f} PHP.\\n\\n"
         prompt += (
             "Task: Predict the probability and level of cost-overrun risk (variation orders inflating the final price by >10%) "
             "before construction begins. Return a JSON object with keys 'probability' (float between 0 and 1) and 'rationale' (string, 3-4 sentences)."
