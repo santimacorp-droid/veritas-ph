@@ -369,7 +369,7 @@ Return strictly a JSON object:
         
         # Quality gate: skip analysis if law has almost no content
         total_len = sum(len(p['content'] or '') for p in provisions)
-        if total_len < 500 and not law_data.get('controversies'):
+        if total_len < 500 and not controversies:
             logger.warning(
                 f"Law {law_id} has only {total_len} chars of provision text — too little to analyze accurately. "
                 "Marking as skipped_incomplete."
