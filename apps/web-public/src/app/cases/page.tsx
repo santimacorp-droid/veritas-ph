@@ -133,17 +133,38 @@ function StageBadge({ stage }: { stage?: string }) {
   );
 }
 
-function StageCount({ label, count, stage, activeStage, color }: {
+function StageCount({
+  label,
+  count,
+  stage,
+  activeStage,
+  color,
+  currentFilters,
+}: {
   label: string;
   count: number;
   stage: string;
   activeStage?: string;
   color: string;
+  currentFilters: Record<string, string | undefined>;
 }) {
   const isActive = activeStage === stage;
+
+  // Build the URL preserving other active filters
+  const params = new URLSearchParams();
+  Object.entries(currentFilters).forEach(([k, v]) => {
+    if (v && k !== 'stage') {
+      params.append(k, v);
+    }
+  });
+  if (!isActive) {
+    params.append('stage', stage);
+  }
+  const href = params.toString() ? `/projects?${params.toString()}` : '/projects';
+
   return (
     <Link
-      href={isActive ? '/projects' : `/projects?stage=${stage}`}
+      href={href}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -198,15 +219,18 @@ export default async function ProjectsPage({
 
         {/* Stage Summary Tabs */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
-          <StageCount label="Accepting Bids"   count={byStage.active_bidding ?? 0}   stage="active_bidding"   activeStage={filters.stage} color="#16a34a" />
-          <StageCount label="Under Review"     count={byStage.under_evaluation ?? 0} stage="under_evaluation" activeStage={filters.stage} color="#ca8a04" />
-          <StageCount label="Awarded"          count={byStage.awarded ?? 0}          stage="awarded"          activeStage={filters.stage} color="#2563eb" />
-          <StageCount label="In Progress"      count={byStage.ongoing ?? 0}          stage="ongoing"          activeStage={filters.stage} color="#ea580c" />
-          <StageCount label="Completed"        count={byStage.completed ?? 0}        stage="completed"        activeStage={filters.stage} color="#6b7280" />
-          <StageCount label="Cancelled"        count={byStage.cancelled ?? 0}        stage="cancelled"        activeStage={filters.stage} color="#dc2626" />
+          <StageCount label="Accepting Bids"   count={byStage.active_bidding ?? 0}   stage="active_bidding"   activeStage={filters.stage} color="#16a34a" currentFilters={filters} />
+          <StageCount label="Under Review"     count={byStage.under_evaluation ?? 0} stage="under_evaluation" activeStage={filters.stage} color="#ca8a04" currentFilters={filters} />
+          <StageCount label="Awarded"          count={byStage.awarded ?? 0}          stage="awarded"          activeStage={filters.stage} color="#2563eb" currentFilters={filters} />
+          <StageCount label="In Progress"      count={byStage.ongoing ?? 0}          stage="ongoing"          activeStage={filters.stage} color="#ea580c" currentFilters={filters} />
+          <StageCount label="Completed"        count={byStage.completed ?? 0}        stage="completed"        activeStage={filters.stage} color="#6b7280" currentFilters={filters} />
+          <StageCount label="Cancelled"        count={byStage.cancelled ?? 0}        stage="cancelled"        activeStage={filters.stage} color="#dc2626" currentFilters={filters} />
         </div>
 
         <form className={styles.filterForm} method="GET" action="/projects">
+          {/* Keep stage selection in the query context silently */}
+          <input type="hidden" name="stage" value={filters.stage || ""} />
+
           <div className={styles.filterGroup}>
             <label className="font-ui">Agency</label>
             <select name="agency_id" defaultValue={filters.agency_id || ""}>
@@ -216,18 +240,6 @@ export default async function ProjectsPage({
                   {a.acronym ? `${a.acronym} — ${a.name}` : a.name}
                 </option>
               ))}
-            </select>
-          </div>
-          <div className={styles.filterGroup}>
-            <label className="font-ui">Stage</label>
-            <select name="stage" defaultValue={filters.stage || ""}>
-              <option value="">All Stages</option>
-              <option value="active_bidding">Accepting Bids</option>
-              <option value="under_evaluation">Under Evaluation</option>
-              <option value="awarded">Awarded</option>
-              <option value="ongoing">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
             </select>
           </div>
           <div className={styles.filterGroup}>
