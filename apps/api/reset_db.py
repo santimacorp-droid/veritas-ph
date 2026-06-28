@@ -22,14 +22,19 @@ from sqlalchemy import text
 
 
 async def reset():
+    import sys
+    migrate_only = "--migrate-only" in sys.argv
+
     print("=" * 60)
-    print("VERITAS PH — FULL DATABASE RESET")
+    print("VERITAS PH — SCHEMA SETUP & DATABASE MIGRATION" if migrate_only else "VERITAS PH — FULL DATABASE RESET")
     print("=" * 60)
-    print("\nWARNING: This will delete ALL law and case data.")
-    confirm = input("Type 'yes' to continue: ").strip().lower()
-    if confirm != "yes":
-        print("Aborted.")
-        return
+    
+    if not migrate_only:
+        print("\nWARNING: This will delete ALL law and case data.")
+        confirm = input("Type 'yes' to continue: ").strip().lower()
+        if confirm != "yes":
+            print("Aborted.")
+            return
 
     print("\nStep 1: Adding schema columns if missing...")
     async with async_session_maker() as db:
@@ -133,6 +138,10 @@ async def reset():
         # Add 'incomplete' to laws.status (no CHECK constraint enforced via code)
         await db.commit()
         print("  ✅ Schema columns added/verified.")
+        
+        if migrate_only:
+            print("Migration complete (--migrate-only). Exiting.")
+            return
 
 
     print("\nStep 2: Wiping all law and case data...")
