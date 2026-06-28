@@ -42,7 +42,8 @@ async def seed_departments():
                 "source_type": "portal",
                 "publisher_name": "DPWH Civil Works Procurement Opportunities",
                 "base_url": "https://www.dpwh.gov.ph/dpwh/procurement/civil_works",
-                "parser_type": "dpwh_procurement_parser"
+                "parser_type": "dpwh_procurement_parser",
+                "robots_compliant": False
             },
             {
                 "source_id": "src_doh",
@@ -50,7 +51,8 @@ async def seed_departments():
                 "source_type": "portal",
                 "publisher_name": "DOH Procurement Opportunities",
                 "base_url": "https://doh.gov.ph/procurement",
-                "parser_type": "doh_procurement_parser"
+                "parser_type": "doh_procurement_parser",
+                "robots_compliant": False
             },
             {
                 "source_id": "src_deped",
@@ -58,7 +60,8 @@ async def seed_departments():
                 "source_type": "portal",
                 "publisher_name": "DepEd Procurement Opportunities",
                 "base_url": "https://www.deped.gov.ph/about-deped/procurement/",
-                "parser_type": "deped_procurement_parser"
+                "parser_type": "deped_procurement_parser",
+                "robots_compliant": False
             }
         ]
 
@@ -88,14 +91,15 @@ async def seed_departments():
                 print(f"Adding source: {src['publisher_name']}")
                 await session.execute(
                     text("""
-                        INSERT INTO sources (source_id, publisher_id, source_type, publisher_name, base_url, parser_type)
-                        VALUES (:source_id, :publisher_id, :source_type, :publisher_name, :base_url, :parser_type)
+                        INSERT INTO sources (source_id, publisher_id, source_type, publisher_name, base_url, parser_type, robots_compliant)
+                        VALUES (:source_id, :publisher_id, :source_type, :publisher_name, :base_url, :parser_type, :robots_compliant)
                     """),
                     src
                 )
                 
         await session.commit()
     print("Department sources seeding complete!")
+
 
 if __name__ == "__main__":
     asyncio.run(seed_departments())
