@@ -247,8 +247,8 @@ async def fetch_sources():
         
         logger.info(f"Crawling source: {source_id} ({target_url})")
 
-        # For portal source type, use Playwright PhilGEPS crawl logic
-        if source_type == 'portal':
+        # Use Playwright for both portal and html_listing to bypass Cloudflare/Incapsula WAFs
+        if source_type in ('portal', 'html_listing'):
             if robots_compliant:
                 rp = urllib.robotparser.RobotFileParser()
                 rp.set_url(urlparse(target_url).scheme + "://" + urlparse(target_url).netloc + "/robots.txt")
@@ -288,27 +288,48 @@ async def fetch_sources():
                     except Exception:
                         logger.info("No 'Search' tab found, parsing current page directly")
 
-                    # ── Expanded link detection ──
-                    # Now captures bid notices AND award notices AND contract documents
-                    logger.info("Extracting notice links (bid, award, contract) from page...")
+                    # ── Dual-Mode link detection ──
+                    # Support PhilGEPS portal format or generic department procurement listings
+                    logger.info("Extracting links (portal or generic) from page...")
                     links = await page.eval_on_selector_all(
                         "a",
-                        """elements => elements
-                            .filter(el =>
-                                el.href.includes("SplashBidNoticeAbstractUI") ||
-                                el.href.includes("SplashAwardNoticeUI") ||
-                                el.href.includes("SplashContractUI") ||
-                                el.href.includes("NoticeDetail") ||
-                                el.href.includes("AwardNotice") ||
-                                el.href.includes("noticeofaward")
-                            )
-                            .map(el => [el.innerText.trim(), el.href])""",
+                        """elements => {
+                            const isPortal = window.location.href.includes("philgeps.gov.ph");
+                            return elements
+                                .filter(el => {
+                                    if (!el.href) return false;
+                                    const hr = el.href.toLowerCase();
+                                    if (isPortal) {
+                                        return (
+                                            hr.includes("splashbidnoticeabstractui") ||
+                                            hr.includes("splashawardnoticeui") ||
+                                            hr.includes("splashcontractui") ||
+                                            hr.includes("noticedetail") ||
+                                            hr.includes("awardnotice") ||
+                                            hr.includes("noticeofaward")
+                                        );
+                                    } else {
+                                        // Category procurement listing
+                                        return (
+                                            hr.includes("/2024/") ||
+                                            hr.includes("/2025/") ||
+                                            hr.includes("/2026/") ||
+                                            hr.includes("procurement") ||
+                                            hr.includes("bidding") ||
+                                            hr.includes("notice") ||
+                                            hr.includes("award") ||
+                                            hr.includes("contract") ||
+                                            hr.endsWith(".pdf")
+                                        ) && !hr.includes("/category/") && !hr.includes("#") && !hr.includes("page_id=");
+                                    }
+                                })
+                                .map(el => [el.innerText.trim(), el.href]);
+                        }""",
                     )
-                    logger.info(f"Found {len(links)} notice links on page "
-                                f"(bid + award + contract notices)")
+                    logger.info(f"Found {len(links)} matching notice links on page")
 
                     async with async_session_maker() as db:
-                        for title, href in links[:30]:  # increased from 20 to 30
+                        for title, href in links[:30]:
                             if not href or not title:
                                 continue
                             doc_type = _detect_doc_type(href, title)
