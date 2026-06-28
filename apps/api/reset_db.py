@@ -51,6 +51,32 @@ async def reset():
             END $$;
         """))
 
+        # Add ai_stage_confidence column (set by AI stage classifier)
+        await db.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='procurement_cases' AND column_name='ai_stage_confidence'
+                ) THEN
+                    ALTER TABLE procurement_cases ADD COLUMN ai_stage_confidence NUMERIC;
+                END IF;
+            END $$;
+        """))
+
+        # Add stage_classified_at column (timestamp of last AI classification)
+        await db.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='procurement_cases' AND column_name='stage_classified_at'
+                ) THEN
+                    ALTER TABLE procurement_cases ADD COLUMN stage_classified_at TIMESTAMP;
+                END IF;
+            END $$;
+        """))
+
         # Add completion_date column
         await db.execute(text("""
             DO $$
@@ -80,6 +106,7 @@ async def reset():
         # Add 'incomplete' to laws.status (no CHECK constraint enforced via code)
         await db.commit()
         print("  ✅ Schema columns added/verified.")
+
 
     print("\nStep 2: Wiping all law and case data...")
     async with async_session_maker() as db:

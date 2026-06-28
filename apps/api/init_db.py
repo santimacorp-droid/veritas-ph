@@ -190,6 +190,13 @@ CREATE TABLE IF NOT EXISTS procurement_cases (
     contract_start_date     DATE,
     contract_end_date       DATE,
     status                  TEXT DEFAULT 'open',
+    procurement_stage       TEXT NOT NULL DEFAULT 'active_bidding'
+                            CHECK (procurement_stage IN (
+                                'active_bidding', 'under_evaluation', 'awarded',
+                                'ongoing', 'completed', 'cancelled'
+                            )),
+    ai_stage_confidence     NUMERIC,          -- 0-1, set when AI classifier is used
+    stage_classified_at     TIMESTAMP,        -- when AI last classified stage
     completeness_score      NUMERIC,   -- 0-1
     risk_score              NUMERIC,   -- 0-1
     confidence_score        NUMERIC,   -- 0-1
@@ -204,6 +211,7 @@ CREATE INDEX IF NOT EXISTS idx_cases_risk ON procurement_cases(risk_score DESC);
 CREATE INDEX IF NOT EXISTS idx_cases_title ON procurement_cases(title);
 CREATE INDEX IF NOT EXISTS idx_cases_award_date ON procurement_cases(award_date DESC);
 CREATE INDEX IF NOT EXISTS idx_cases_status ON procurement_cases(status);
+CREATE INDEX IF NOT EXISTS idx_cases_stage ON procurement_cases(procurement_stage);
 CREATE INDEX IF NOT EXISTS idx_cases_category ON procurement_cases(category);
 CREATE INDEX IF NOT EXISTS idx_cases_method ON procurement_cases(procurement_method);
 CREATE INDEX IF NOT EXISTS idx_cases_updated ON procurement_cases(updated_at DESC);

@@ -1,7 +1,8 @@
 import asyncio
 import hashlib
 import urllib.robotparser
-from urllib.parse import urlparse
+from datetime import date
+from urllib.parse import urlparse, urljoin
 from uuid import uuid4
 
 import structlog
@@ -21,6 +22,48 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 ]
+
+# ─── Document Type Detection ──────────────────────────────────────────────────
+
+def _detect_doc_type(url: str, title: str = "") -> str:
+    """
+    Infer document type from URL pattern and title text.
+    Returns one of: bid_notice, award_notice, contract, completion_report, audit_report, app
+    """
+    url_lower = url.lower()
+    title_lower = title.lower()
+
+    if any(k in url_lower for k in ["splashawardnotice", "awardnotice", "noticeofaward", "noa"]):
+        return "award_notice"
+    if any(k in url_lower for k in ["splashcontract", "contractnotice"]):
+        return "contract"
+    if any(k in url_lower for k in ["completion", "projectcompletion", "finalreport"]):
+        return "completion_report"
+    if any(k in url_lower for k in ["auditreport", "coafinding"]):
+        return "audit_report"
+    if any(k in url_lower for k in ["app", "annualprocurement"]):
+        return "app"
+
+    # Fallback: check title text
+    if any(k in title_lower for k in ["award", "noa", "notice of award"]):
+        return "award_notice"
+    if any(k in title_lower for k in ["contract", "agreement"]):
+        return "contract"
+    if any(k in title_lower for k in ["completion", "final report"]):
+        return "completion_report"
+
+    return "bid_notice"
+
+
+def _extract_philgeps_ref(url: str) -> str | None:
+    """Extract PhilGEPS reference number from URL query string (refID=...)."""
+    from urllib.parse import parse_qs, urlparse as _parse
+    try:
+        qs = parse_qs(_parse(url).query)
+        return (qs.get("refID") or qs.get("refId") or qs.get("id") or [None])[0]
+    except Exception:
+        return None
+
 
 @retry(
     stop=stop_after_attempt(3),
@@ -107,15 +150,88 @@ async def handle_document_recrawl(db, document_id: str, href: str, current_hash:
         logger.error("Error during document re-crawl check", doc_id=document_id, error=str(e))
 
 
+async def _record_document(db, source_id: str, href: str, title: str, doc_type: str) -> str | None:
+    """
+    Insert a new document row if URL is not already recorded.
+    Returns document_id if newly created, None if already exists.
+    """
+    result = await db.execute(
+        text("SELECT document_id, sha256_hash, storage_path FROM documents WHERE source_url = :href"),
+        {"href": href}
+    )
+    row = result.fetchone()
+    if row:
+        doc_id, current_hash, current_path = row[0], row[1], row[2]
+        await handle_document_recrawl(db, doc_id, href, current_hash, current_path)
+        return None  # Already exists
+
+    doc_id = str(uuid4())
+    url_hash = hashlib.sha256(href.encode("utf-8")).hexdigest()
+    storage_path = f"documents/{doc_id}.txt"
+
+    await db.execute(
+        text("""
+        INSERT INTO documents (
+            document_id, source_id, source_url, sha256_hash, storage_path, 
+            processing_status, document_type, language
+        )
+        VALUES (:did, :sid, :href, :uhash, :path, 'pending', :dtype, 'en')
+        """),
+        {"did": doc_id, "sid": source_id, "href": href, "uhash": url_hash,
+         "path": storage_path, "dtype": doc_type}
+    )
+    logger.info("Discovered new document", type=doc_type, title=title[:60], url=href, doc_id=doc_id)
+    return doc_id
+
+
+async def _trigger_stage_update_for_award(db, doc_id: str):
+    """
+    When a new award_notice is discovered, immediately try to link it to an existing
+    procurement case (by PhilGEPS ref) and trigger a targeted stage update.
+    """
+    # Find any case linked to this document via procurement events
+    res = await db.execute(
+        text("SELECT case_id FROM procurement_events WHERE document_id = :did LIMIT 1"),
+        {"did": doc_id}
+    )
+    row = res.fetchone()
+    if not row:
+        return
+    case_id = row[0]
+
+    # Promote stage: if document is award_notice and case has no award_date, set today
+    await db.execute(
+        text("""
+            UPDATE procurement_cases
+               SET award_date = CURRENT_DATE,
+                   procurement_stage = 'awarded',
+                   updated_at = CURRENT_TIMESTAMP
+             WHERE case_id = :cid
+               AND award_date IS NULL
+               AND procurement_stage IN ('active_bidding', 'under_evaluation')
+        """),
+        {"cid": case_id}
+    )
+    logger.info("Stage fast-promoted to 'awarded' from new award_notice", case_id=case_id)
+
+
 async def fetch_sources():
     """
     Main entry point for the crawler.
     Loops through all enabled sources in the database and discovers/versions documents.
+
+    Discovers:
+    - Bid notices (SplashBidNoticeAbstractUI)
+    - Award notices (SplashAwardNoticeUI) ← NEW
+    - Contract documents (SplashContractUI) ← NEW
     """
     logger.info("Crawler starting: discovery phase")
 
     async with async_session_maker() as db:
-        res = await db.execute(text("SELECT source_id, base_url, source_type, parser_type, robots_compliant FROM sources WHERE enabled = TRUE"))
+        res = await db.execute(text(
+            "SELECT source_id, base_url, source_type, parser_type, robots_compliant "
+            "FROM sources WHERE enabled = TRUE"
+        ))
         sources = res.mappings().all()
 
     if not sources:
@@ -150,20 +266,21 @@ async def fetch_sources():
             try:
                 async with async_playwright() as p:
                     logger.info("Launching headless Chromium with stealth profile...")
-                    browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+                    browser = await p.chromium.launch(
+                        headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"]
+                    )
                     context = await browser.new_context(
-                        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                        user_agent=random.choice(USER_AGENTS),
                         viewport={"width": 1920, "height": 1080}
                     )
                     page = await context.new_page()
-                    await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                    await page.add_init_script(
+                        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+                    )
 
                     logger.info(f"Navigating to source URL: {target_url}")
-                    await asyncio.sleep(1.0) # Rate limiting
-                    await page.goto(
-                        target_url,
-                        timeout=45000,
-                    )
+                    await asyncio.sleep(1.0)  # Rate limiting
+                    await page.goto(target_url, timeout=45000)
 
                     try:
                         await page.click("text=Search", timeout=5000)
@@ -171,51 +288,41 @@ async def fetch_sources():
                     except Exception:
                         logger.info("No 'Search' tab found, parsing current page directly")
 
-                    logger.info("Extracting notice links from search table...")
+                    # ── Expanded link detection ──
+                    # Now captures bid notices AND award notices AND contract documents
+                    logger.info("Extracting notice links (bid, award, contract) from page...")
                     links = await page.eval_on_selector_all(
                         "a",
-                        'elements => elements.filter(el => el.href.includes("SplashBidNoticeAbstractUI") || el.href.includes("NoticeDetail")).map(el => [el.innerText.trim(), el.href])',
+                        """elements => elements
+                            .filter(el =>
+                                el.href.includes("SplashBidNoticeAbstractUI") ||
+                                el.href.includes("SplashAwardNoticeUI") ||
+                                el.href.includes("SplashContractUI") ||
+                                el.href.includes("NoticeDetail") ||
+                                el.href.includes("AwardNotice") ||
+                                el.href.includes("noticeofaward")
+                            )
+                            .map(el => [el.innerText.trim(), el.href])""",
                     )
-                    logger.info(f"Found {len(links)} notice links on page")
+                    logger.info(f"Found {len(links)} notice links on page "
+                                f"(bid + award + contract notices)")
 
                     async with async_session_maker() as db:
-                        for title, href in links[:20]:
+                        for title, href in links[:30]:  # increased from 20 to 30
                             if not href or not title:
                                 continue
-                            result = await db.execute(
-                                text("SELECT document_id, sha256_hash, storage_path FROM documents WHERE source_url = :href"),
-                                {"href": href}
-                            )
-                            row = result.fetchone()
-                            if row:
-                                doc_id, current_hash, current_path = row[0], row[1], row[2]
-                                await handle_document_recrawl(db, doc_id, href, current_hash, current_path)
-                                continue
-
-                            # Create a new document entry
-                            await asyncio.sleep(1.0)
-                            doc_id = str(uuid4())
-                            url_hash = hashlib.sha256(href.encode("utf-8")).hexdigest()
-                            storage_path = f"documents/{doc_id}.txt"
-
-                            await db.execute(
-                                text("""
-                                INSERT INTO documents (
-                                    document_id, source_id, source_url, sha256_hash, storage_path, 
-                                    processing_status, document_type, language
-                                )
-                                VALUES (:did, :sid, :href, :uhash, :path, 'pending', 'bid_notice', 'en')
-                                """),
-                                {"did": doc_id, "sid": source_id, "href": href, "uhash": url_hash, "path": storage_path}
-                            )
-                            discovered_count += 1
-                            logger.info(
-                                "Discovered new opportunity notice", title=title, url=href, doc_id=doc_id
-                            )
+                            doc_type = _detect_doc_type(href, title)
+                            new_doc_id = await _record_document(db, source_id, href, title, doc_type)
+                            if new_doc_id:
+                                discovered_count += 1
+                                # Fast-promote stage when an award notice is discovered
+                                if doc_type == "award_notice":
+                                    await _trigger_stage_update_for_award(db, new_doc_id)
                         await db.commit()
 
                     await browser.close()
                     discovered_total += discovered_count
+
             except Exception as e:
                 logger.error(f"Error during crawl of source {source_id}", error=str(e))
         else:
@@ -232,41 +339,26 @@ async def fetch_sources():
                         for a in soup.find_all("a", href=True):
                             href = a["href"]
                             if href.startswith("/"):
-                                from urllib.parse import urljoin
                                 href = urljoin(target_url, href)
-                            if href.startswith("http") and (".pdf" in href.lower() or "notice" in href.lower() or "award" in href.lower()):
+                            if href.startswith("http") and (
+                                ".pdf" in href.lower()
+                                or "notice" in href.lower()
+                                or "award" in href.lower()
+                                or "contract" in href.lower()
+                                or "completion" in href.lower()
+                            ):
                                 links.append((a.get_text().strip(), href))
                         
                         logger.info(f"Generic crawl found {len(links)} links for {source_id}")
                         async with async_session_maker() as db:
                             discovered_count = 0
-                            for _title, href in links[:5]:
-                                result = await db.execute(
-                                    text("SELECT document_id, sha256_hash, storage_path FROM documents WHERE source_url = :href"),
-                                    {"href": href}
-                                )
-                                row = result.fetchone()
-                                if row:
-                                    doc_id, current_hash, current_path = row[0], row[1], row[2]
-                                    await handle_document_recrawl(db, doc_id, href, current_hash, current_path)
-                                    continue
-
-                                doc_id = str(uuid4())
-                                url_hash = hashlib.sha256(href.encode("utf-8")).hexdigest()
-                                doc_type = "audit_report" if "audit" in target_url.lower() else ("app" if "app" in target_url.lower() else "bid_notice")
-                                storage_path = f"documents/{doc_id}.pdf" if href.lower().endswith(".pdf") else f"documents/{doc_id}.txt"
-
-                                await db.execute(
-                                    text("""
-                                    INSERT INTO documents (
-                                        document_id, source_id, source_url, sha256_hash, storage_path, 
-                                        processing_status, document_type, language
-                                    )
-                                    VALUES (:did, :sid, :href, :uhash, :path, 'pending', :dtype, 'en')
-                                    """),
-                                    {"did": doc_id, "sid": source_id, "href": href, "uhash": url_hash, "path": storage_path, "dtype": doc_type}
-                                )
-                                discovered_count += 1
+                            for _title, href in links[:10]:  # increased from 5 to 10
+                                doc_type = _detect_doc_type(href, _title)
+                                new_doc_id = await _record_document(db, source_id, href, _title, doc_type)
+                                if new_doc_id:
+                                    discovered_count += 1
+                                    if doc_type == "award_notice":
+                                        await _trigger_stage_update_for_award(db, new_doc_id)
                             await db.commit()
                             discovered_total += discovered_count
             except Exception as e:
@@ -299,7 +391,8 @@ async def download_document(document_id: str):
         from storage import get_api_store
         store = get_api_store()
         if store.stat(storage_path) is not None:
-            logger.info("Document already exists in storage, skipping download", doc_id=document_id, path=storage_path)
+            logger.info("Document already exists in storage, skipping download",
+                        doc_id=document_id, path=storage_path)
             return {"status": "success", "document_id": document_id}
 
         # 2. Launch browser and load source_url
@@ -311,17 +404,20 @@ async def download_document(document_id: str):
         )
         async def fetch_page_content(url: str) -> str:
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+                browser = await p.chromium.launch(
+                    headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"]
+                )
                 context = await browser.new_context(
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                    user_agent=random.choice(USER_AGENTS),
                     viewport={"width": 1920, "height": 1080}
                 )
                 page = await context.new_page()
-                await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                await page.add_init_script(
+                    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+                )
                 logger.info("Loading notice detail page with stealth profile...", url=url)
-                await asyncio.sleep(1.0) # Rate limiting
+                await asyncio.sleep(1.0)  # Rate limiting
                 await page.goto(url, timeout=30000)
-                # Extract inner text of the body
                 text_result = await page.inner_text("body")
                 await browser.close()
                 return text_result
@@ -344,7 +440,8 @@ async def download_document(document_id: str):
         async with async_session_maker() as db:
             try:
                 await db.execute(
-                    text("UPDATE documents SET sha256_hash = :hash, file_size_bytes = :size WHERE document_id = :did"),
+                    text("UPDATE documents SET sha256_hash = :hash, file_size_bytes = :size "
+                         "WHERE document_id = :did"),
                     {"hash": new_hash, "size": len(text_bytes), "did": document_id}
                 )
                 await db.commit()
@@ -352,7 +449,8 @@ async def download_document(document_id: str):
                 # E.g. sqlalchemy.exc.IntegrityError in case of hash clash
                 await db.rollback()
                 logger.warning(
-                    "Hash clash on downloaded text, keeping URL-based hash or creating new version if supported", doc_id=document_id
+                    "Hash clash on downloaded text, keeping URL-based hash",
+                    doc_id=document_id
                 )
 
         logger.info("Successfully downloaded and stored document", doc_id=document_id)

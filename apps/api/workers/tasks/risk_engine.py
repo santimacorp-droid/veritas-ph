@@ -1428,8 +1428,12 @@ async def check_bid_spec_similarity(db, case_id: str):
 
 async def generate_advanced_audit_report(db, case_id: str):
     """
-    Generates a DeepSeek-powered predictive risk assessment (for active projects)
-    or a post-mortem forensic audit (for completed projects) and saves it to the database.
+    Generates a stage-aware audit report:
+    - active_bidding / under_evaluation → pre-bid risk screening (DeepSeek only)
+    - awarded → award integrity check (DeepSeek primary, OpenAI confirms red flags)
+    - ongoing → in-progress risk monitor (DeepSeek only)
+    - completed → post-mortem forensic audit (DeepSeek primary + mandatory OpenAI confirmation)
+    - cancelled → cancellation analysis (DeepSeek only)
     """
     exists_res = await db.execute(
         text("SELECT 1 FROM audit_reports WHERE case_id = :cid"),
@@ -1440,11 +1444,13 @@ async def generate_advanced_audit_report(db, case_id: str):
 
     case_res = await db.execute(
         text("""
-            SELECT pc.case_id, pc.title, pc.planned_amount, pc.awarded_amount, pc.final_contract_amount, pc.status,
+            SELECT pc.case_id, pc.title, pc.planned_amount, pc.awarded_amount,
+                   pc.final_contract_amount, pc.status, pc.procurement_stage,
+                   pc.bid_deadline, pc.award_date, pc.ntp_date, pc.contract_end_date,
                    a.name AS agency_name, s.canonical_name AS supplier_name, s.supplier_id
             FROM procurement_cases pc
-            JOIN awards aw ON aw.case_id = pc.case_id
-            JOIN suppliers s ON s.supplier_id = aw.supplier_id
+            LEFT JOIN awards aw ON aw.case_id = pc.case_id
+            LEFT JOIN suppliers s ON s.supplier_id = aw.supplier_id
             LEFT JOIN agencies a ON a.agency_id = pc.agency_id
             WHERE pc.case_id = :cid
         """),
@@ -1455,18 +1461,24 @@ async def generate_advanced_audit_report(db, case_id: str):
         return
 
     events_res = await db.execute(
-        text("SELECT stage, event_type, event_date, amount FROM procurement_events WHERE case_id = :cid ORDER BY event_date ASC"),
+        text("SELECT stage, event_type, event_date, amount FROM procurement_events "
+             "WHERE case_id = :cid ORDER BY event_date ASC"),
         {"cid": case_id}
     )
     events = events_res.mappings().all()
-    timeline_str = "\\n".join([f"- {ev['stage'].capitalize()} ({ev['event_type']}): {ev['event_date']} (Amount: {ev['amount'] or '—'})" for ev in events])
+    timeline_str = "\n".join([
+        f"- {ev['stage'].capitalize()} ({ev['event_type']}): {ev['event_date']} "
+        f"(Amount: {ev['amount'] or '—'})"
+        for ev in events
+    ])
 
     history_res = await db.execute(
         text("""
             SELECT COUNT(*), AVG(pc.final_contract_amount - pc.awarded_amount) as avg_overrun
             FROM procurement_cases pc
             JOIN awards aw ON aw.case_id = pc.case_id
-            WHERE aw.supplier_id = :sid AND pc.case_id != :cid AND pc.status = 'completed'
+            WHERE aw.supplier_id = :sid AND pc.case_id != :cid
+              AND pc.procurement_stage = 'completed'
         """),
         {"sid": case["supplier_id"], "cid": case_id}
     )
@@ -1474,98 +1486,237 @@ async def generate_advanced_audit_report(db, case_id: str):
     history_count = history["count"] if history else 0
     avg_overrun = float(history["avg_overrun"] or 0)
 
-    is_completed = case["status"] == "completed"
-    report_type = "post_mortem" if is_completed else "predictive"
-    
+    # ── Determine audit type based on procurement_stage ──
+    # Use procurement_stage as the authoritative source; fall back to legacy status
+    lifecycle_stage = case.get("procurement_stage") or case.get("status", "active_bidding")
+
+    STAGE_AUDIT_MAP = {
+        "active_bidding":   ("pre_bid_screening",  False),   # DeepSeek only
+        "under_evaluation": ("bid_evaluation",     False),   # DeepSeek only
+        "awarded":          ("award_integrity",    False),   # DeepSeek + OpenAI for red flags
+        "ongoing":          ("in_progress_monitor",False),   # DeepSeek only
+        "completed":        ("post_mortem",         True),   # DeepSeek + mandatory OpenAI
+        "cancelled":        ("cancellation",        False),  # DeepSeek only
+    }
+    # Legacy status fallback mapping
+    if lifecycle_stage == "completed" or case.get("status") == "completed":
+        lifecycle_stage = "completed"
+    elif lifecycle_stage == "open":
+        lifecycle_stage = "active_bidding"
+
+    report_type, openai_required = STAGE_AUDIT_MAP.get(
+        lifecycle_stage, ("pre_bid_screening", False)
+    )
+
     p_amt = case.get("planned_amount") or 0.0
     a_amt = case.get("awarded_amount") or 0.0
-    prompt = (
-        f"You are a senior forensic auditor and civic watchdog specializing in public procurement corruption and contract padding.\\n\\n"
-        f"Audit Type: {report_type.upper()}\\n"
-        f"Project Name: {case['title']}\\n"
-        f"Procuring Agency: {case['agency_name'] or 'Unknown Agency'}\\n"
-        f"Supplier: {case['supplier_name']}\\n"
-        f"Approved Budget (ABC): {p_amt:,.2f} PHP\\n"
-        f"Awarded Contract Price: {a_amt:,.2f} PHP\\n"
+    f_amt = case.get("final_contract_amount") or 0.0
+    supplier_name = case.get("supplier_name") or "Unknown Supplier"
+    agency_name = case.get("agency_name") or "Unknown Agency"
+
+    # ── Build stage-specific prompt ──
+    base_context = (
+        f"Project: {case['title']}\n"
+        f"Agency: {agency_name}\n"
+        f"Supplier: {supplier_name}\n"
+        f"Approved Budget (ABC): {p_amt:,.2f} PHP\n"
+        f"Awarded Amount: {a_amt:,.2f} PHP\n"
+        f"Current Lifecycle Stage: {lifecycle_stage.replace('_', ' ').title()}\n"
+        f"Today: {__import__('datetime').date.today().isoformat()}\n"
+        f"Bid Deadline: {case.get('bid_deadline') or 'Not set'}\n"
+        f"Award Date: {case.get('award_date') or 'Not set'}\n"
+        f"NTP Date: {case.get('ntp_date') or 'Not set'}\n"
+        f"Contract End Date: {case.get('contract_end_date') or 'Not set'}\n"
     )
-    
-    if is_completed:
-        f_amt = case.get("final_contract_amount") or 0.0
-        prompt += f"Final Paid Amount: {f_amt:,.2f} PHP\\n"
-        prompt += f"Completed Project Timeline:\\n{timeline_str}\\n\\n"
-        prompt += (
-            "Task: Audit this completed project and identify if there is evidence of historical corruption, "
-            "cost-overrun padding, or budget manipulation. Highlight specific loopholes or red flags exploited. "
-            "Keep the analysis professional, citizen-friendly, and limit it to 4-5 sentences."
+
+    if report_type == "post_mortem":
+        prompt = (
+            "You are a senior forensic auditor specializing in Philippine public procurement corruption.\n\n"
+            + base_context
+            + f"Final Paid Amount: {f_amt:,.2f} PHP\n"
+            f"Completed Project Timeline:\n{timeline_str}\n\n"
+            "Task: Audit this COMPLETED project. Identify evidence of corruption, cost-overrun padding, "
+            "budget manipulation, or procurement law violations. Cite specific red flags. "
+            "Keep the analysis professional and citizen-friendly. Limit to 4-5 sentences."
         )
+        json_mode = False
+
+    elif report_type == "award_integrity":
+        prompt = (
+            "You are a civic watchdog and procurement integrity auditor.\n\n"
+            + base_context
+            + f"Supplier History: {history_count} completed contracts with avg overrun {avg_overrun:,.2f} PHP\n"
+            f"Timeline so far:\n{timeline_str}\n\n"
+            "Task: Assess the integrity of this RECENTLY AWARDED contract. Flag any signs of: "
+            "collusion, underpriced bids that will balloon via variation orders, single-bidder risk, "
+            "or conflict of interest. Return a JSON object with keys:"
+            " 'probability' (0-1 overrun risk), 'rationale' (3-4 sentences)."
+        )
+        json_mode = True
+
+    elif report_type in ("active_bidding", "pre_bid_screening", "bid_evaluation"):
+        prompt = (
+            "You are a pre-bid procurement risk analyst for Philippine government contracts.\n\n"
+            + base_context
+            + f"Supplier History: {history_count} completed contracts with avg overrun {avg_overrun:,.2f} PHP\n\n"
+            "Task: Screen this ACTIVE/BIDDING procurement for early warning signs of: "
+            "budget inflation, restrictive specifications, short posting windows, or history-based risk. "
+            "Return a JSON object with 'probability' (0-1 risk) and 'rationale' (2-3 sentences)."
+        )
+        json_mode = True
+
+    elif report_type == "in_progress_monitor":
+        prompt = (
+            "You are a procurement monitoring specialist for Philippine infrastructure contracts.\n\n"
+            + base_context
+            + f"Supplier History: {history_count} completed contracts, avg overrun {avg_overrun:,.2f} PHP\n"
+            f"Project Timeline:\n{timeline_str}\n\n"
+            "Task: Monitor this ONGOING project for signs of delay, scope creep, variation order abuse, "
+            "or implementation risk. Return a JSON object with 'probability' (0-1 overrun risk) "
+            "and 'rationale' (2-3 sentences)."
+        )
+        json_mode = True
+
+    elif report_type == "cancellation":
+        prompt = (
+            "You are a Philippine procurement analyst investigating cancelled contracts.\n\n"
+            + base_context
+            + f"Timeline:\n{timeline_str}\n\n"
+            "Task: Analyze the likely reason for this CANCELLED procurement. "
+            "Flag whether cancellation may be a bid-rigging tactic or genuine procurement failure. "
+            "Limit to 3-4 sentences."
+        )
+        json_mode = False
+
     else:
-        avg_ovr = avg_overrun or 0.0
-        prompt += f"Historical Relationship Context: This supplier has won {history_count} previous completed contracts with this agency, with an average cost overrun of {avg_ovr:,.2f} PHP.\\n\\n"
-        prompt += (
-            "Task: Predict the probability and level of cost-overrun risk (variation orders inflating the final price by >10%) "
-            "before construction begins. Return a JSON object with keys 'probability' (float between 0 and 1) and 'rationale' (string, 3-4 sentences)."
+        prompt = (
+            "You are a procurement risk analyst.\n\n"
+            + base_context
+            + "Task: Provide a brief risk summary. 2-3 sentences."
         )
+        json_mode = False
 
     analysis_details = None
     risk_prob = 0.5
 
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    url = "https://api.deepseek.com/chat/completions"
-    model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
+    # ── DeepSeek (primary heavy lifter) ──
+    ds_key = os.getenv("DEEPSEEK_API_KEY")
+    ds_url = "https://api.deepseek.com/chat/completions"
+    ds_model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
 
-    if not api_key or api_key == "your_key_here":
-        api_key = os.getenv("OPENAI_API_KEY")
-        url = "https://api.openai.com/v1/chat/completions"
-        model = "gpt-4o-mini"
-
-    if api_key and api_key != "your_key_here":
+    if ds_key and ds_key != "your_key_here":
         try:
-            res = await call_llm_api(url=url, api_key=api_key, model=model, prompt=prompt, json_mode=not is_completed)
+            res = await call_llm_api(
+                url=ds_url, api_key=ds_key, model=ds_model,
+                prompt=prompt, json_mode=json_mode
+            )
             if res:
-                if not is_completed:
+                if json_mode:
                     try:
-                        import re
-                        clean_res = re.sub(r"```json\\s*|\\s*```", "", res).strip()
-                        parsed = json.loads(clean_res)
+                        import re as _re
+                        clean = _re.sub(r"```json\s*|\s*```", "", res).strip()
+                        parsed = json.loads(clean)
                         risk_prob = float(parsed.get("probability", 0.5))
                         analysis_details = parsed.get("rationale", res)
-                    except:
+                    except Exception:
                         analysis_details = res
                         risk_prob = 0.75 if "high" in res.lower() else 0.45
                 else:
                     analysis_details = res
                     risk_prob = None
+                logger.info(f"DeepSeek audit report generated", stage=lifecycle_stage, case_id=case_id)
         except Exception as e:
-            logger.error(f"LLM call failed in advanced audit: {e}")
+            logger.error(f"DeepSeek audit failed: {e}")
 
+    # ── OpenAI confirmation layer ──
+    # Required for: 'completed' stage (post-mortem forensic audit, high stakes)
+    # Optional for: 'awarded' stage — called only if DeepSeek risk_prob > 0.7 (red flag confirmation)
+    oa_key = os.getenv("OPENAI_API_KEY")
+    use_openai = (
+        oa_key
+        and oa_key != "your_key_here"
+        and (
+            openai_required  # always for completed
+            or (report_type == "award_integrity" and risk_prob and risk_prob > 0.7)
+        )
+    )
+
+    if use_openai:
+        audit_prompt = (
+            "You are a senior OpenAI-powered forensic auditor performing independent verification.\n"
+            f"DeepSeek analysis: {analysis_details}\n"
+            f"Estimated risk probability: {risk_prob}\n\n"
+            + base_context
+            + (f"Timeline:\n{timeline_str}\n\n" if events else "")
+            + ("Task: Independently verify and enhance this forensic audit of a COMPLETED project. "
+               "Add any additional red flags missed. Keep to 4-5 sentences total."
+               if report_type == "post_mortem"
+               else "Task: Confirm or correct this risk assessment. Provide your probability (0-1) and 2-3 sentence rationale as JSON with keys 'probability' and 'rationale'.")
+        )
+        try:
+            oa_res = await call_llm_api(
+                url="https://api.openai.com/v1/chat/completions",
+                api_key=oa_key,
+                model="gpt-4o-mini",
+                prompt=audit_prompt,
+                json_mode=(report_type != "post_mortem"),
+            )
+            if oa_res:
+                if report_type == "post_mortem":
+                    # Combine DeepSeek + OpenAI forensic analysis
+                    analysis_details = (
+                        (analysis_details or "") + "\n\n[OpenAI Forensic Audit Confirmation]\n" + oa_res
+                    ).strip()
+                    logger.info("OpenAI forensic audit appended to DeepSeek analysis", case_id=case_id)
+                else:
+                    try:
+                        import re as _re2
+                        clean2 = _re2.sub(r"```json\s*|\s*```", "", oa_res).strip()
+                        parsed2 = json.loads(clean2)
+                        oa_prob = float(parsed2.get("probability", risk_prob or 0.5))
+                        # Average DeepSeek + OpenAI probabilities
+                        risk_prob = round((risk_prob + oa_prob) / 2, 3) if risk_prob else oa_prob
+                        analysis_details = (
+                            (analysis_details or "") + "\n\n[OpenAI Review]\n"
+                            + parsed2.get("rationale", oa_res)
+                        ).strip()
+                        logger.info("OpenAI risk confirmation added", case_id=case_id, final_prob=risk_prob)
+                    except Exception:
+                        pass
+        except Exception as e:
+            logger.error(f"OpenAI audit confirmation failed: {e}")
+
+    # ── Local fallback if both LLMs failed ──
     if not analysis_details:
-        if is_completed:
-            overrun_val = (case["final_contract_amount"] or 0) - case["awarded_amount"]
-            overrun_pct = (overrun_val / case["awarded_amount"]) * 100 if case["awarded_amount"] > 0 else 0
+        if report_type == "post_mortem" and f_amt and a_amt:
+            overrun_val = f_amt - a_amt
+            overrun_pct = (overrun_val / a_amt) * 100 if a_amt > 0 else 0
             if overrun_pct > 10:
                 analysis_details = (
-                    f"Forensic audit confirms a significant cost overrun of {overrun_pct:.1f}% on this project, "
-                    f"resulting in an additional {overrun_val:,.2f} PHP payout to {case['supplier_name']}. The contract was "
-                    f"repeatedly modified during implementation via variation orders, indicating a high risk of budget padding."
+                    f"Forensic audit confirms a significant cost overrun of {overrun_pct:.1f}% on this "
+                    f"completed project, resulting in an additional {overrun_val:,.2f} PHP payout to "
+                    f"{supplier_name}. Repeated contract modifications indicate high risk of budget padding."
                 )
             else:
-                analysis_details = "The project was completed within acceptable budgetary bounds with no significant cost variations detected."
+                analysis_details = "Project completed within acceptable budgetary bounds with no significant cost variations."
             risk_prob = None
-        else:
-            bid_ratio = case["awarded_amount"] / case["planned_amount"] if case["planned_amount"] > 0 else 1.0
+        elif json_mode:
+            bid_ratio = a_amt / p_amt if p_amt > 0 else 1.0
             if bid_ratio < 0.85:
                 risk_prob = 0.82
                 analysis_details = (
-                    f"High predictive risk (82%) of cost overruns. The supplier won with an aggressive low-ball bid "
-                    f"({(1.0 - bid_ratio)*100:.1f}% below ABC). Historical patterns show that such extreme bid discounts "
-                    f"are typically placeholders recovered later through subsequent variation orders and price amendments."
+                    f"High predictive risk (82%) of cost overruns. The supplier won with an aggressive "
+                    f"low-ball bid ({(1.0 - bid_ratio)*100:.1f}% below ABC). Historical patterns show "
+                    f"that extreme bid discounts are typically recovered through subsequent variation orders."
                 )
             else:
                 risk_prob = 0.35
                 analysis_details = (
-                    "Low predictive risk (35%) of cost overruns. The bid price is within standard historical margins "
-                    "relative to the Approved Budget for Contract (ABC), indicating a balanced project valuation."
+                    "Low predictive risk (35%). Bid price is within standard historical margins "
+                    "relative to the Approved Budget for Contract (ABC)."
                 )
+        else:
+            analysis_details = f"Automated analysis unavailable for this {lifecycle_stage.replace('_', ' ')} project."
 
     report_id = str(uuid4())
     await db.execute(
@@ -1582,6 +1733,7 @@ async def generate_advanced_audit_report(db, case_id: str):
         }
     )
     await db.commit()
+
 
 
 async def analyze_case(case_id: str):
