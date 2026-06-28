@@ -5,7 +5,7 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 const API_URL = typeof window === 'undefined'
-  ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000')
+  ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://47.129.63.52:8000')
   : '/api';
 
 interface ProjectLocation {

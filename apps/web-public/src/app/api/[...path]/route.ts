@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://47.129.63.52:8000';
 
 async function handleProxy(request: NextRequest, path: string[]) {
   const targetPath = path.join('/');

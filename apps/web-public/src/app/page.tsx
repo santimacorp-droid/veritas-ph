@@ -9,7 +9,7 @@ import {
 } from '@/components/AnalyticsCharts';
 import { PublicSummary, Discrepancy } from '@veritas/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://47.129.63.52:8000';
 
 async function getSummary(): Promise<PublicSummary | null> {
   try {
