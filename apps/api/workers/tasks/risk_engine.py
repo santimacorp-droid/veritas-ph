@@ -268,7 +268,7 @@ async def check_single_bidder_risk(db, case_id: str):
                 INSERT INTO discrepancies (
                     discrepancy_id, case_id, discrepancy_type, severity, 
                     explanation, rule_id, rule_version, why_fired, 
-                    source_document_ids, review_status
+                    thresholds_applied, source_document_ids, review_status
                 )
                 VALUES (
                     :did, :cid, 'competition_risk', 'high', 
@@ -280,7 +280,8 @@ async def check_single_bidder_risk(db, case_id: str):
                 "did": discrepancy_id,
                 "cid": case_id,
                 "exp": explanation,
-                "why": json.dumps(why_fired), "thresholds": json.dumps(why_fired.get("conditions", {})),
+                "why": json.dumps(why_fired),
+                "thresholds": json.dumps(why_fired.get("conditions", {})),
                 "docs": json.dumps([str(case["document_id"])]) if case["document_id"] else "[]",
             },
         )
@@ -388,11 +389,13 @@ async def check_budget_splitting(db, case_id: str):
             text("""
                 INSERT INTO discrepancies (
                     discrepancy_id, case_id, discrepancy_type, severity, 
-                    explanation, rule_id, rule_version, why_fired, review_status
+                    explanation, rule_id, rule_version, why_fired, 
+                    thresholds_applied, review_status
                 )
                 VALUES (
                     :did, :cid, 'transparency_risk', 'high', 
-                    :exp, 'RULE_002', 'v1.0.0', :why, :thresholds, 'pending'
+                    :exp, 'RULE_002', 'v1.0.0', :why, 
+                    :thresholds, 'pending'
                 )
             """),
             {
@@ -400,6 +403,7 @@ async def check_budget_splitting(db, case_id: str):
                 "cid": case_id,
                 "exp": explanation,
                 "why": json.dumps(why_fired),
+                "thresholds": json.dumps({"threshold": bidding_threshold}),
             },
         )
         return discrepancy_id
@@ -504,7 +508,7 @@ async def check_short_posting_window(db, case_id: str):
                 INSERT INTO discrepancies (
                     discrepancy_id, case_id, discrepancy_type, severity, 
                     explanation, rule_id, rule_version, why_fired, 
-                    source_document_ids, review_status
+                    thresholds_applied, source_document_ids, review_status
                 )
                 VALUES (
                     :did, :cid, 'transparency_risk', 'high', 
@@ -516,7 +520,8 @@ async def check_short_posting_window(db, case_id: str):
                 "did": discrepancy_id,
                 "cid": case_id,
                 "exp": explanation,
-                "why": json.dumps(why_fired), "thresholds": json.dumps(why_fired.get("conditions", {})),
+                "why": json.dumps(why_fired),
+                "thresholds": json.dumps(why_fired.get("conditions", {})),
                 "docs": json.dumps([str(row["document_id"])]) if row["document_id"] else "[]",
             },
         )
