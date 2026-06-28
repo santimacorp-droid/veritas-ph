@@ -4,13 +4,14 @@ import styles from './VeritasLogo.module.css';
 interface VeritasLogoProps {
   size?: number;
   showText?: boolean;
+  animated?: boolean;
 }
 
-export default function VeritasLogo({ size = 32, showText = false }: VeritasLogoProps) {
+export default function VeritasLogo({ size = 32, showText = false, animated = true }: VeritasLogoProps) {
   const scaleRatio = size / 32;
 
   return (
-    <div className={styles.logoWrapper} style={{ gap: `${12 * scaleRatio}px` }}>
+    <div className={`${styles.logoWrapper} ${animated ? styles.logoWrapperAnimated : ''}`} style={{ gap: `${12 * scaleRatio}px` }}>
       <div 
         className={styles.logoIcon}
         style={{ width: `${size}px`, height: `${size}px` }}

@@ -64,27 +64,27 @@
 }
 
 /* Hover effects: slightly rotate balance beam to simulate active physical scales */
-.logoWrapper:hover .logoBeam {
+.logoWrapperAnimated:hover .logoBeam {
   transform: rotate(5deg);
 }
 
-.logoWrapper:hover .logoPanLeft {
+.logoWrapperAnimated:hover .logoPanLeft {
   transform: rotate(5deg) translateY(-0.5px);
 }
 
-.logoWrapper:hover .logoPanRight {
+.logoWrapperAnimated:hover .logoPanRight {
   transform: rotate(5deg) translateY(0.5px);
 }
 
 /* Central needle stays stable or slightly tilts in opposition */
-.logoWrapper:hover .logoNeedle {
+.logoWrapperAnimated:hover .logoNeedle {
   transform: rotate(-3deg);
 }
 
-.logoWrapper:hover .logoBackground {
+.logoWrapperAnimated:hover .logoBackground {
   opacity: 0.85;
 }
 
-.logoWrapper:hover .logoPivot {
+.logoWrapperAnimated:hover .logoPivot {
   transform: scale(1.15);
 }
