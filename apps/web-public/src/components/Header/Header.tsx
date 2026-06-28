@@ -16,8 +16,7 @@ export default function Header() {
     { label: 'Scorecard', path: '/scorecard' },
     { label: 'Map', path: '/map' },
     { label: 'Legislation Audits', path: '/laws' },
-    { label: 'Methodology', path: '/methodology' },
-    { label: 'Report Anomaly', path: '/report' }
+    { label: 'Methodology', path: '/methodology' }
   ];
 
   return (

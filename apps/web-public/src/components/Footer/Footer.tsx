@@ -16,6 +16,7 @@ export default function Footer() {
           <Link href="/about" className={`${styles.link} font-ui`}>About Veritas</Link>
           <Link href="/methodology" className={`${styles.link} font-ui`}>Methodology</Link>
           <Link href="/laws" className={`${styles.link} font-ui`}>Legislative Audits</Link>
+          <Link href="/report" className={`${styles.link} font-ui`}>Report Anomaly</Link>
           <a href="https://github.com/santimacorp-droid/veritas-ph" target="_blank" rel="noopener noreferrer" className={`${styles.link} font-ui`}>GitHub</a>
           <a href="https://ko-fi.com/santima" target="_blank" rel="noopener noreferrer" className={`${styles.link} font-ui`} style={{ color: '#FFD54F', fontWeight: 600 }}>☕ Support on Ko-fi</a>
         </div>
