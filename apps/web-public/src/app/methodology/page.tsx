@@ -17,12 +17,12 @@ interface Rule {
 const RULES: Rule[] = [
   {
     id: "RULE-001",
-    title: "Single Bidder on High-Value Bids",
+    title: "Single Bidder on High-Value Tenders",
     category: "competition",
     categoryLabel: "Competition",
     description: "Flags competitive tenders valued above a critical threshold that yield only a single bidder, indicating potential tailored specifications or pre-arranged collusion.",
-    model: "Trigger = True  if  [ Bidders_Count = 1  &  Award_Value >= 10,000,000 PHP ]",
-    link: "RA 9184 Section 36 (Single Calculated Responsive Bid requirements)."
+    model: "Trigger = True  if  [ Bidders_Count = 1  &  Award_Value >= 10,000,000 PHP ]\n  - Flags a pattern permitted under specific Section 65 criteria, used as a statistical red flag for further review.",
+    link: "RA 12009 Section 65 (Single Calculated/Rated/Economically Advantageous and Responsive Bid Submission)."
   },
   {
     id: "RULE-002",
@@ -30,8 +30,8 @@ const RULES: Rule[] = [
     category: "financial",
     categoryLabel: "Financial",
     description: "Identifies clusters of alternative (non-competitive) contract awards executed by the same procuring entity within close temporal proximity that aggregate to a value exceeding public bidding thresholds.",
-    model: "Let C = { contracts } by same Agency, same Category, using SVP or Shopping where:\n  - |Date(c_i) - Date(c_j)| <= 30 days\n  - TitleSimilarity(c_i, c_j) >= 0.40\n  - Sum(Award_Value(c_i)) >= 1,000,000 PHP",
-    link: "RA 9184 Section 54.1 (Prohibition against splitting of contracts to bypass public bidding)."
+    model: "Let C = { contracts } by same Agency, same Category, using SVP or Shopping where:\n  - |Date(c_i) - Date(c_j)| <= 30 days\n  - TitleSimilarity(c_i, c_j) >= 0.40\n  - Sum(Award_Value(c_i)) >= 1,000,000 PHP\n  - Section 39 excludes legitimate package/lot procurement.",
+    link: "RA 12009 Section 39 (Prohibition on Splitting of Government Contracts) & Section 92(d) (Administrative Liability)."
   },
   {
     id: "RULE-003",
@@ -39,8 +39,8 @@ const RULES: Rule[] = [
     category: "timeline",
     categoryLabel: "Timeline",
     description: "Flags procurement events where the duration between the public advertisement date and the bid closing date falls below the legal minimum.",
-    model: "Trigger = True  if  [ (Closing_Date - Date_Published) < Method_Posting_Threshold ]\n  - Threshold: 20 calendar days for competitive bidding; 7 days for Shopping/SVP.",
-    link: "RA 9184 Section 21.2.1(a) (Notice posting requirements)."
+    model: "Trigger = True  if  [ (Closing_Date - Date_Published) < Method_Posting_Threshold ]\n  - Pre-Feb 2025: 20 calendar days for competitive bidding; 7 days for Shopping/SVP.\n  - Post-Feb 2025: Differentiates based on updated NGPA IRR timeline frameworks (e.g. up to 45 days for Goods).",
+    link: "RA 12009 Section 50 (Publication and Contents of the Invitation to Bid) & GPPB IRR Rule VII/VIII."
   },
   {
     id: "RULE-004",
@@ -48,8 +48,8 @@ const RULES: Rule[] = [
     category: "financial",
     categoryLabel: "Financial",
     description: "Flags contracts where the awarded contract amount exceeds the Approved Budget for the Contract (ABC) or the planned budget limit.",
-    model: "Trigger = True  if  [ Award_Value > Planned_Budget_ABC * 1.20 ]",
-    link: "RA 9184 Section 31 (Budget ceiling limitations)."
+    model: "Trigger = True  if  [ Award_Value > Planned_Budget_ABC ]\n  - Bids exceeding the ABC ceiling must be disqualified outright. Over-budget awards suggest bidding process anomalies or post-award inflation.",
+    link: "RA 12009 Section 60 (Ceiling for Bid Prices)."
   },
   {
     id: "RULE-005",
@@ -57,8 +57,8 @@ const RULES: Rule[] = [
     category: "financial",
     categoryLabel: "Financial",
     description: "Flags contract modifications and amendments executed post-award that increase the total project cost by a margin exceeding statutory limitations.",
-    model: "Trigger = True  if  [ Cumulative_Amendment_Value_Increase > Original_Contract_Value * 10% ]",
-    link: "RA 9184 Annex E Section 1.3 (Cumulative Variation Orders capped at 10% of original price)."
+    model: "Trigger = True  if  [ Cumulative_Amendment_Value_Increase > Original_Contract_Value * 10% ]\n  - Section 89 strictly controls price escalation based on official indices and GPPB approval.",
+    link: "RA 12009 Section 71 (Contract Implementation and Termination) & Section 89 (Contract Prices)."
   },
   {
     id: "RULE-006",
@@ -67,7 +67,7 @@ const RULES: Rule[] = [
     categoryLabel: "Transparency",
     description: "Flags projects launched dynamically by agencies without corresponding schedule listings in the approved Annual Procurement Plan (APP).",
     model: "Trigger = True  if  [ Linked_APP_Items_Count = 0 ]",
-    link: "RA 9184 Section 7.2 (Procurement must conform with the approved Annual Procurement Plan)."
+    link: "RA 12009 Section 7 (Strategic Procurement Planning and Budgeting Linkage)."
   },
   {
     id: "RULE-007",
@@ -76,25 +76,25 @@ const RULES: Rule[] = [
     categoryLabel: "Competition",
     description: "Flags wins by contractors whose commercial registration, history, or industry sector classification falls entirely outside the scope of the bid.",
     model: "Trigger = True  if  [ Project_Category_Code not in Supplier_Specialization_Registry ]",
-    link: "RA 9184 Section 23 (Contractor technical eligibility and licensing benchmarks)."
+    link: "RA 12009 Section 52 (Eligibility Requirements for Goods, Infrastructure, and Consulting)."
   },
   {
     id: "RULE-008",
     title: "Delayed Notice to Proceed (NTP)",
     category: "timeline",
     categoryLabel: "Timeline",
-    description: "Detects deviations where the date of issuance for the Notice to Proceed lags significantly behind the Notice of Award.",
-    model: "Trigger = True  if  [ (NTP_Date - Award_Date) > 15 days  or  NTP_Date < Award_Date ]",
-    link: "RA 9184 Section 37.4.1 (Notice to Proceed timelines)."
+    description: "Detects deviations where the date of issuance for the Notice to Proceed lags significantly behind the contract approval date.",
+    model: "Trigger = True  if  [ (NTP_Date - Contract_Approval_Date) > 3 days ]\n  - Measured from contract approval for post-Feb 2025 procurements (NGPA mandate).",
+    link: "RA 12009 Section 66 (Notice and Execution of Award)."
   },
   {
     id: "RULE-009",
-    title: "Missing Abstract of Bids",
+    title: "Missing Abstract of Bids / Opening Records",
     category: "transparency",
     categoryLabel: "Transparency",
-    description: "Flags completed or awarded tenders that fail to publish the standard Abstract of Bids.",
+    description: "Flags completed or awarded tenders that fail to publish the standard Abstract of Bids or bid opening records.",
     model: "Trigger = True  if  [ Has_Award = True  &  Abstract_Attachments_Count = 0 ]",
-    link: "RA 9184 Section 37 (Public disclosure rules)."
+    link: "RA 12009 Section 58 (Bid Opening) and Section 3(a) (Transparency Principles)."
   },
   {
     id: "RULE-010",
@@ -103,7 +103,7 @@ const RULES: Rule[] = [
     categoryLabel: "Compliance",
     description: "Flags cases initiated by agencies that currently have outstanding or unresolved notices of suspension or disallowance published by the Commission on Audit (COA).",
     model: "Trigger = True  if  [ COA_Adverse_Findings(Agency, Fiscal_Year) > 0 ]",
-    link: "1987 Philippine Constitution Article IX-D Section 2."
+    link: "1987 Philippine Constitution Art. IX-D Sec. 2 & PD 1445 (Government Auditing Code)."
   },
   {
     id: "RULE-011",
@@ -112,7 +112,7 @@ const RULES: Rule[] = [
     categoryLabel: "Timeline",
     description: "Detects chronological anomalies where a contract award date is officially logged prior to the closing deadline for public bid submission.",
     model: "Trigger = True  if  [ Award_Date < Bid_Closing_Deadline ]",
-    link: "RA 9184 Section 37 (Award chronology rules)."
+    link: "Derived sequencing violation from RA 12009 Articles VIII-XI (Sections 54, 58, 63, and 66)."
   },
   {
     id: "RULE-012",
@@ -120,8 +120,8 @@ const RULES: Rule[] = [
     category: "competition",
     categoryLabel: "Competition",
     description: "Flags contract awards executed within a market category and agency region that exhibits extreme supplier monopolization, measured using the Herfindahl-Hirschman Index (HHI).",
-    model: "HHI_category = Sum_{s in Suppliers} ( (Supplier_Category_Wins / Total_Category_Volume) * 100 )^2\nTrigger = True  if  [ HHI_category > 2,500 ]",
-    link: "Philippine Competition Act (RA 10667) & GPPB Anti-Collusion standards."
+    model: "HHI_category = Sum_{s in Suppliers} ( (Supplier_Category_Wins / Total_Category_Volume) * 100 )^2\nTrigger = True  if  [ HHI_category > 2,500 ]\n  - HHI > 2500 threshold is an international statistical convention applied for market analysis.",
+    link: "RA 12009 Section 100(c), (f), & (i) (Bid-Rigging Definitions) & Philippine Competition Act (RA 10667)."
   },
   {
     id: "RULE-013",
@@ -130,7 +130,7 @@ const RULES: Rule[] = [
     categoryLabel: "Financial",
     description: "Detects overpricing by executing statistical outlier checks on specific itemized unit prices against the historical baseline distribution of identical goods.",
     model: "Trigger = True  if  [ Item_Unit_Price > Category_Mean_Price + 2 * Standard_Deviation ]",
-    link: "COA Guidelines on Overpricing audits."
+    link: "COA Price Reasonableness circulars and Value-for-Money auditing guidelines."
   },
   {
     id: "RULE-014",
@@ -139,7 +139,7 @@ const RULES: Rule[] = [
     categoryLabel: "Compliance",
     description: "Flags infrastructure projects awarded to suppliers whose registered office address or PCAB license regional classification codes mismatch the actual geographic location of the project.",
     model: "Trigger = True  if  [ Project_Region_Code not in Supplier_PCAB_Allowed_Regions ]",
-    link: "Philippine Contractors Accreditation Board (PCAB) licensing requirements."
+    link: "RA 4566 (Contractors' License Law) & RA 12009 Section 23(c) (PhilGEPS database interconnectivity)."
   }
 ];
 

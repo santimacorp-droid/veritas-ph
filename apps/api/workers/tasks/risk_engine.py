@@ -458,19 +458,36 @@ async def check_short_posting_window(db, case_id: str):
         return None
 
     diff_days = (closing_date - date_published).days
+    
+    # Check if this procurement is under RA 12009 (NGPA) based on date_published >= Feb 4, 2025
+    from datetime import date
+    is_ngpa = date_published >= date(2025, 2, 4)
 
-    # RA 9184 minimum posting days per procurement method
-    method_thresholds = {
-        "public_bidding": 20,
-        "shopping": 7,
-        "small_value_procurement": 7,
-        "negotiated": 7,
-        "direct_contracting": 0
-    }
+    if is_ngpa:
+        # RA 12009 (NGPA) minimum posting days
+        method_thresholds = {
+            "public_bidding": 14,
+            "shopping": 3,
+            "small_value_procurement": 3,
+            "negotiated": 3,
+            "direct_contracting": 0
+        }
+        law_ref = "Section 50 of RA 12009 (NGPA)"
+    else:
+        # RA 9184 minimum posting days
+        method_thresholds = {
+            "public_bidding": 20,
+            "shopping": 7,
+            "small_value_procurement": 7,
+            "negotiated": 7,
+            "direct_contracting": 0
+        }
+        law_ref = "Section 21 of RA 9184"
+
     method_key = str(row.get("procurement_method", "")).lower()
     
     # Determine minimum days based on method (fallback to 7 if unknown)
-    min_posting_days = method_thresholds.get(method_key, 7)
+    min_posting_days = method_thresholds.get(method_key, 3 if is_ngpa else 7)
 
     if diff_days < min_posting_days:
         discrepancy_id = str(uuid4())
@@ -478,7 +495,7 @@ async def check_short_posting_window(db, case_id: str):
         fallback_explanation = (
             f"The posting window for this bid notice was only {diff_days} days "
             f"({date_published_str} to {closing_date_str}), which is less than the statutory "
-            f"minimum of {min_posting_days} calendar days required by Section 21 of RA 9184. "
+            f"minimum of {min_posting_days} calendar days required by {law_ref}. "
             f"Short posting windows limit competition and may favor pre-selected suppliers."
         )
 
@@ -489,6 +506,7 @@ async def check_short_posting_window(db, case_id: str):
                 "closing_date": closing_date_str,
                 "days_posted": diff_days,
                 "required_minimum_days": min_posting_days,
+                "governing_law": "RA 12009" if is_ngpa else "RA 9184"
             },
         }
 
@@ -518,6 +536,7 @@ async def check_short_posting_window(db, case_id: str):
             """),
             {
                 "did": discrepancy_id,
+
                 "cid": case_id,
                 "exp": explanation,
                 "why": json.dumps(why_fired),
@@ -539,7 +558,7 @@ async def check_short_posting_window(db, case_id: str):
 async def check_award_to_budget_overshoot(db, case_id: str):
     sql = text("""
         SELECT pc.case_id, pc.title, pc.planned_amount, pc.awarded_amount, pc.final_contract_amount,
-               a.name AS agency_name, pc.publisher_id
+               pc.award_date, a.name AS agency_name, pc.publisher_id
         FROM procurement_cases pc
         LEFT JOIN agencies a ON a.agency_id = pc.agency_id
         WHERE pc.case_id = :cid
@@ -551,30 +570,34 @@ async def check_award_to_budget_overshoot(db, case_id: str):
     
     planned = float(case["planned_amount"])
     awarded = float(case["awarded_amount"])
-    final = float(case["final_contract_amount"] or 0)
     
     # Check if discrepancy already exists to avoid duplication
     exists = (await db.execute(text("SELECT 1 FROM discrepancies WHERE case_id = :cid AND rule_id = 'RULE_004'"), {"cid": case_id})).scalar()
     if exists:
         return "exists"
         
-    overshoot_val = awarded
-    if final > 0:
-        overshoot_val = final
-        
-    if planned > 0 and overshoot_val > planned * 1.20:
+    # Strictly checking if awarded amount exceeds planned amount (ABC ceiling)
+    if planned > 0 and awarded > planned:
+        # Determine governing law
+        from datetime import date
+        a_date = case.get("award_date")
+        is_ngpa = a_date and a_date >= date(2025, 2, 4)
+        law_ref = "Section 60 of RA 12009 (NGPA)" if is_ngpa else "Section 31 of RA 9184"
+
         discrepancy_id = str(uuid4())
         fallback_explanation = (
-            f"The final award or contract amount ({overshoot_val:,.2f} PHP) significantly exceeded the "
-            f"Approved Budget for the Contract ({planned:,.2f} PHP) by over 20%. Under RA 9184 Sec 31, "
-            "budgets serve as ceilings, and excessive final costs require justification."
+            f"The awarded contract amount ({awarded:,.2f} PHP) exceeded the Approved Budget for the "
+            f"Contract (ABC) of {planned:,.2f} PHP. Under {law_ref}, the ABC serves as an absolute "
+            "ceiling for bid prices, and bids exceeding this ceiling must be disqualified outright."
         )
         why_fired = {
             "rule": "AWARD_TO_BUDGET_OVERSHOOT",
-            "planned_amount": planned,
-            "awarded_amount": awarded,
-            "final_contract_amount": final,
-            "overshoot_percentage": (overshoot_val / planned - 1) * 100
+            "conditions": {
+                "planned_amount": planned,
+                "awarded_amount": awarded,
+                "overshoot_percentage": ((awarded / planned) - 1.0) * 100.0,
+                "governing_law": "RA 12009" if is_ngpa else "RA 9184"
+            }
         }
         explanation = await generate_explanation(
             discrepancy_type="financial_risk",
@@ -793,7 +816,7 @@ async def check_late_ntp_issuance(db, case_id: str):
         return "exists"
         
     sql = text("""
-        SELECT pc.case_id, pc.title, pc.award_date, pc.ntp_date,
+        SELECT pc.case_id, pc.title, pc.award_date, pc.ntp_date, pc.contract_start_date,
                a.name AS agency_name, pc.awarded_amount
         FROM procurement_cases pc
         LEFT JOIN agencies a ON a.agency_id = pc.agency_id
@@ -801,52 +824,105 @@ async def check_late_ntp_issuance(db, case_id: str):
     """)
     result = await db.execute(sql, {"cid": case_id})
     row = result.mappings().first()
-    if not row or not row["award_date"] or not row["ntp_date"]:
+    if not row or not row["ntp_date"]:
         return None
         
-    a_date = row["award_date"]
     n_date = row["ntp_date"]
+    a_date = row["award_date"]
+    c_date = row["contract_start_date"]
     
-    if isinstance(a_date, str):
-        a_date = parse_date(a_date)
     if isinstance(n_date, str):
         n_date = parse_date(n_date)
+    if isinstance(a_date, str):
+        a_date = parse_date(a_date)
+    if isinstance(c_date, str):
+        c_date = parse_date(c_date)
         
-    if not a_date or not n_date:
+    if not n_date:
         return None
         
-    diff = (n_date - a_date).days
+    # Check if this procurement falls under RA 12009 (NGPA) based on award_date or contract_start_date >= Feb 4, 2025
+    from datetime import date
+    ref_date = a_date or c_date
+    is_ngpa = ref_date and ref_date >= date(2025, 2, 4)
     
-    if diff > 15:
-        severity = "medium"
-        discrepancy_id = str(uuid4())
-        fallback_explanation = (
-            f"The Notice to Proceed (NTP) was issued {diff} calendar days after the Notice of Award "
-            f"({a_date} to {n_date}), exceeding the statutory limit of 15 calendar days prescribed "
-            "by the IRR of RA 9184. Delays in NTP issuance can stall public services and indicate negotiation irregularities."
-        )
-        why_fired = {
-            "rule": "LATE_NTP_ISSUANCE",
-            "award_date": str(a_date),
-            "ntp_date": str(n_date),
-            "days_delay": diff,
-            "statutory_limit": 15
-        }
-    elif diff < 0:
-        severity = "high"
-        discrepancy_id = str(uuid4())
-        fallback_explanation = (
-            f"The Notice to Proceed (NTP) was issued BEFORE the Notice of Award "
-            f"({a_date} to {n_date}). This is a severe chronological violation."
-        )
-        why_fired = {
-            "rule": "NTP_BEFORE_NOA",
-            "award_date": str(a_date),
-            "ntp_date": str(n_date),
-            "days_delay": diff
-        }
-    
-    if diff > 15 or diff < 0:
+    triggered = False
+    severity = "medium"
+    fallback_explanation = ""
+    why_fired = {}
+
+    if is_ngpa:
+        # Under RA 12009 Section 66: NTP must be issued within 3 days from contract approval
+        if not c_date:
+            return None  # Can't check yet if contract approval date is missing
+            
+        diff = (n_date - c_date).days
+        if diff > 3:
+            triggered = True
+            fallback_explanation = (
+                f"The Notice to Proceed (NTP) was issued {diff} calendar days after contract approval "
+                f"({c_date} to {n_date}), exceeding the statutory limit of 3 calendar days prescribed "
+                "by Section 66 of RA 12009 (NGPA). Delays in NTP can stall public projects."
+            )
+            why_fired = {
+                "rule": "LATE_NTP_ISSUANCE_NGPA",
+                "contract_approval_date": str(c_date),
+                "ntp_date": str(n_date),
+                "days_delay": diff,
+                "statutory_limit": 3,
+                "governing_law": "RA 12009"
+            }
+        elif diff < 0:
+            triggered = True
+            severity = "high"
+            fallback_explanation = (
+                f"The Notice to Proceed (NTP) was issued BEFORE the contract approval date "
+                f"({c_date} to {n_date}). This is a severe chronological violation."
+            )
+            why_fired = {
+                "rule": "NTP_BEFORE_CONTRACT_APPROVAL",
+                "contract_approval_date": str(c_date),
+                "ntp_date": str(n_date),
+                "days_delay": diff,
+                "governing_law": "RA 12009"
+            }
+    else:
+        # Under RA 9184: NTP must be issued within 15 days from Notice of Award (NOA)
+        if not a_date:
+            return None
+            
+        diff = (n_date - a_date).days
+        if diff > 15:
+            triggered = True
+            fallback_explanation = (
+                f"The Notice to Proceed (NTP) was issued {diff} calendar days after the Notice of Award "
+                f"({a_date} to {n_date}), exceeding the statutory limit of 15 calendar days prescribed "
+                "by the IRR of RA 9184. Delays in NTP can stall public projects."
+            )
+            why_fired = {
+                "rule": "LATE_NTP_ISSUANCE_RA9184",
+                "award_date": str(a_date),
+                "ntp_date": str(n_date),
+                "days_delay": diff,
+                "statutory_limit": 15,
+                "governing_law": "RA 9184"
+            }
+        elif diff < 0:
+            triggered = True
+            severity = "high"
+            fallback_explanation = (
+                f"The Notice to Proceed (NTP) was issued BEFORE the Notice of Award "
+                f"({a_date} to {n_date}). This is a severe chronological violation."
+            )
+            why_fired = {
+                "rule": "NTP_BEFORE_NOA",
+                "award_date": str(a_date),
+                "ntp_date": str(n_date),
+                "days_delay": diff,
+                "governing_law": "RA 9184"
+            }
+
+    if triggered:
         explanation = await generate_explanation(
             discrepancy_type="timeline_risk",
             rule_id="RULE_008",
