@@ -53,6 +53,7 @@
 }
 .statusBadge[data-status="active"] { background: var(--color-confirm-light); color: var(--color-confirm); border-color: var(--color-confirm); }
 .statusBadge[data-status="repealed"] { background: var(--color-flag-light); color: var(--color-flag); border-color: var(--color-flag); }
+.statusBadge[data-status="incomplete"] { background: var(--color-medium-light); color: var(--color-medium); border-color: var(--color-medium); }
 
 .emptyCell { padding: 40px 16px; text-align: center; color: var(--color-ink-muted); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
 

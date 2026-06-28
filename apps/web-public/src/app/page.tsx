@@ -104,7 +104,7 @@ export default async function Home() {
       <section className={styles.statsBar}>
         <div className={`${styles.stat} font-mono`}>
           <span className={styles.statValue}>{summary?.total_cases ?? 0}</span>
-          <span className={styles.statLabel}>Cases indexed</span>
+          <span className={styles.statLabel}>Projects indexed</span>
         </div>
         <div className={`${styles.stat} font-mono`}>
           <span className={`${styles.statValue} ${styles.statFlag}`}>
@@ -127,7 +127,12 @@ export default async function Home() {
       {/* Donation/Support Banner */}
       <section className={styles.donationBanner}>
         <div className={styles.donationContent}>
-          <div className={styles.donationIcon}>☕</div>
+          <div className={styles.donationIcon}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-medium)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </div>
           <div className={styles.donationText}>
             <h3 className={`${styles.donationTitle} font-display`}>Support Veritas Philippines</h3>
             <p className={`${styles.donationDesc} font-body`}>

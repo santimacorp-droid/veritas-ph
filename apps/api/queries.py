@@ -220,7 +220,8 @@ async def list_cases(
     category: str | None = None,
     risk_min: float | None = None,
     year: int | None = None,
-    region: str | None = None
+    region: str | None = None,
+    stage: str | None = None,
 ):
     """List procurement cases ordered by freshness first, then risk and award date."""
     where_clauses = []
@@ -249,6 +250,9 @@ async def list_cases(
         else:
             where_clauses.append("EXTRACT(YEAR FROM pc.award_date) = :year")
             params["year"] = year
+    if stage:
+        where_clauses.append("pc.procurement_stage = :stage")
+        params["stage"] = stage
         
     where_sql = ""
     if where_clauses:
@@ -268,6 +272,9 @@ async def list_cases(
             pc.final_contract_amount,
             pc.award_date,
             pc.status,
+            pc.procurement_stage,
+            pc.bid_deadline,
+            pc.ntp_date,
             pc.risk_score,
             pc.completeness_score,
             pc.confidence_score,
@@ -282,7 +289,9 @@ async def list_cases(
         {where_sql}
         GROUP BY
             pc.case_id, pc.title, pc.procurement_ref_no, pc.procurement_method,
-            pc.category, pc.geographic_scope, pc.planned_amount, pc.awarded_amount, pc.final_contract_amount, pc.award_date, pc.status,
+            pc.category, pc.geographic_scope, pc.planned_amount, pc.awarded_amount,
+            pc.final_contract_amount, pc.award_date, pc.status, pc.procurement_stage,
+            pc.bid_deadline, pc.ntp_date,
             pc.risk_score, pc.completeness_score, pc.confidence_score,
             pc.updated_at, pc.created_at,
             a.agency_id, a.name, a.acronym

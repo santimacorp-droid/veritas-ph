@@ -337,7 +337,7 @@ export default function AnalystDashboard() {
           ))}
           <div style={{ margin: '12px 20px', borderTop: '1px solid var(--color-rule)', opacity: 0.5 }} />
           <Link href="/legislation" className={`${styles.navItem} font-ui`} style={{ textDecoration: 'none' }}>
-            Legislation
+            Legislation Audits
           </Link>
           <Link href="/audit-log" className={`${styles.navItem} font-ui`} style={{ textDecoration: 'none' }}>
             Audit Log

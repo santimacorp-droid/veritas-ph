@@ -445,35 +445,51 @@ async def process_document(document_id: str):
                 case_id = case_row["case_id"]
                 case_exists = True
 
+        # Map method and category to canonical formats
+        method_key = procurement_method.lower().replace(" ", "_")
+        if "bidding" in method_key:
+            method_key = "public_bidding"
+        elif "shopping" in method_key:
+            method_key = "shopping"
+        elif "value" in method_key or "svp" in method_key:
+            method_key = "small_value_procurement"
+        elif "negotiated" in method_key:
+            method_key = "negotiated"
+
+        cat_key = category.lower().replace(" ", "_")
+        if "infra" in cat_key or "construction" in cat_key:
+            cat_key = "infrastructure"
+        elif "drugs" in cat_key or "medicine" in cat_key or "goods" in cat_key:
+            cat_key = "goods"
+        elif "consult" in cat_key:
+            cat_key = "consulting_services"
+
+        deadline_val = (
+            datetime.strptime(dl, "%Y-%m-%d").date()
+            if (dl := normalize_date_to_iso(extracted_data.get("closing_date")))
+            else None
+        )
+
+        # Infer initial procurement_stage from extracted dates
+        from datetime import date as _date
+        _today = _date.today()
+        if deadline_val and deadline_val < _today:
+            inferred_stage = 'under_evaluation'
+        else:
+            inferred_stage = 'active_bidding'
+
         if not case_exists:
-            # Map method and category to canonical formats
-            method_key = procurement_method.lower().replace(" ", "_")
-            if "bidding" in method_key:
-                method_key = "public_bidding"
-            elif "shopping" in method_key:
-                method_key = "shopping"
-            elif "value" in method_key or "svp" in method_key:
-                method_key = "small_value_procurement"
-            elif "negotiated" in method_key:
-                method_key = "negotiated"
-
-            cat_key = category.lower().replace(" ", "_")
-            if "infra" in cat_key or "construction" in cat_key:
-                cat_key = "infrastructure"
-            elif "drugs" in cat_key or "medicine" in cat_key or "goods" in cat_key:
-                cat_key = "goods"
-            elif "consult" in cat_key:
-                cat_key = "consulting_services"
-
             await db.execute(
                 text("""
                     INSERT INTO procurement_cases (
-                        case_id, publisher_id, agency_id, procurement_ref_no, title, 
-                        procurement_method, category, planned_amount, bid_deadline, status
+                        case_id, publisher_id, agency_id, procurement_ref_no, title,
+                        procurement_method, category, planned_amount, bid_deadline,
+                        status, procurement_stage
                     )
                     VALUES (
-                        :cid, :pid, :aid, :ref, :title, 
-                        :method, :cat, :amount, :deadline, 'open'
+                        :cid, :pid, :aid, :ref, :title,
+                        :method, :cat, :amount, :deadline,
+                        'open', :stage
                     )
                 """),
                 {
@@ -485,14 +501,47 @@ async def process_document(document_id: str):
                     "method": method_key,
                     "cat": cat_key,
                     "amount": planned_amount,
-                    "deadline": (
-                        datetime.strptime(dl, "%Y-%m-%d").date()
-                        if (dl := normalize_date_to_iso(extracted_data.get("closing_date")))
-                        else None
-                    ),
+                    "deadline": deadline_val,
+                    "stage": inferred_stage,
+                },
+            )
+        else:
+            await db.execute(
+                text("""
+                    UPDATE procurement_cases
+                    SET publisher_id = :pid,
+                        agency_id = :aid,
+                        title = :title,
+                        procurement_method = :method,
+                        category = :cat,
+                        planned_amount = :amount,
+                        bid_deadline = :deadline,
+                        procurement_stage = :stage,
+                        risk_score = NULL,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE case_id = :cid
+                """),
+                {
+                    "pid": publisher_id,
+                    "aid": agency_id,
+                    "title": title,
+                    "method": method_key,
+                    "cat": cat_key,
+                    "amount": planned_amount,
+                    "deadline": deadline_val,
+                    "stage": inferred_stage,
+                    "cid": case_id,
                 },
             )
 
+        # Check if tender event for this case & document already exists
+        event_res = await db.execute(
+            text("SELECT event_id FROM procurement_events WHERE case_id = :cid AND document_id = :did AND stage = 'tender'"),
+            {"cid": case_id, "did": document_id}
+        )
+        event_exists = event_res.mappings().first() is not None
+
+        if not event_exists:
             # Insert tender event
             await db.execute(
                 text("""

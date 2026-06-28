@@ -4,16 +4,15 @@ import styles from './VeritasLogo.module.css';
 interface VeritasLogoProps {
   size?: number;
   showText?: boolean;
-  animated?: boolean;
 }
 
-export default function VeritasLogo({ size = 32, showText = false, animated = true }: VeritasLogoProps) {
+export default function VeritasLogo({ size = 32, showText = false }: VeritasLogoProps) {
   const scaleRatio = size / 32;
 
   return (
-    <div className={styles.logoWrapper} style={{ gap: `${10 * scaleRatio}px` }}>
+    <div className={styles.logoWrapper} style={{ gap: `${12 * scaleRatio}px` }}>
       <div 
-        className={`${styles.logoIcon} ${animated ? styles.animateLogo : ''}`}
+        className={styles.logoIcon}
         style={{ width: `${size}px`, height: `${size}px` }}
       >
         <svg
@@ -22,68 +21,83 @@ export default function VeritasLogo({ size = 32, showText = false, animated = tr
           xmlns="http://www.w3.org/2000/svg"
           className={styles.svg}
         >
-          <defs>
-            {/* Cyber Gradient: Blue to Green */}
-            <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00B0FF" /> {/* Cyber Blue */}
-              <stop offset="100%" stopColor="#00E676" /> {/* Neon Green */}
-            </linearGradient>
-
-            {/* Risk Gradient: Red to Orange */}
-            <linearGradient id="riskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FF4D5E" /> {/* Electric Red */}
-              <stop offset="100%" stopColor="#FF9838" /> {/* Neon Orange */}
-            </linearGradient>
-
-            {/* Premium Radial Glow */}
-            <filter id="premiumGlow" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="2" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
-          {/* Futuristic Minimalist "V" (Chevron Ribbon Concept) */}
-          {/* Left Ribbon Wing */}
+          {/* Background shield/prism glow */}
           <path
-            d="M5 6L13.5 25.5C14.2 27.1 15.8 27.1 16.5 25.5L25 6"
-            stroke="url(#cyberGrad)"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            filter="url(#premiumGlow)"
-            className={styles.chevronLeft}
-          />
-
-          {/* Overlapping Right Accent Ribbon (Truth/Risk balance) */}
-          <path
-            d="M17.5 16.5L21.5 7.5"
-            stroke="url(#riskGrad)"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            className={styles.chevronRight}
+            d="M16 2L28 9V21L16 30L4 21V9L16 2Z"
+            fill="url(#shieldGlow)"
+            className={styles.logoBackground}
           />
           
-          {/* Center Audit Node */}
-          <circle 
-            cx="16" 
-            cy="15" 
-            r="1.8" 
-            fill="#F3F5F9" 
-            filter="url(#premiumGlow)"
-            className={styles.centerNode} 
+          {/* Minimalist modern geometric balance scales */}
+          <path
+            d="M6 10L16 13L26 10"
+            stroke="var(--color-ink)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={styles.logoBeam}
           />
+          
+          {/* Right scale pan */}
+          <path
+            d="M26 10L28 20C28 21.1 27.1 22 26 22H24C22.9 22 22 21.1 22 20L22 10"
+            stroke="var(--color-ink-secondary)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={styles.logoPanRight}
+          />
+
+          {/* Left scale pan */}
+          <path
+            d="M6 10L4 20C4 21.1 4.9 22 6 22H8C9.1 22 10 21.1 10 20L10 10"
+            stroke="var(--color-ink-secondary)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={styles.logoPanLeft}
+          />
+
+          {/* Glowing central needle of truth */}
+          <line
+            x1="16"
+            y1="5"
+            x2="16"
+            y2="24"
+            stroke="url(#needleGradient)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            className={styles.logoNeedle}
+          />
+
+          {/* Anchor node pivot point */}
+          <circle
+            cx="16"
+            cy="13"
+            r="2.5"
+            fill="var(--color-flag)"
+            className={styles.logoPivot}
+          />
+          
+          <defs>
+            <linearGradient id="shieldGlow" x1="16" y1="2" x2="16" y2="30" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="var(--color-flag)" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="var(--color-data-blue)" stopOpacity="0.02" />
+            </linearGradient>
+            <linearGradient id="needleGradient" x1="16" y1="5" x2="16" y2="24" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="var(--color-flag)" />
+              <stop offset="100%" stopColor="var(--color-data-blue)" />
+            </linearGradient>
+          </defs>
         </svg>
       </div>
 
       {showText && (
         <div className={styles.brandText}>
-          <span className={`${styles.logoName} font-display`}>
-            VERITAS<span className={styles.accentDot}>PH</span>
+          <span className={styles.logoName}>
+            VERITAS<span className={styles.logoSuffix}>PH</span>
           </span>
-          <span className={`${styles.logoTagline} font-ui`}>
+          <span className={styles.logoTagline}>
             Procurement Intelligence Platform
           </span>
         </div>

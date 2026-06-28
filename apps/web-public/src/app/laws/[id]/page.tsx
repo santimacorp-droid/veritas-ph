@@ -102,7 +102,7 @@ export default async function LawDetailPage({ params }: { params: Promise<{ id: 
     <div>
       <main className={styles.pageContent} style={{ paddingTop: '40px' }}>
         <Link href="/laws" className={`${styles.backLink} font-ui`}>
-          &larr; Back to Laws
+          &larr; Back to Legislation Audits
         </Link>
         <div className={styles.pageHead}>
           <h1 className={`${styles.pageTitle} font-display`}>{law.title}</h1>
@@ -156,8 +156,13 @@ export default async function LawDetailPage({ params }: { params: Promise<{ id: 
         {/* AI Law Analysis Panel */}
         <div className={styles.aiPanel}>
           <div className={styles.aiHeader}>
-            <h2 className={`${styles.aiTitle} font-display`}>
-              🔬 AI Integrity & Governance Assessment
+            <h2 className={`${styles.aiTitle} font-display`} style={{ display: 'flex', alignItems: 'center' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-flag)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <circle cx="12" cy="11" r="3" />
+                <line x1="12" y1="14" x2="12" y2="17" />
+              </svg>
+              AI Integrity & Governance Assessment
             </h2>
           </div>
 
@@ -296,8 +301,13 @@ export default async function LawDetailPage({ params }: { params: Promise<{ id: 
 
                 {prov.controversies && prov.controversies.length > 0 && (
                   <div className={styles.controversyWrap} style={{ borderLeft: '4px solid var(--color-flag)', paddingLeft: '16px', marginTop: '16px' }}>
-                    <span className={`${styles.controversyBadge} font-ui`} style={{ background: 'rgba(255, 65, 54, 0.15)', color: '#ff8a8a', borderColor: '#ff4136', fontWeight: 'bold' }}>
-                      ⚠️ Legislative Flaw / Loophole Detected
+                    <span className={`${styles.controversyBadge} font-ui`} style={{ background: 'rgba(255, 65, 54, 0.15)', color: '#ff8a8a', borderColor: '#ff4136', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff4136" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                      Legislative Flaw / Loophole Detected
                     </span>
                     {prov.controversies.map(cont => (
                       <div key={cont.controversy_id} style={{ marginTop: '8px' }}>

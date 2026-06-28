@@ -188,13 +188,36 @@ async def list_cases(
     risk_min: float | None = Query(None, description="Filter by minimum risk score"),
     year: int | None = Query(None, description="Filter by award year"),
     region: str | None = Query(None, description="Filter by geographic region/scope"),
+    stage: str | None = Query(None, description="Filter by procurement stage (active_bidding, under_evaluation, awarded, ongoing, completed, cancelled)"),
     db: AsyncSession = Depends(get_db),
 ):
-    """List procurement cases ordered by risk score."""
+    """List procurement projects ordered by risk score. Supports filtering by stage."""
     total, cases = await queries.list_cases(
-        db, limit, offset, agency_id, procurement_method, category, risk_min, year, region
+        db, limit, offset, agency_id, procurement_method, category, risk_min, year, region, stage
     )
     return {"total": total, "cases": cases}
+
+
+@app.get("/cases/summary", tags=["Public"])
+async def cases_summary(db: AsyncSession = Depends(get_db)):
+    """Returns a count of procurement projects grouped by lifecycle stage."""
+    sql = text("""
+        SELECT
+            COALESCE(procurement_stage, 'active_bidding') AS stage,
+            COUNT(*) AS count
+        FROM procurement_cases
+        GROUP BY procurement_stage
+        ORDER BY procurement_stage
+    """)
+    res = await db.execute(sql)
+    rows = res.mappings().all()
+    stage_counts = {r["stage"]: r["count"] for r in rows}
+    # Ensure all stages are present even if zero
+    all_stages = ["active_bidding", "under_evaluation", "awarded", "ongoing", "completed", "cancelled"]
+    return {
+        "total": sum(stage_counts.values()),
+        "by_stage": {s: stage_counts.get(s, 0) for s in all_stages}
+    }
 
 
 @app.get("/cases/{case_id}", tags=["Public"])
@@ -506,6 +529,48 @@ async def download_document(document_id: UUID, db: AsyncSession = Depends(get_db
         media_type=ct,
         headers={"Content-Disposition": f'inline; filename="{document_id}{ext}"'},
     )
+
+
+@app.get("/documents/{document_id}/text", tags=["Public"])
+async def get_document_text(document_id: UUID, db: AsyncSession = Depends(get_db)):
+    """Retrieve the extracted plain text of a document."""
+    from fastapi.responses import PlainTextResponse
+
+    result = await db.execute(
+        text("SELECT storage_path, content_type FROM documents WHERE document_id = :id"),
+        {"id": str(document_id)},
+    )
+    row = result.mappings().first()
+    if not row or not row["storage_path"]:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    path = row["storage_path"]
+    try:
+        from storage import get_api_store
+        content_bytes = get_api_store().get_bytes(path)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Object storage unavailable") from None
+
+    if not content_bytes:
+        raise HTTPException(status_code=404, detail="File content empty")
+
+    if path.lower().endswith(".pdf"):
+        # Extract plain text from PDF bytes
+        try:
+            import io
+            import pdfplumber
+            with pdfplumber.open(io.BytesIO(content_bytes)) as pdf:
+                text_content = "\n".join(page.extract_text() or "" for page in pdf.pages)
+            return PlainTextResponse(content=text_content)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to extract text from PDF: {e}")
+    else:
+        try:
+            text_content = content_bytes.decode("utf-8", errors="ignore")
+            return PlainTextResponse(content=text_content)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to decode text: {e}")
+
 
 
 # ─── Discrepancies ───────────────────────────────────────────────────────────
@@ -926,17 +991,167 @@ async def submit_correction(
     
     actor_id = current_user["user_id"]
     current = await db.execute(
-        text("SELECT fields FROM extractions WHERE extraction_id = :id"),
+        text("SELECT fields, document_id FROM extractions WHERE extraction_id = :id"),
         {"id": str(extraction_id)}
     )
     row = current.mappings().first()
     if not row:
         raise HTTPException(status_code=404, detail="Extraction not found")
+    
+    doc_id = row["document_id"]
         
     await db.execute(
         text("UPDATE extractions SET fields = :fields, review_status = 'corrected' WHERE extraction_id = :id"),
         {"fields": json.dumps(fields), "id": str(extraction_id)}
     )
+
+    # Propagate corrections to the linked procurement case and events
+    case_res = await db.execute(
+        text("SELECT case_id FROM procurement_events WHERE document_id = :did LIMIT 1"),
+        {"did": doc_id}
+    )
+    case_row = case_res.mappings().first()
+    case_id = case_row["case_id"] if case_row else None
+
+    if case_id:
+        procuring_entity = fields.get("procuring_entity")
+        agency_id = None
+        if procuring_entity:
+            pub_res = await db.execute(
+                text("SELECT publisher_id FROM procurement_cases WHERE case_id = :cid"),
+                {"cid": case_id}
+            )
+            pub_row = pub_res.mappings().first()
+            publisher_id = pub_row["publisher_id"] if pub_row and pub_row["publisher_id"] else 'pub1'
+
+            agency_res = await db.execute(text("SELECT agency_id, name FROM agencies"))
+            agencies = agency_res.mappings().all()
+            best_score = 0
+            best_agency = None
+            from rapidfuzz import fuzz
+            for a in agencies:
+                score = fuzz.token_sort_ratio(procuring_entity.lower(), str(a["name"]).lower())
+                if score > 80 and score > best_score:
+                    best_score = score
+                    best_agency = a["agency_id"]
+            
+            if best_agency:
+                agency_id = best_agency
+            else:
+                agency_id = str(uuid4())
+                name_lower = procuring_entity.lower()
+                if "municipality" in name_lower or "brgy" in name_lower or "barangay" in name_lower:
+                    agency_type = "municipality"
+                elif "province" in name_lower:
+                    agency_type = "province"
+                elif "city" in name_lower:
+                    agency_type = "city"
+                else:
+                    agency_type = "national_agency"
+
+                acronym = "".join([w[0].upper() for w in procuring_entity.split() if w.isalnum()])[:10]
+                await db.execute(
+                    text("""
+                        INSERT INTO agencies (agency_id, publisher_id, name, acronym, agency_type)
+                        VALUES (:aid, :pid, :name, :acronym, :atype)
+                    """),
+                    {
+                        "aid": agency_id,
+                        "pid": publisher_id,
+                        "name": procuring_entity,
+                        "acronym": acronym,
+                        "atype": agency_type,
+                    },
+                )
+        
+        if not agency_id:
+            existing_case_res = await db.execute(
+                text("SELECT agency_id FROM procurement_cases WHERE case_id = :cid"),
+                {"cid": case_id}
+            )
+            existing_case_row = existing_case_res.mappings().first()
+            if existing_case_row:
+                agency_id = existing_case_row["agency_id"]
+
+        procurement_method = fields.get("procurement_method", "Public Bidding")
+        category = fields.get("category", "Goods")
+        
+        method_key = procurement_method.lower().replace(" ", "_")
+        if "bidding" in method_key:
+            method_key = "public_bidding"
+        elif "shopping" in method_key:
+            method_key = "shopping"
+        elif "value" in method_key or "svp" in method_key:
+            method_key = "small_value_procurement"
+        elif "negotiated" in method_key:
+            method_key = "negotiated"
+
+        cat_key = category.lower().replace(" ", "_")
+        if "infra" in cat_key or "construction" in cat_key:
+            cat_key = "infrastructure"
+        elif "drugs" in cat_key or "medicine" in cat_key or "goods" in cat_key:
+            cat_key = "goods"
+        elif "consult" in cat_key:
+            cat_key = "consulting_services"
+
+        from workers.tasks.extractor import normalize_date_to_iso
+        from datetime import datetime
+
+        deadline_val = None
+        if "closing_date" in fields:
+            dl = normalize_date_to_iso(fields.get("closing_date"))
+            if dl:
+                deadline_val = datetime.strptime(dl, "%Y-%m-%d").date()
+
+        event_date_val = None
+        if "date_published" in fields:
+            ed = normalize_date_to_iso(fields.get("date_published"))
+            if ed:
+                event_date_val = datetime.strptime(ed, "%Y-%m-%d").date()
+
+        planned_amount = float(fields.get("planned_amount", 0.0) or 0.0)
+
+        await db.execute(
+            text("""
+                UPDATE procurement_cases
+                SET procurement_ref_no = :ref,
+                    agency_id = :aid,
+                    title = :title,
+                    procurement_method = :method,
+                    category = :cat,
+                    planned_amount = :amount,
+                    bid_deadline = COALESCE(:deadline, bid_deadline),
+                    risk_score = NULL,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE case_id = :cid
+            """),
+            {
+                "ref": fields.get("procurement_ref_no"),
+                "aid": agency_id,
+                "title": fields.get("title"),
+                "method": method_key,
+                "cat": cat_key,
+                "amount": planned_amount,
+                "deadline": deadline_val,
+                "cid": case_id,
+            }
+        )
+
+        await db.execute(
+            text("""
+                UPDATE procurement_events
+                SET event_date = COALESCE(:event_date, event_date),
+                    amount = :amount
+                WHERE case_id = :cid AND document_id = :did AND stage = 'tender'
+            """),
+            {
+                "event_date": event_date_val,
+                "amount": planned_amount,
+                "cid": case_id,
+                "did": doc_id,
+            }
+        )
+
     await db.execute(
         text("""
             INSERT INTO audit_log (log_id, actor_id, actor_type, action, entity_type, entity_id, old_value, new_value)

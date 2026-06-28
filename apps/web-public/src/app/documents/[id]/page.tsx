@@ -27,7 +27,7 @@ async function getDocumentMetadata(id: string): Promise<DocumentMetadata | null>
 
 async function getDocumentContent(id: string): Promise<string | null> {
   try {
-    const res = await fetch(`${API_URL}/documents/${id}/download`, { next: { revalidate: 30 } });
+    const res = await fetch(`${API_URL}/documents/${id}/text`, { next: { revalidate: 30 } });
     if (!res.ok) return null;
     return res.text();
   } catch {

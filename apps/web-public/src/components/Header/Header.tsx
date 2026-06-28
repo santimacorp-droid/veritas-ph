@@ -10,12 +10,12 @@ export default function Header() {
   
   const navItems = [
     { label: 'Search', path: '/search' },
-    { label: 'Cases', path: '/cases' },
+    { label: 'Projects', path: '/projects' },
     { label: 'Agencies', path: '/agencies' },
     { label: 'Suppliers', path: '/suppliers' },
     { label: 'Scorecard', path: '/scorecard' },
     { label: 'Map', path: '/map' },
-    { label: 'Laws', path: '/laws' },
+    { label: 'Legislation Audits', path: '/laws' },
     { label: 'Methodology', path: '/methodology' },
     { label: 'Report Anomaly', path: '/report' }
   ];

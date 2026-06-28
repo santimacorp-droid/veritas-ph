@@ -17,9 +17,6 @@ from bs4 import BeautifulSoup
 from database import async_session_maker
 from sqlalchemy import text
 
-# ... (rest of the file until the insert block)
-# Let's target the exact replace context to be very clean.
-
 
 logger = structlog.get_logger()
 
@@ -207,298 +204,398 @@ REAL_LEGISLATION_DATA = [
     }
 ]
 
+
+async def parse_bookshelf_provisions(html_text: str, ra_short: str, logger_ref) -> list:
+    """
+    Two-pass section parser for SC E-Library bookshelf pages.
+
+    Pass 1: div[align="justify"] elements (standard E-Library layout).
+    Pass 2: Fallback to <p> tags if Pass 1 yields < 2 sections.
+
+    Handles:
+    - "SECTION 1. Title - Content" (with em-dash or hyphen separator)
+    - "SEC. 2. Content only" (no title, no dash)
+    - "SECTION 1. June 22 is declared..." (short laws with no title)
+    - Subsection paragraphs (appended to parent section content)
+
+    Returns list of {section_number, title, content} dicts.
+    If fewer than 2 sections found, returns [] to signal 'incomplete'.
+    """
+    sec_re = re.compile(
+        r'^(SEC(?:TION)?\.?\s+\d+)\.?\s*(.*?)(?:\s+[-\u2014\u2013]\s+(.*))?$',
+        re.IGNORECASE | re.DOTALL
+    )
+    sig_re = re.compile(r'Approved:|\(SGD\.\)|Passed by the|Approved,', re.IGNORECASE)
+
+    def _parse_blocks(blocks: list) -> list:
+        provisions = []
+        current_sec = None
+        current_title = ""
+        current_paragraphs = []
+
+        for raw in blocks:
+            txt = re.sub(r'\s+', ' ', raw).strip()
+            if not txt:
+                continue
+            if "Be it enacted" in txt:
+                continue
+
+            m = sec_re.match(txt)
+            if m:
+                # Flush previous section
+                if current_sec:
+                    provisions.append({
+                        "section_number": current_sec,
+                        "title": current_title,
+                        "content": "\n\n".join(current_paragraphs).strip()
+                    })
+                current_sec = m.group(1).strip()
+                g2 = (m.group(2) or "").strip()
+                g3 = m.group(3)
+                if g3 is not None:
+                    # Has "Title - Content" pattern
+                    title_part = re.sub(r'[\s\.]+$', '', g2)
+                    content_part = g3.strip()
+                else:
+                    # No dash separator — entire remainder is content
+                    title_part = ""
+                    content_part = g2
+                current_title = title_part
+                current_paragraphs = [content_part] if content_part else []
+            else:
+                if current_sec:
+                    current_paragraphs.append(txt)
+
+        # Flush final section
+        if current_sec:
+            last = "\n\n".join(current_paragraphs).strip()
+            sig = sig_re.search(last)
+            if sig:
+                last = last[:sig.start()].strip()
+            provisions.append({
+                "section_number": current_sec,
+                "title": current_title,
+                "content": last
+            })
+        return provisions
+
+    soup = BeautifulSoup(html_text, "html.parser")
+    content_div = soup.find("div", class_="single_content") or soup.body or soup
+
+    # Pass 1: div[align="justify"] (standard E-Library format)
+    divs = content_div.find_all("div", align="justify")
+    provisions = _parse_blocks([d.get_text(separator=" ") for d in divs])
+    if len(provisions) >= 2:
+        logger_ref.debug(f"Pass 1 succeeded for {ra_short}: {len(provisions)} sections")
+        return provisions
+
+    # Pass 2: <p> tag fallback
+    logger_ref.info(f"Pass 1 found {len(provisions)} sections for {ra_short}. Trying <p> fallback...")
+    paras = content_div.find_all("p")
+    provisions = _parse_blocks([p.get_text(separator=" ") for p in paras])
+    if len(provisions) >= 2:
+        logger_ref.debug(f"Pass 2 succeeded for {ra_short}: {len(provisions)} sections")
+        return provisions
+
+    logger_ref.warning(f"Both passes failed for {ra_short}. Will store as incomplete.")
+    return []
+
+
 async def fetch_laws() -> dict:
     """
     Main entry point for automated law crawling.
-    Scrapes the Official Gazette for Republic Acts, parses them, and populates the database.
-    Falls back to curated real legislation to guarantee successful execution.
+
+    IMPORTANT: Only scrapes the SC Judiciary E-Library (full authenticated text).
+    Official Gazette and Lawphil are intentionally EXCLUDED — they produce
+    useless one-line stubs that cause the AI to generate inaccurate analyses.
+
+    Features:
+    - Full AJAX pagination (fetches ALL pages, not just the first 50)
+    - Two-pass section parser with printer-friendly URL fallback
+    - Stub detection: laws with < 2 sections stored as 'incomplete', no AI queued
+    - Respects existing backlog — pauses if pending analyses exist
     """
-    # Check if there is an active backlog of pending audits
+    # Guard: pause if there is an active backlog of pending/running audits
     async with async_session_maker() as session:
-        backlog_sql = text("SELECT COUNT(*) FROM law_analyses WHERE analysis_status IN ('pending', 'running')")
-        backlog_res = await session.execute(backlog_sql)
-        backlog_count = backlog_res.scalar() or 0
-        
+        backlog_count = (
+            await session.execute(
+                text("SELECT COUNT(*) FROM law_analyses WHERE analysis_status IN ('pending', 'running')")
+            )
+        ).scalar() or 0
         if backlog_count > 0:
-            logger.info("Legislative crawler paused: backlog of pending audits in progress", backlog=backlog_count)
+            logger.info("Crawler paused: active backlog", backlog=backlog_count)
             return {"status": "paused", "reason": f"backlog_of_{backlog_count}_pending_audits"}
 
-    logger.info("Automated Law Crawler starting: legislative discovery phase")
-    discovered_count = 0
+    logger.info("Law Crawler starting: SC E-Library full-text discovery phase")
     scraped_laws = []
+    incomplete_count = 0
 
-    # 1. Attempt to crawl Official Gazette and Judiciary E-Library online
     try:
-        headers = {
-            "User-Agent": random.choice(USER_AGENTS)
-        }
-        await asyncio.sleep(random.uniform(1.0, 3.0))
-        async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
-            # 1a. Official Gazette
-            url = "https://www.officialgazette.gov.ph/section/laws/republic-acts/"
-            try:
-                logger.info("Crawling Official Gazette Republic Acts...", url=url)
-                await asyncio.sleep(random.uniform(0.5, 2.0))
-                response = await client.get(url, headers=headers, follow_redirects=True)
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.text, "html.parser")
-                    headings = soup.find_all(["h2", "h3", "a"])
-                    gazette_count = 0
-                    for heading in headings:
-                        text_val = heading.get_text().strip()
-                        match = re.search(r"(Republic Act No\.\s*(\d+))", text_val, re.IGNORECASE)
-                        if match:
-                            ra_short = match.group(1)
-                            ra_num = match.group(2)
-                            
-                            if not any(x["short_title"] == ra_short for x in scraped_laws):
-                                scraped_laws.append({
-                                    "title": text_val,
-                                    "short_title": ra_short,
-                                    "description": f"Scraped from the Official Gazette index. Republic Act Number: {ra_num}.",
-                                    "date_passed": "2024-01-01",
-                                    "status": "active",
-                                    "author": None,
-                                    "sponsor": None,
-                                    "approved_by": None,
-                                    "provisions": [
-                                        {
-                                            "section_number": "Section 1",
-                                            "title": "Short Title",
-                                            "content": f"This Act shall be known and cited as '{text_val}'."
-                                        }
-                                    ],
-                                    "controversies": []
-                                })
-                                gazette_count += 1
-                    logger.info(f"Scraped {gazette_count} raw acts from Official Gazette page.")
-            except Exception as e:
-                logger.warning(f"Official Gazette crawling failed: {e}")
+        headers = {"User-Agent": random.choice(USER_AGENTS)}
+        await asyncio.sleep(random.uniform(1.0, 2.0))
 
-            # 1b. Judiciary E-Library
+        async with httpx.AsyncClient(timeout=25.0, verify=False) as client:
             url_elib = "https://elibrary.judiciary.gov.ph/republic_acts"
-            try:
-                logger.info("Crawling Judiciary E-Library Republic Acts...", url=url_elib)
-                elib_headers = headers.copy()
-                elib_headers["Referer"] = url_elib
-                
-                # Fetch landing page to get CSRF token
-                response = await client.get(url_elib, headers=elib_headers, follow_redirects=True)
-                if response.status_code == 200:
-                    csrf_match = re.search(r"'csrf_test_name'\s*:\s*'([a-f0-9]+)'", response.text)
-                    csrf_token = csrf_match.group(1) if csrf_match else None
-                    if not csrf_token:
-                        logger.warning("CSRF token not found in Judiciary E-Library landing page. Trying default.")
-                        csrf_token = "911e9a80775d8254cef336694db85299"
-                    
-                    ajax_url = "https://elibrary.judiciary.gov.ph/republic_acts/fetch_ra"
-                    data = {
-                        "csrf_test_name": csrf_token,
-                        "draw": "1",
-                        "start": "0",
-                        "length": "50",
-                        "search[value]": "",
-                        "search[regex]": "false"
-                    }
-                    
-                    logger.info("Making POST request to Judiciary E-Library AJAX endpoint...", url=ajax_url)
-                    response_post = await client.post(ajax_url, data=data, headers=elib_headers)
-                    if response_post.status_code == 200:
-                        res_data = response_post.json()
-                        elib_count = 0
-                        for row in res_data.get("data", []):
-                            if len(scraped_laws) >= 100:
-                                break
-                            if len(row) >= 3:
-                                raw_short_title = row[0]
-                                date_passed = row[1]
-                                link_html = row[2]
-                                
-                                a_soup = BeautifulSoup(link_html, "html.parser")
-                                a_tag = a_soup.find("a")
-                                if a_tag:
-                                    title_val = a_tag.get_text().strip()
-                                    bookshelf_url = a_tag.get("href", "")
-                                    
-                                    # Normalize short title
-                                    ra_short = raw_short_title.replace("R.A.", "Republic Act").replace("R.A ", "Republic Act ").strip()
-                                    ra_short = re.sub(r"\s+", " ", ra_short)
-                                    ra_short_match = re.search(r"republic\s+act\s+no\.\s*(\d+)", ra_short, re.IGNORECASE)
-                                    if ra_short_match:
-                                        ra_short = f"Republic Act No. {ra_short_match.group(1)}"
-                                    
-                                    ra_num_match = re.search(r"\d+", ra_short)
-                                    ra_num = ra_num_match.group(0) if ra_num_match else "Unknown"
-                                    
-                                    if not any(x["short_title"] == ra_short for x in scraped_laws):
-                                        scraped_laws.append({
-                                            "title": title_val,
-                                            "short_title": ra_short,
-                                            "description": f"Scraped from the Judiciary E-Library. Bookshelf URL: {bookshelf_url}. Republic Act Number: {ra_num}.",
-                                            "date_passed": date_passed if date_passed else "2026-01-01",
-                                            "status": "active",
-                                            "author": None,
-                                            "sponsor": None,
-                                            "approved_by": None,
-                                            "provisions": [
-                                                {
-                                                    "section_number": "Section 1",
-                                                    "title": "Short Title",
-                                                    "content": f"This Act shall be known and cited as '{title_val}'."
-                                                }
-                                            ],
-                                            "controversies": []
-                                        })
-                                        elib_count += 1
-                        logger.info(f"Scraped {elib_count} raw acts from Judiciary E-Library AJAX response.")
-            except Exception as e:
-                logger.warning(f"Judiciary E-Library crawling failed: {e}")
+            elib_headers = {**headers, "Referer": url_elib}
 
-            # 1c. Lawphil.net
+            # Step 1: Fetch landing page for CSRF token
+            logger.info("Fetching E-Library landing page for CSRF token...")
+            csrf_token = "911e9a80775d8254cef336694db85299"
             try:
-                current_year = date.today().year
-                for year in [current_year - 1, current_year]:
-                    if len(scraped_laws) >= 100:
-                        break
-                    url_lawphil = f"https://lawphil.net/statutes/repacts/ra{year}/ra{year}.html"
-                    logger.info(f"Crawling Lawphil Republic Acts for year {year}...", url=url_lawphil)
-                    response = await client.get(url_lawphil, headers=headers, follow_redirects=True)
-                    if response.status_code == 200:
-                        clean_text = re.sub(r"&#(\d+)(?!;)", r"&#\1;", response.text)
-                        soup = BeautifulSoup(clean_text, "html.parser")
-                        links = soup.find_all("a", href=True)
-                        lawphil_count = 0
-                        for link in links:
-                            if len(scraped_laws) >= 100:
-                                break
-                            text_val = link.get_text().strip()
-                            href = link["href"]
-                            if href.startswith("/"):
-                                href = "https://lawphil.net" + href
-                            elif not href.startswith("http"):
-                                href = f"https://lawphil.net/statutes/repacts/ra{year}/" + href
-                                
-                            match = re.search(r"((?:Republic Act|R\.A\.)\s*No\.\s*(\d+))", text_val, re.IGNORECASE)
-                            if match:
-                                ra_short = match.group(1).replace("R.A.", "Republic Act").replace("R.A ", "Republic Act ")
-                                ra_short = re.sub(r"\s+", " ", ra_short)
-                                ra_num = match.group(2)
-                                
-                                if not any(x["short_title"] == ra_short for x in scraped_laws):
-                                    scraped_laws.append({
-                                        "title": text_val if len(text_val) > 20 else f"Republic Act No. {ra_num}: {text_val}",
-                                        "short_title": ra_short,
-                                        "description": f"Scraped from Lawphil. Document URL: {href}. Republic Act Number: {ra_num}.",
-                                        "date_passed": f"{year}-01-01",
-                                        "status": "active",
-                                        "author": None,
-                                        "sponsor": None,
-                                        "approved_by": None,
-                                        "provisions": [
-                                            {
-                                                "section_number": "Section 1",
-                                                "title": "Short Title",
-                                                "content": f"This Act shall be known and cited as '{text_val}'."
-                                            }
-                                        ],
-                                        "controversies": []
-                                    })
-                                    lawphil_count += 1
-                        logger.info(f"Scraped {lawphil_count} raw acts from Lawphil year {year} page.")
+                lp_resp = await client.get(url_elib, headers=elib_headers, follow_redirects=True)
+                if lp_resp.status_code == 200:
+                    m = re.search(r"'csrf_test_name'\s*:\s*'([a-f0-9]+)'", lp_resp.text)
+                    if m:
+                        csrf_token = m.group(1)
             except Exception as e:
-                logger.warning(f"Lawphil crawling failed: {e}")
+                logger.warning(f"Failed to fetch E-Library landing page: {e}")
+
+            # Step 2: AJAX paginated fetch — get ALL laws
+            ajax_url = "https://elibrary.judiciary.gov.ph/republic_acts/fetch_ra"
+            page_size = 100
+            start = 0
+
+            while True:
+                await asyncio.sleep(random.uniform(0.5, 1.5))
+                ajax_data = {
+                    "csrf_test_name": csrf_token,
+                    "draw": str(start // page_size + 1),
+                    "start": str(start),
+                    "length": str(page_size),
+                    "search[value]": "",
+                    "search[regex]": "false"
+                }
+                logger.info(f"Fetching E-Library AJAX rows {start}–{start + page_size}...")
+
+                try:
+                    rp = await client.post(ajax_url, data=ajax_data, headers=elib_headers)
+                except Exception as e:
+                    logger.warning(f"E-Library AJAX request failed: {e}")
+                    break
+
+                if rp.status_code != 200:
+                    logger.warning(f"E-Library AJAX returned HTTP {rp.status_code}. Stopping pagination.")
+                    break
+
+                try:
+                    rows = rp.json().get("data", [])
+                except Exception:
+                    logger.warning("Failed to parse E-Library AJAX JSON response.")
+                    break
+
+                if not rows:
+                    logger.info("E-Library AJAX: no more rows. Pagination complete.")
+                    break
+
+                for row in rows:
+                    if len(row) < 3:
+                        continue
+
+                    raw_short_title = row[0]
+                    date_passed = row[1]
+                    link_html = row[2]
+
+                    a_tag = BeautifulSoup(link_html, "html.parser").find("a")
+                    if not a_tag:
+                        continue
+
+                    title_val = a_tag.get_text().strip()
+                    bookshelf_url = a_tag.get("href", "")
+
+                    # Normalize short title to canonical form "Republic Act No. XXXX"
+                    ra_short = (
+                        raw_short_title
+                        .replace("R.A.", "Republic Act")
+                        .replace("R.A ", "Republic Act ")
+                        .strip()
+                    )
+                    ra_short = re.sub(r"\s+", " ", ra_short)
+                    m2 = re.search(r"republic\s+act\s+no\.?\s*(\d+)", ra_short, re.IGNORECASE)
+                    if m2:
+                        ra_short = f"Republic Act No. {m2.group(1)}"
+                    ra_num_m = re.search(r"\d+", ra_short)
+                    ra_num = ra_num_m.group(0) if ra_num_m else "Unknown"
+
+                    # Skip duplicates within this batch
+                    if any(x["short_title"] == ra_short for x in scraped_laws):
+                        continue
+
+                    # Step 3: Fetch and parse full bookshelf text
+                    parsed_provisions = []
+                    law_status = "active"
+                    try:
+                        await asyncio.sleep(random.uniform(0.3, 0.8))
+                        doc_resp = await client.get(bookshelf_url, headers=headers)
+                        if doc_resp.status_code == 200:
+                            parsed_provisions = await parse_bookshelf_provisions(
+                                doc_resp.text, ra_short, logger
+                            )
+
+                        # Printer-friendly fallback if standard page failed
+                        if not parsed_provisions and "/showdocs/" in bookshelf_url:
+                            friendly_url = bookshelf_url.replace("/showdocs/", "/showdocsfriendly/")
+                            logger.info(f"Trying printer-friendly URL for {ra_short}...")
+                            await asyncio.sleep(random.uniform(0.3, 0.7))
+                            fd = await client.get(friendly_url, headers=headers)
+                            if fd.status_code == 200:
+                                parsed_provisions = await parse_bookshelf_provisions(
+                                    fd.text, ra_short, logger
+                                )
+                    except Exception as fe:
+                        logger.warning(f"Failed fetching bookshelf for {ra_short}: {fe}")
+
+                    if not parsed_provisions:
+                        law_status = "incomplete"
+                        incomplete_count += 1
+                        logger.warning(f"No parseable sections for {ra_short} — storing as incomplete.")
+
+                    scraped_laws.append({
+                        "title": title_val,
+                        "short_title": ra_short,
+                        "description": (
+                            f"Scraped from SC E-Library. Bookshelf URL: {bookshelf_url}. "
+                            f"Republic Act Number: {ra_num}."
+                        ),
+                        "date_passed": date_passed if date_passed else None,
+                        "status": law_status,
+                        "author": None,
+                        "sponsor": None,
+                        "approved_by": None,
+                        "provisions": parsed_provisions,
+                        "controversies": []
+                    })
+
+                # Stop if we got fewer rows than the page size (last page)
+                if len(rows) < page_size:
+                    logger.info("E-Library pagination complete (last page reached).")
+                    break
+                start += page_size
+
+            logger.info(
+                "E-Library crawl finished",
+                total_scraped=len(scraped_laws),
+                incomplete=incomplete_count,
+                complete=len(scraped_laws) - incomplete_count,
+            )
+
     except Exception as e:
-        logger.warning(f"Legislative crawling failed: {e}")
+        logger.warning(f"Law crawler outer error: {e}")
 
-    # 2. Combine crawled laws with curated laws to ensure core procurement legislation is always seeded
+    # Merge curated seed laws (always first, never skipped)
     all_laws_to_ingest = list(REAL_LEGISLATION_DATA)
     for sl in scraped_laws:
         if not any(x["short_title"] == sl["short_title"] for x in all_laws_to_ingest):
             all_laws_to_ingest.append(sl)
 
-    # 3. Ingest discovered laws into database
+    # Ingest into database
+    discovered_count = 0
     async with async_session_maker() as session:
         for law_data in all_laws_to_ingest:
-            # Check if already exists
-            check_sql = text("SELECT law_id FROM laws WHERE short_title = :st OR title = :t")
-            res = await session.execute(check_sql, {"st": law_data["short_title"], "t": law_data["title"]})
-            row = res.mappings().first()
-
-            if row:
-                logger.debug(f"Law {law_data['short_title']} already exists. Skipping insertion.")
+            # Skip if already in DB
+            res = await session.execute(
+                text("SELECT law_id FROM laws WHERE short_title = :st OR title = :t"),
+                {"st": law_data["short_title"], "t": law_data["title"]}
+            )
+            if res.mappings().first():
+                logger.debug(f"Already exists: {law_data['short_title']}")
                 continue
 
-            # Insert Law
             law_id = str(uuid.uuid4())
-            insert_law_sql = text("""
-                INSERT INTO laws (law_id, title, short_title, description, date_passed, status, author, sponsor, approved_by, submitted_by, voting_record, category)
-                VALUES (:law_id, :title, :short_title, :description, :date_passed, :status, :author, :sponsor, :approved_by, :submitted_by, :voting_record, :category)
-            """)
-            await session.execute(insert_law_sql, {
-                "law_id": law_id,
-                "title": law_data["title"],
-                "short_title": law_data["short_title"],
-                "description": law_data["description"],
-                "date_passed": date.fromisoformat(law_data["date_passed"]) if law_data.get("date_passed") else None,
-                "status": law_data["status"],
-                "author": law_data.get("author"),
-                "sponsor": law_data.get("sponsor"),
-                "approved_by": law_data.get("approved_by"),
-                "submitted_by": law_data.get("submitted_by"),
-                "voting_record": law_data.get("voting_record"),
-                "category": law_data.get("category", "republic_act")
-            })
+            law_status = law_data.get("status", "active")
+
+            try:
+                dp = law_data.get("date_passed")
+                date_val = date.fromisoformat(dp) if dp else None
+            except (ValueError, TypeError):
+                date_val = None
+
+            await session.execute(
+                text("""
+                    INSERT INTO laws (
+                        law_id, title, short_title, description, date_passed, status,
+                        author, sponsor, approved_by, submitted_by, voting_record, category
+                    ) VALUES (
+                        :law_id, :title, :short_title, :description, :date_passed, :status,
+                        :author, :sponsor, :approved_by, :submitted_by, :voting_record, :category
+                    )
+                """),
+                {
+                    "law_id": law_id,
+                    "title": law_data["title"],
+                    "short_title": law_data["short_title"],
+                    "description": law_data["description"],
+                    "date_passed": date_val,
+                    "status": law_status,
+                    "author": law_data.get("author"),
+                    "sponsor": law_data.get("sponsor"),
+                    "approved_by": law_data.get("approved_by"),
+                    "submitted_by": law_data.get("submitted_by"),
+                    "voting_record": law_data.get("voting_record"),
+                    "category": law_data.get("category", "republic_act")
+                }
+            )
 
             # Insert provisions
-            for prov in law_data["provisions"]:
+            for prov in law_data.get("provisions", []):
                 prov_id = str(uuid.uuid4())
-                insert_prov_sql = text("""
-                    INSERT INTO law_provisions (provision_id, law_id, section_number, title, content)
-                    VALUES (:provision_id, :law_id, :section_number, :title, :content)
-                """)
-                await session.execute(insert_prov_sql, {
-                    "provision_id": prov_id,
-                    "law_id": law_id,
-                    "section_number": prov["section_number"],
-                    "title": prov["title"],
-                    "content": prov["content"]
-                })
-
-                # Link controversies
+                await session.execute(
+                    text("""
+                        INSERT INTO law_provisions (provision_id, law_id, section_number, title, content)
+                        VALUES (:provision_id, :law_id, :section_number, :title, :content)
+                    """),
+                    {
+                        "provision_id": prov_id,
+                        "law_id": law_id,
+                        "section_number": prov["section_number"],
+                        "title": prov.get("title", ""),
+                        "content": prov["content"]
+                    }
+                )
+                # Link controversies to provisions
                 for cont in law_data.get("controversies", []):
                     if cont["section_number"] == prov["section_number"]:
-                        cont_id = str(uuid.uuid4())
-                        insert_cont_sql = text("""
-                            INSERT INTO law_controversies (controversy_id, provision_id, issue_description, impact, severity)
-                            VALUES (:controversy_id, :provision_id, :issue_description, :impact, :severity)
-                        """)
-                        await session.execute(insert_cont_sql, {
-                            "controversy_id": cont_id,
-                            "provision_id": prov_id,
-                            "issue_description": cont["issue_description"],
-                            "impact": cont["impact"],
-                            "severity": cont["severity"]
-                        })
+                        await session.execute(
+                            text("""
+                                INSERT INTO law_controversies (
+                                    controversy_id, provision_id, issue_description, impact, severity
+                                ) VALUES (
+                                    :controversy_id, :provision_id, :issue_description, :impact, :severity
+                                )
+                            """),
+                            {
+                                "controversy_id": str(uuid.uuid4()),
+                                "provision_id": prov_id,
+                                "issue_description": cont["issue_description"],
+                                "impact": cont.get("impact"),
+                                "severity": cont.get("severity", "medium")
+                            }
+                        )
 
-            # Insert pending AI Law Analysis row so the worker handles it
-            analysis_id = str(uuid.uuid4())
-            insert_analysis_sql = text("""
-                INSERT INTO law_analyses (
-                    analysis_id, law_id, model_used, pros, cons, loopholes, 
-                    suggested_revisions, citizen_summary, analysis_status, requested_by
+            # Only queue AI analysis for laws with real, parseable content
+            if law_status == "active":
+                await session.execute(
+                    text("""
+                        INSERT INTO law_analyses (
+                            analysis_id, law_id, model_used, pros, cons, loopholes,
+                            suggested_revisions, citizen_summary, analysis_status, requested_by
+                        ) VALUES (
+                            :aid, :lid, 'pending', '[]', '[]', '[]', '[]',
+                            'Analyzing new crawled legislation...', 'pending', 'crawler'
+                        )
+                    """),
+                    {"aid": str(uuid.uuid4()), "lid": law_id}
                 )
-                VALUES (
-                    :aid, :lid, 'pending', '[]', '[]', '[]', '[]', 'Analyzing new crawled legislation...', 'pending', 'crawler'
-                )
-            """)
-            await session.execute(insert_analysis_sql, {
-                "aid": analysis_id,
-                "lid": law_id
-            })
+                logger.info(f"Queued AI analysis: {law_data['short_title']}")
+            else:
+                logger.info(f"Stored incomplete (no AI queued): {law_data['short_title']}")
 
             discovered_count += 1
-            logger.info(f"Discovered and scheduled AI vulnerability audit for: {law_data['short_title']}")
 
         await session.commit()
 
-    return {"status": "success", "discovered": discovered_count}
+    return {
+        "status": "success",
+        "discovered": discovered_count,
+        "incomplete": incomplete_count,
+        "queued_for_analysis": discovered_count - incomplete_count
+    }

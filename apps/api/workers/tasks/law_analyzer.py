@@ -153,7 +153,14 @@ async def call_llm_json(url: str, api_key: str, model: str, prompt: str) -> str 
         "messages": [
             {
                 "role": "system",
-                "content": "You are a senior legal expert in Philippine procurement law and civic governance. You must return your analysis strictly as a raw valid JSON object. Do not include markdown formatting like ```json or ```."
+                "content": (
+                    "You are a senior legal expert in Philippine procurement law and civic governance. "
+                    "You will be given the FULL TEXT of a Philippine law, section by section. "
+                    "You MUST read and analyze every section carefully. "
+                    "Do NOT infer, assume, or fabricate content that is not present in the provided text. "
+                    "Base your entire analysis ONLY on the section text explicitly provided. "
+                    "Return your analysis strictly as a raw valid JSON object with no markdown formatting."
+                )
             },
             {
                 "role": "user",
@@ -161,7 +168,7 @@ async def call_llm_json(url: str, api_key: str, model: str, prompt: str) -> str 
             }
         ],
         "temperature": 0.2,
-        "max_tokens": 4000,
+        "max_tokens": 8000,
         "response_format": {"type": "json_object"} if ("gpt" in model or "deepseek" in model) else None
     }
     async with httpx.AsyncClient(timeout=60.0) as client:
@@ -360,16 +367,32 @@ Return strictly a JSON object:
 
         law_context += f"Overview: {law_row['description'] or ''}\n\n"
         
-        # Safeguard: prevent token blowup on extremely long laws
+        # Quality gate: skip analysis if law has almost no content
         total_len = sum(len(p['content'] or '') for p in provisions)
-        truncate_provisions = total_len > 40000
+        if total_len < 500 and not law_data.get('controversies'):
+            logger.warning(
+                f"Law {law_id} has only {total_len} chars of provision text — too little to analyze accurately. "
+                "Marking as skipped_incomplete."
+            )
+            await db.execute(
+                text("UPDATE law_analyses SET analysis_status = 'skipped_incomplete', "
+                     "citizen_summary = 'Insufficient law text available for analysis.' "
+                     "WHERE analysis_id = :aid"),
+                {"aid": analysis_id}
+            )
+            await db.commit()
+            return
 
-        law_context += "=== PROVISIONS ===\n"
+        # Safeguard: prevent token blowup on extremely long laws (>60k chars)
+        truncate_provisions = total_len > 60000
+        logger.info(f"Law {law_id}: {len(provisions)} sections, {total_len} chars total", truncated=truncate_provisions)
+
+        law_context += "=== FULL LAW TEXT (ALL SECTIONS) ===\n"
         for p in provisions:
             content = p['content'] or ''
-            if truncate_provisions and len(content) > 1200:
-                content = content[:1200] + " ... [TRUNCATED FOR LENGTH]"
-            law_context += f"Section {p['section_number']} - {p['title'] or ''}:\n{content}\n\n"
+            if truncate_provisions and len(content) > 2000:
+                content = content[:2000] + " ... [TRUNCATED — see original law for full text]"
+            law_context += f"\n{p['section_number']}. {p['title'] or ''}:\n{content}\n"
 
         if controversies:
             law_context += "=== KNOWN CONTROVERSIES / ISSUES ===\n"
@@ -377,38 +400,46 @@ Return strictly a JSON object:
                 law_context += f"Section {c['section_number']}: {c['issue_description']} (Impact: {c['impact'] or ''}, Severity: {c['severity']})\n\n"
 
         prompt = f"""
-Analyze the following Philippine law and produce a structured assessment JSON object.
-Ensure your analysis is comprehensive, legal-expert grade, and citizen-friendly.
-Specifically evaluate the role of the Authors, Sponsors, Approvers, and the Voting/Approval Timeline for potential conflicts of interest, lobbying influence, or compromised oversight, and document these findings in your pros/cons, loopholes, or citizen summary as applicable.
+You are analyzing a Philippine law. The FULL TEXT of each section is provided below.
+You MUST base your entire analysis on ONLY the section content provided — do not assume, fabricate,
+or infer provisions that are not shown. If a section is short or a holiday law, that is the actual law.
+
+Analyze every section and identify:
+- What the law does well (pros)
+- Weaknesses, vague language, or failures (cons)
+- Loopholes that could be exploited (with the specific section number)
+- Suggested revisions with exact section references
+- A plain-language summary for ordinary Filipino citizens
+- Evaluate the Authors, Sponsors, and Approvers for potential conflicts of interest
 
 {law_context}
 
 Return exactly a JSON object conforming to this schema:
 {{
-  "integrity_score": <number between 0 and 100 representing how loophole-free and enforceable it is>,
-  "governance_score": <number between 0 and 100 representing strength of oversight and accountability>,
-  "pros": [<list of strings detailing what the law does well for transparency and civic interest>],
-  "cons": [<list of strings detailing weaknesses, vague items, or failures of the law>],
+  "integrity_score": <number 0-100: how loophole-free and enforceable the law is>,
+  "governance_score": <number 0-100: strength of oversight and accountability mechanisms>,
+  "pros": [<strings: what the law does well for transparency and civic interest>],
+  "cons": [<strings: weaknesses, vague items, or failures — cite specific section numbers>],
   "loopholes": [
     {{
-      "section": "<e.g. Section 53>",
-      "description": "<detailed loophole explanation>",
+      "section": "<exact section number, e.g. SEC. 17>",
+      "description": "<detailed explanation of the loophole and how it could be exploited>",
       "risk_level": "<low|medium|high|critical>"
     }}
   ],
   "suggested_revisions": [
     {{
-      "section": "<e.g. Section 53>",
-      "current_text": "<approximate current wording or reference>",
-      "suggested_text": "<your proposed revision wording for this section>",
-      "rationale": "<why this revision fixes the loophole>"
+      "section": "<exact section number>",
+      "current_text": "<quote or paraphrase of the current problematic wording>",
+      "suggested_text": "<proposed replacement wording>",
+      "rationale": "<why this revision closes the loophole or strengthens the law>"
     }}
   ],
   "violation_patterns": [
     {{
-      "discrepancy_type": "<e.g. budget_splitting>",
+      "discrepancy_type": "<e.g. budget_splitting, single_bidder, overpriced_contract>",
       "linked_rule_ids": ["RULE_002"],
-      "section_refs": "Section 54"
+      "section_refs": "<specific section reference>"
     }}
   ],
   "cross_law_conflicts": [
@@ -416,10 +447,10 @@ Return exactly a JSON object conforming to this schema:
       "conflicting_law_id": "",
       "section_a": "",
       "section_b": "",
-      "description": "<how these sections conflict>"
+      "description": "<how these two sections conflict>"
     }}
   ],
-  "citizen_summary": "<clear, plain-language paragraph summarizing the law's intent and implications for ordinary Filipinos>"
+  "citizen_summary": "<2-3 paragraph plain-language summary: what this law does, who it affects, what citizens should watch out for>"
 }}
 """
 

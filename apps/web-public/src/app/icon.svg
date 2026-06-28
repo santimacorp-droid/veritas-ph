@@ -1,36 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <!-- Cyber Gradient -->
-  <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" stopColor="#00B0FF" />
-    <stop offset="100%" stopColor="#00E676" />
-  </linearGradient>
+  <!-- Sophisticated Obsidian Background Plate -->
+  <rect width="32" height="32" rx="7" fill="#0A0C10" stroke="#1E293B" strokeWidth="1" />
 
-  <!-- Risk Gradient -->
-  <linearGradient id="risk" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" stopColor="#FF4D5E" />
-    <stop offset="100%" stopColor="#FF9838" />
-  </linearGradient>
-
-  <!-- Dark Background Plate -->
-  <rect width="32" height="32" rx="6" fill="#08090C" />
-
-  <!-- Left Chevron Ribbon -->
+  <!-- Classic Geometric V-Mark of Veritas -->
   <path
-    d="M6 8L13.5 24.5C14.2 26 15.8 26 16.5 24.5L24 8"
-    stroke="url(#cyber)"
-    strokeWidth="3.5"
+    d="M7 8L15 24C15.3 24.6 16.7 24.6 17 24L25 8"
+    stroke="#F8FAFC"
+    strokeWidth="2.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   />
 
-  <!-- Right Accent Ribbon -->
-  <path
-    d="M17.5 17L21 9"
-    stroke="url(#risk)"
-    strokeWidth="3"
+  <!-- The vertical pillar representing auditing balance -->
+  <line
+    x1="16"
+    y1="7"
+    x2="16"
+    y2="18"
+    stroke="#E11D48"
+    strokeWidth="2.5"
     strokeLinecap="round"
   />
 
-  <!-- Center Node -->
-  <circle cx="16" cy="15" r="1.5" fill="#F3F5F9" />
+  <!-- Audit node anchor -->
+  <circle
+    cx="16"
+    cy="21"
+    r="1.8"
+    fill="#E11D48"
+  />
 </svg>

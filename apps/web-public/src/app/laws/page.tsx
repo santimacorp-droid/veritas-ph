@@ -129,11 +129,18 @@ export default function LawsPage() {
 
         {/* Automated Law Crawler Explanation Banner */}
         <div className={styles.crawlerBanner}>
-          <div className={styles.bannerIcon}>🔬</div>
+          <div className={styles.bannerIcon}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-data-blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+              <polyline points="14 2 14 8 20 8" />
+              <circle cx="10" cy="13" r="2" />
+              <line x1="20" y1="20" x2="11.5" y2="15" />
+            </svg>
+          </div>
           <div className={styles.bannerContent}>
             <h3 className="font-display">Automated Law Crawler & AI Vulnerability Auditing</h3>
             <p className="font-body">
-              Veritas automatically crawls public legislative registries (Official Gazette, GPPB, COA, and Lawphil) for republic acts and administrative directives. 
+              Veritas automatically crawls the Supreme Court Judiciary E-Library, GPPB, and COA registries for republic acts and administrative directives. 
               Our multi-pass AI engine scans the legislation section-by-section to identify systemic loopholes, rate oversight strengths, and suggest concrete revisions to block corruption.
             </p>
           </div>
@@ -299,7 +306,7 @@ export default function LawsPage() {
                       </td>
                       <td className={styles.td}>
                         <span className={styles.statusBadge} data-status={item.status.toLowerCase()}>
-                          {item.status}
+                          {item.status === 'incomplete' ? 'Incomplete Text' : item.status}
                         </span>
                       </td>
                       <td className={`${styles.td} font-mono`}>

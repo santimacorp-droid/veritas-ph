@@ -239,6 +239,7 @@ async def detect_duplicate_documents():
                     await db.execute(text("UPDATE discrepancies SET case_id = :id1 WHERE case_id = :id2"), {"id1": id1, "id2": id2})
                     await db.execute(text("UPDATE risk_signals SET case_id = :id1 WHERE case_id = :id2"), {"id1": id1, "id2": id2})
                     await db.execute(text("DELETE FROM procurement_cases WHERE case_id = :id2"), {"id2": id2})
+                    await db.execute(text("UPDATE procurement_cases SET risk_score = NULL WHERE case_id = :id1"), {"id1": id1})
                     
                     processed_ids.add(id2)
                     merged_count += 1

@@ -1,47 +1,47 @@
 /* Veritas — Web Public Global Styles */
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&display=swap');
 
 /* ── Design Tokens ─────────────────────────────────────── */
 :root {
-  /* Backgrounds */
-  --color-paper:         #08090C;      /* Sleek deep slate black */
-  --color-paper-dark:    #0F1116;      /* Dashboard card background */
-  --color-paper-darker:  #171B22;      /* Interactive hover states */
+  /* Backgrounds: Obsidian & Deep Slate */
+  --color-paper:         #0A0C10;      /* Deep obsidian black */
+  --color-paper-dark:    #11141B;      /* Card background */
+  --color-paper-darker:  #181C26;      /* Hover states */
 
-  /* Ink / Text */
-  --color-ink:           #F3F5F9;      /* Clean off-white */
-  --color-ink-secondary: #9BA3B2;      /* Medium contrast text */
-  --color-ink-muted:     #5E6776;      /* Muted tags and labels */
-  --color-ink-faint:     #353B47;      /* Extremely faint borders/placeholders */
+  /* Ink / Text: Crisp Platinum & Muted Steel */
+  --color-ink:           #F8FAFC;      /* Clean slate white */
+  --color-ink-secondary: #94A3B8;      /* Slate gray */
+  --color-ink-muted:     #64748B;      /* Muted steel */
+  --color-ink-faint:     #334155;      /* Dark borders/placeholders */
 
   /* Structure */
-  --color-rule:          #161A23;      /* Crisp table/border lines */
-  --color-rule-strong:   #252C3B;      /* Glowing focus borders */
+  --color-rule:          #1E293B;      /* Slate borders */
+  --color-rule-strong:   #2D3748;      /* High contrast borders */
 
-  /* Risk Signals */
-  --color-flag:          #FF4D5E;      /* Electric Neon Red */
-  --color-flag-light:    rgba(255, 77, 94, 0.08);
-  --color-flag-medium:   rgba(255, 77, 94, 0.25);
-  --color-critical:      #FF2438;      
-  --color-high:          #FF4D5E;
-  --color-medium:        #FF9838;      /* Neon Orange */
-  --color-medium-light:  rgba(255, 152, 56, 0.08);
-  --color-low:           #5E6776;
-  --color-low-light:     #0F1116;
+  /* Risk Signals: Refined Crimson, Amber & Muted Gray */
+  --color-flag:          #E11D48;      /* Sophisticated Crimson Rose */
+  --color-flag-light:    rgba(225, 29, 72, 0.06);
+  --color-flag-medium:   rgba(225, 29, 72, 0.18);
+  --color-critical:      #BE123C;      /* Deep burgundy */
+  --color-high:          #E11D48;      /* Crimson */
+  --color-medium:        #D97706;      /* Warm Amber Gold */
+  --color-medium-light:  rgba(217, 119, 6, 0.06);
+  --color-low:           #64748B;      /* Slate steel */
+  --color-low-light:     #11141B;
 
-  /* Confirm / Safe States */
-  --color-confirm:       #00E676;      /* Vibrant Neon Green */
-  --color-confirm-light: rgba(0, 230, 118, 0.08);
+  /* Confirm / Safe States: Emerald */
+  --color-confirm:       #10B981;      /* Emerald Green */
+  --color-confirm-light: rgba(16, 185, 129, 0.06);
 
-  /* Data Accents */
-  --color-data-blue:       #00B0FF;    /* Vivid Cyber Blue */
-  --color-data-blue-light: rgba(0, 176, 255, 0.08);
+  /* Data Accents: Sky Blue & Warm Gold */
+  --color-data-blue:       #38BDF8;    /* Muted Slate Sky Blue */
+  --color-data-blue-light: rgba(56, 189, 248, 0.06);
 
   /* Typography */
-  --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
-  --font-mono:    'Fira Code', 'IBM Plex Mono', monospace;
-  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
-  --font-ui:      'Outfit', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-mono:    'Fira Code', monospace;
+  --font-body:    'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-ui:      'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
   /* Spacing */
   --space-2:  4px;

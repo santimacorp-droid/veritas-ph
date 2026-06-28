@@ -150,3 +150,61 @@ async def test_process_document_extracts_closing_date(mock_session_maker, mock_g
     fields = json.loads(extractions_call["fields"])
     assert fields["date_published"] == "26/06/2026"
     assert fields["closing_date"] == "02/07/2026"
+
+
+@pytest.mark.asyncio
+@patch("workers.tasks.extractor.get_api_store")
+@patch("workers.tasks.extractor.async_session_maker")
+async def test_process_document_existing_case_updates(mock_session_maker, mock_get_store):
+    # Mock storage client returning notice content
+    mock_store = MagicMock()
+    mock_store.get_bytes.return_value = (
+        b"Invitation to Bid (ITB)\n"
+        b"  Reference Number      12967682\n"
+        b"  Procuring Entity      MUNICIPALITY OF GUIGUINTO, BULACAN\n"
+        b"  Title Purchase of anti rabies vaccine (purified chick embryo cell)\n"
+        b"  Procurement Mode:       Public Bidding\n"
+        b"  Category:       Drugs and Medicines\n"
+        b"  Approved Budget for the Contract:       PHP 3,670,800.00\n"
+        b"  Date Published  26/06/2026\n"
+        b"  Closing Date/Time  02/07/2026\n"
+    )
+    mock_get_store.return_value = mock_store
+
+    mock_db = AsyncMock()
+    mock_result = MagicMock()
+
+    # 1. document lookup: returns storage path
+    # 2. agency lookup: returns None (will create)
+    # 3. case lookup: returns existing case (case_exists = True)
+    # 4. event lookup: returns None (event_exists = False, will insert event)
+    first_mock = MagicMock()
+    first_mock.side_effect = [
+        {"storage_path": "test_path.txt"},
+        {"case_id": "existing-case-uuid"},
+        None
+    ]
+    mock_result.mappings().first = first_mock
+    mock_db.execute.return_value = mock_result
+
+    mock_session = AsyncMock()
+    mock_session.execute = mock_db.execute
+    mock_session_maker.return_value.__aenter__.return_value = mock_session
+
+    result = await process_document("some-doc-uuid")
+
+    assert result["status"] == "success"
+
+    # Verify that UPDATE procurement_cases and INSERT INTO procurement_events were called
+    update_case_called = False
+    insert_event_called = False
+    for call in mock_db.execute.call_args_list:
+        stmt = str(call[0][0])
+        if "UPDATE procurement_cases" in stmt:
+            update_case_called = True
+        if "INSERT INTO procurement_events" in stmt:
+            insert_event_called = True
+
+    assert update_case_called
+    assert insert_event_called
+
