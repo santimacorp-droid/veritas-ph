@@ -68,7 +68,7 @@ export default async function AgenciesPage() {
             <thead>
               <tr>
                 <th className={`${styles.th} font-ui`}>Agency</th>
-                <th className={`${styles.th} ${styles.thNum} font-ui`}>Cases</th>
+                <th className={`${styles.th} ${styles.thNum} font-ui`}>Projects</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Total Awarded</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Avg Risk</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>High Risk</th>

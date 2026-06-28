@@ -173,7 +173,7 @@ export default async function CaseDetailPage({
       <main className={styles.pageContent}>
         {/* Breadcrumb */}
         <nav className={`${styles.breadcrumb} font-ui`}>
-          <Link href="/cases">Cases</Link>
+          <Link href="/projects">Projects</Link>
           <span className={styles.breadcrumbSep}>›</span>
           {caseData.agency_acronym && caseData.agency_id && (
             <>
@@ -291,19 +291,28 @@ export default async function CaseDetailPage({
         {/* Score Glossary / Interpretation */}
         <div style={{ background: 'var(--color-paper-dark)', border: '1px solid var(--color-rule)', padding: '16px 20px', borderRadius: '4px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px', marginTop: '16px' }}>
           <div>
-            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600 }} className="font-ui">🔴 Risk Score</h4>
+            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600, display: 'flex', alignItems: 'center' }} className="font-ui">
+              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-flag)', marginRight: '6px' }}></span>
+              Risk Score
+            </h4>
             <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-ink-secondary)', lineHeight: 1.5 }} className="font-body">
               Calculated based on red flag rules (e.g. single-bidder loops, compressed timelines, or cost overruns). A higher score indicates higher exposure to integrity risks.
             </p>
           </div>
           <div>
-            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600 }} className="font-ui">🔵 Confidence Score</h4>
+            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600, display: 'flex', alignItems: 'center' }} className="font-ui">
+              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-data-blue)', marginRight: '6px' }}></span>
+              Confidence Score
+            </h4>
             <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-ink-secondary)', lineHeight: 1.5 }} className="font-body">
               Measures reliability and linkage depth. High scores indicate the presence of verifiable cryptographic hashes linked directly to PhilGEPS source records.
             </p>
           </div>
           <div>
-            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600 }} className="font-ui">🟢 Timeline Completeness</h4>
+            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600, display: 'flex', alignItems: 'center' }} className="font-ui">
+              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-confirm)', marginRight: '6px' }}></span>
+              Timeline Completeness
+            </h4>
             <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-ink-secondary)', lineHeight: 1.5 }} className="font-body">
               Tracks transparency across the 5 statutory procurement stages: Planning (APP), Tender (ITB), Award (NOA), Contract, and Implementation (NTP).
             </p>
@@ -339,8 +348,13 @@ export default async function CaseDetailPage({
               {caseData.final_contract_amount ? formatPHP(caseData.final_contract_amount) : '—'}
             </div>
             {caseData.final_contract_amount && caseData.awarded_amount && caseData.final_contract_amount > caseData.awarded_amount ? (
-              <div className={`${styles.financialSublabel} ${styles.warningText} font-ui`}>
-                ⚠️ Cost Overrun of {(((caseData.final_contract_amount - caseData.awarded_amount) / caseData.awarded_amount) * 100).toFixed(1)}% detected
+              <div className={`${styles.financialSublabel} ${styles.warningText} font-ui`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Cost Overrun of {(((caseData.final_contract_amount - caseData.awarded_amount) / caseData.awarded_amount) * 100).toFixed(1)}% detected
               </div>
             ) : (
               <div className={`${styles.financialSublabel} font-ui`}>Actual expenditure at completion</div>
@@ -352,12 +366,21 @@ export default async function CaseDetailPage({
           const primaryDoc = timelineData.timeline.find((ev) => ev.document_id);
           return (
             <>
-              <div className={styles.sectionHeader}>
-                <span className="font-ui">📁 Verified Case Dossier Basis</span>
+              <div className={styles.sectionHeader} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-data-blue)' }}>
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span className="font-ui">Verified Project Dossier Basis</span>
               </div>
               <div className={styles.dossierContainer}>
                 <div className={styles.dossierBadge}>
-                  <span className={styles.dossierBadgeIcon}>📜</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-ink-muted)' }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
                   <span className={styles.dossierBadgeLabel}>Official basis</span>
                 </div>
                 <div className={styles.dossierContent}>
@@ -371,8 +394,25 @@ export default async function CaseDetailPage({
                       className={`${styles.dossierStatus} ${
                         primaryDoc ? styles.statusVerified : styles.statusPending
                       } font-ui`}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
-                      {primaryDoc ? '✓ Cryptographically Verified' : '⚠ Syncing from Registry'}
+                      {primaryDoc ? (
+                        <>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Cryptographically Verified
+                        </>
+                      ) : (
+                        <>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                          </svg>
+                          Syncing from Registry
+                        </>
+                      )}
                     </span>
                   </div>
 
@@ -403,16 +443,27 @@ export default async function CaseDetailPage({
                         <Link
                           href={`/documents/${primaryDoc.document_id}`}
                           className={`${styles.dossierBtn} ${styles.dossierBtnPrimary} font-ui`}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         >
-                          👁 Read Extracted Text
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                          Read Extracted Text
                         </Link>
                         <a
                           href={`/api/documents/${primaryDoc.document_id}/download`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`${styles.dossierBtn} font-ui`}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         >
-                          ⬇ Download PDF / Ingested HTML
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                          </svg>
+                          Download PDF / Ingested HTML
                         </a>
                       </>
                     ) : null}
@@ -425,8 +476,14 @@ export default async function CaseDetailPage({
                         target="_blank"
                         rel="noopener noreferrer"
                         className={`${styles.dossierBtn} font-ui`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                       >
-                        ↗ Open External PhilGEPS Notice
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                          <polyline points="15 3 21 3 21 9"/>
+                          <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                        Open External PhilGEPS Notice
                       </a>
                     )}
                   </div>
@@ -439,10 +496,15 @@ export default async function CaseDetailPage({
         {/* Advanced Audit Report (DeepSeek) */}
         {auditReport.report_type !== 'none' && (
           <>
-            <div className={styles.sectionHeader}>
-              <span className="font-ui">🔬 Advanced Audit Report</span>
+            <div className={styles.sectionHeader} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-flag)' }}>
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                <line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+              <span className="font-ui">Advanced Audit Report</span>
               <span className={`${styles.sectionCount} font-mono`} style={{ background: 'var(--color-flag)', color: 'var(--color-paper)' }}>
-                DeepSeek AI
+                AI Engine
               </span>
             </div>
             <div style={{
@@ -454,10 +516,14 @@ export default async function CaseDetailPage({
               position: 'relative',
               overflow: 'hidden'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '3px 8px', borderRadius: '3px', background: auditReport.report_type === 'predictive' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: auditReport.report_type === 'predictive' ? 'var(--color-flag)' : 'var(--color-confirm)', fontWeight: 600 }} className="font-ui">
-                    {auditReport.report_type === 'predictive' ? '🔮 Predictive Risk Model' : '🔎 Forensic Audit Report'}
+                  <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '3px 8px', borderRadius: '3px', background: auditReport.report_type === 'predictive' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: auditReport.report_type === 'predictive' ? 'var(--color-flag)' : 'var(--color-confirm)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }} className="font-ui">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    {auditReport.report_type === 'predictive' ? 'Predictive Risk Model' : 'Forensic Audit Report'}
                   </span>
                 </div>
                 {auditReport.report_type === 'predictive' && auditReport.risk_probability !== null && (
@@ -544,12 +610,17 @@ export default async function CaseDetailPage({
 
         {/* Public Integrity Action Hub */}
         <div className={styles.actionHub}>
-          <div className={styles.actionHubHeader}>
-            <span className={styles.actionHubTitle}>📢 Citizen Action Hub — How to Use This Case</span>
+          <div className={styles.actionHubHeader} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-data-blue)' }}>
+              <path d="M12 19c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H12z"/>
+              <path d="M12 11H8c-1.1 0-2 .9-2 2v4"/>
+              <circle cx="5" cy="5" r="2"/>
+            </svg>
+            <span className={styles.actionHubTitle}>Citizen Action Hub — How to Use This Project</span>
           </div>
           <div className={styles.actionHubBody}>
             <p className="font-body">
-              This case contains verified statistical anomalies. As a citizen, journalist, or public watchdog, you can take concrete steps to verify, investigate, and report these findings:
+              This project contains verified statistical anomalies. As a citizen, journalist, or public watchdog, you can take concrete steps to verify, investigate, and report these findings:
             </p>
             <div className={styles.actionGrid}>
               <div className={styles.actionItem}>

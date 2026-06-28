@@ -198,7 +198,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
           <table className={styles.table}>
             <thead>
               <tr>
-                <th className={`${styles.th} font-ui`}>Case</th>
+                <th className={`${styles.th} font-ui`}>Project</th>
                 <th className={`${styles.th} font-ui`}>Agency</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Award Date</th>
                 <th className={`${styles.th} ${styles.thNum} font-ui`}>Amount</th>

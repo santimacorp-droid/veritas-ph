@@ -106,9 +106,9 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
         {/* Stats Panel */}
         <div className={styles.statsPanel}>
           {[
-            { label: 'Total Cases', value: agency.total_cases ?? 0 },
+            { label: 'Total Projects', value: agency.total_cases ?? 0 },
             { label: 'Total Awarded', value: formatPHP(agency.total_awarded) },
-            { label: 'High Risk Cases', value: agency.high_risk_cases ?? 0, flag: true },
+            { label: 'High Risk Projects', value: agency.high_risk_cases ?? 0, flag: true },
             {
               label: 'Confirmed Signals',
               value: agency.confirmed_discrepancies ?? 0,
@@ -147,7 +147,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
 
         {/* Cases Table */}
         <div className={styles.sectionHeader}>
-          <span className="font-ui">Procurement Cases</span>
+          <span className="font-ui">Procurement Projects</span>
           <span className={`${styles.sectionCount} font-mono`}>
             {casesData.total} total
           </span>
