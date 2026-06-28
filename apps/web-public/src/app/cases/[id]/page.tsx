@@ -540,7 +540,7 @@ export default async function CaseDetailPage({
               position: 'relative',
               overflow: 'hidden'
             }}>
-              <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '3px 8px', borderRadius: '3px', background: auditReport.report_type === 'predictive' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: auditReport.report_type === 'predictive' ? 'var(--color-flag)' : 'var(--color-confirm)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }} className="font-ui">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
