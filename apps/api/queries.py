@@ -275,7 +275,7 @@ async def list_cases(
             pc.procurement_stage,
             pc.bid_deadline,
             pc.ntp_date,
-            pc.risk_score,
+            pc.public_risk_score AS risk_score,
             pc.completeness_score,
             pc.confidence_score,
             pc.updated_at,
@@ -292,12 +292,12 @@ async def list_cases(
             pc.category, pc.geographic_scope, pc.planned_amount, pc.awarded_amount,
             pc.final_contract_amount, pc.award_date, pc.status, pc.procurement_stage,
             pc.bid_deadline, pc.ntp_date,
-            pc.risk_score, pc.completeness_score, pc.confidence_score,
+            pc.public_risk_score, pc.completeness_score, pc.confidence_score,
             pc.updated_at, pc.created_at,
             a.agency_id, a.name, a.acronym
         ORDER BY
             COALESCE(pc.updated_at, pc.created_at) DESC,
-            pc.risk_score DESC NULLS LAST,
+            pc.public_risk_score DESC NULLS LAST,
             pc.award_date DESC NULLS LAST
         LIMIT :limit OFFSET :offset
     """)
@@ -347,7 +347,7 @@ async def search_cases(
                 pc.procurement_method,
                 pc.awarded_amount,
                 pc.award_date,
-                pc.risk_score,
+                pc.public_risk_score AS risk_score,
                 pc.status,
                 a.name AS agency_name,
                 a.acronym AS agency_acronym,
@@ -359,7 +359,7 @@ async def search_cases(
             FROM procurement_cases pc
             LEFT JOIN agencies a ON a.agency_id = pc.agency_id
             WHERE {where}
-            ORDER BY rank DESC, pc.risk_score DESC NULLS LAST
+            ORDER BY rank DESC, pc.public_risk_score DESC NULLS LAST
             LIMIT :limit OFFSET :offset
         """)
     else:
@@ -385,7 +385,7 @@ async def search_cases(
                 pc.procurement_method,
                 pc.awarded_amount,
                 pc.award_date,
-                pc.risk_score,
+                pc.public_risk_score AS risk_score,
                 pc.status,
                 a.name AS agency_name,
                 a.acronym AS agency_acronym,
@@ -396,7 +396,7 @@ async def search_cases(
             FROM procurement_cases pc
             LEFT JOIN agencies a ON a.agency_id = pc.agency_id
             WHERE {where}
-            ORDER BY rank DESC, pc.risk_score DESC NULLS LAST
+            ORDER BY rank DESC, pc.public_risk_score DESC NULLS LAST
             LIMIT :limit OFFSET :offset
         """)
 
@@ -530,7 +530,7 @@ async def get_case_detail(db: AsyncSession, case_id: UUID):
             pc.contract_start_date,
             pc.contract_end_date,
             pc.status,
-            pc.risk_score,
+            pc.public_risk_score AS risk_score,
             pc.completeness_score,
             pc.confidence_score,
             pc.risk_components,
@@ -684,8 +684,8 @@ async def get_agency_profile(db: AsyncSession, agency_id: UUID):
             p.name AS publisher_name,
             COUNT(DISTINCT pc.case_id) AS total_cases,
             SUM(pc.awarded_amount) AS total_awarded,
-            AVG(pc.risk_score) AS avg_risk_score,
-            COUNT(DISTINCT CASE WHEN pc.risk_score >= 0.7 THEN pc.case_id END) AS high_risk_cases
+            AVG(pc.public_risk_score) AS avg_risk_score,
+            COUNT(DISTINCT CASE WHEN pc.public_risk_score >= 0.7 THEN pc.case_id END) AS high_risk_cases
         FROM agencies a
         LEFT JOIN publishers p ON p.publisher_id = a.publisher_id
         LEFT JOIN procurement_cases pc ON pc.agency_id = a.agency_id
@@ -768,7 +768,7 @@ async def get_supplier_awards(
             pc.case_id,
             pc.title,
             pc.procurement_ref_no,
-            pc.risk_score,
+            pc.public_risk_score AS risk_score,
             a.agency_id,
             a.name AS agency_name,
             a.acronym AS agency_acronym
@@ -809,8 +809,8 @@ async def list_agencies(db: AsyncSession, limit: int = 50, offset: int = 0, sort
             p.name AS publisher_name,
             COUNT(DISTINCT pc.case_id)   AS total_cases,
             SUM(pc.awarded_amount)        AS total_awarded,
-            AVG(pc.risk_score)            AS avg_risk_score,
-            COUNT(DISTINCT CASE WHEN pc.risk_score >= 0.7 THEN pc.case_id END) AS high_risk_cases,
+            AVG(pc.public_risk_score)            AS avg_risk_score,
+            COUNT(DISTINCT CASE WHEN pc.public_risk_score >= 0.7 THEN pc.case_id END) AS high_risk_cases,
             COUNT(DISTINCT CASE WHEN d.review_status IN ('confirmed','published')
                   THEN d.discrepancy_id END) AS confirmed_discrepancies
         FROM agencies a
@@ -852,7 +852,7 @@ async def list_recent_discrepancies(db: AsyncSession, limit: int = 10, offset: i
         JOIN procurement_cases pc ON pc.case_id = d.case_id
         LEFT JOIN agencies a ON a.agency_id = pc.agency_id
         WHERE d.review_status IN ('confirmed', 'published')
-        ORDER BY d.generated_at DESC, pc.risk_score DESC NULLS LAST
+        ORDER BY d.generated_at DESC, pc.public_risk_score DESC NULLS LAST
         LIMIT :limit OFFSET :offset
     """)
     result = await db.execute(sql, {"limit": limit, "offset": offset})
@@ -883,7 +883,7 @@ async def get_agency_cases(
             pc.procurement_method,
             pc.awarded_amount,
             pc.award_date,
-            pc.risk_score,
+            pc.public_risk_score AS risk_score,
             pc.status,
             COUNT(DISTINCT CASE WHEN d.review_status IN ('confirmed', 'published') THEN d.discrepancy_id END) AS discrepancy_count
         FROM procurement_cases pc
@@ -891,8 +891,8 @@ async def get_agency_cases(
         WHERE pc.agency_id = :agency_id
         GROUP BY pc.case_id, pc.title, pc.procurement_ref_no,
                  pc.procurement_method, pc.awarded_amount, pc.award_date,
-                 pc.risk_score, pc.status
-        ORDER BY pc.risk_score DESC NULLS LAST, pc.award_date DESC NULLS LAST
+                 pc.public_risk_score, pc.status
+        ORDER BY pc.public_risk_score DESC NULLS LAST, pc.award_date DESC NULLS LAST
         LIMIT :limit OFFSET :offset
     """)
     result = await db.execute(sql, {"agency_id": str(agency_id), "limit": limit, "offset": offset})

@@ -827,9 +827,9 @@ async def check_late_ntp_issuance(db, case_id: str):
     if not row or not row["ntp_date"]:
         return None
         
-    n_date = row["ntp_date"]
-    a_date = row["award_date"]
-    c_date = row["contract_start_date"]
+    n_date = row.get("ntp_date")
+    a_date = row.get("award_date")
+    c_date = row.get("contract_start_date")
     
     if isinstance(n_date, str):
         n_date = parse_date(n_date)
@@ -923,6 +923,7 @@ async def check_late_ntp_issuance(db, case_id: str):
             }
 
     if triggered:
+        discrepancy_id = str(uuid4())
         explanation = await generate_explanation(
             discrepancy_type="timeline_risk",
             rule_id="RULE_008",
@@ -1887,6 +1888,7 @@ async def analyze_case(case_id: str):
             text("""
                 UPDATE procurement_cases 
                    SET risk_score = :score,
+                       public_risk_score = 0.05,
                        risk_components = :components,
                        confidence_score = :conf
                  WHERE case_id = :cid
@@ -1935,7 +1937,7 @@ async def analyze_case(case_id: str):
                     SELECT lc.controversy_id 
                     FROM law_controversies lc
                     JOIN law_provisions lp ON lp.provision_id = lc.provision_id
-                    WHERE lp.section_number = 'Section 53'
+                    WHERE lp.section_number = 'Section 54'
                     LIMIT 1
                 """)
             )
@@ -1988,4 +1990,56 @@ async def build_timeline(db, case_id: str):
         """),
         {"score": completeness_score, "cid": case_id}
     )
-    # Note: caller (analyze_case) is responsible for committing
+
+
+async def recalculate_case_scores(db, case_id: str):
+    """
+    Recalculates a case's risk_score (raw) and public_risk_score (confirmed only)
+    based on the updated statuses of its discrepancies (e.g. after analyst confirms/rejects).
+    """
+    res = await db.execute(
+        text("SELECT rule_id, review_status FROM discrepancies WHERE case_id = :cid"),
+        {"cid": case_id}
+    )
+    rows = res.mappings().all()
+    
+    raw_rule_ids = set()
+    confirmed_rule_ids = set()
+    for row in rows:
+        r_id = str(row["rule_id"]).replace("-", "_") # e.g. RULE-001 -> RULE_001
+        status = row["review_status"]
+        if status != "false_positive":
+            raw_rule_ids.add(r_id)
+        if status in ("confirmed", "published"):
+            confirmed_rule_ids.add(r_id)
+            
+    rule_weights = {
+        "RULE_001": 0.6, "RULE_002": 0.6, "RULE_003": 0.6, "RULE_004": 0.6, "RULE_005": 0.6,
+        "RULE_006": 0.3, "RULE_007": 0.3, "RULE_008": 0.3, "RULE_009": 0.3, "RULE_010": 0.6,
+        "RULE_011": 1.0, "RULE_012": 0.3, "RULE_013": 0.6, "RULE_014": 0.3, "RULE_015": 1.0,
+        "RULE_016": 0.6
+    }
+    total_weight = sum(rule_weights.values())
+    
+    # Calculate raw score
+    raw_earned = sum(rule_weights.get(rid, 0.0) for rid in raw_rule_ids)
+    raw_score = raw_earned / total_weight if total_weight > 0 else 0.05
+    if "RULE_011" in raw_rule_ids or "RULE_015" in raw_rule_ids:
+        raw_score = max(raw_score, 0.80)
+        
+    # Calculate confirmed public score
+    conf_earned = sum(rule_weights.get(rid, 0.0) for rid in confirmed_rule_ids)
+    conf_score = conf_earned / total_weight if total_weight > 0 else 0.05
+    if "RULE_011" in confirmed_rule_ids or "RULE_015" in confirmed_rule_ids:
+        conf_score = max(conf_score, 0.80)
+        
+    # Update case values
+    await db.execute(
+        text("""
+            UPDATE procurement_cases
+               SET risk_score = :raw_score,
+                   public_risk_score = :conf_score
+             WHERE case_id = :cid
+        """),
+        {"raw_score": raw_score, "conf_score": conf_score, "cid": case_id}
+    )

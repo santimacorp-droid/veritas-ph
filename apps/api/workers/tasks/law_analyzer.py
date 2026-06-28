@@ -406,7 +406,7 @@ or infer provisions that are not shown. If a section is short or a holiday law, 
 
 Analyze every section and identify:
 - What the law does well (pros)
-- Weaknesses, vague language, or failures (cons)
+- Weaknesses, vague language, or failures, including any textual anomalies, drafting errors, incorrect cross-reference years (e.g. referencing a law with a wrong year like RA 9285 as 2024 instead of 2004), and transcription mistakes in the official statute text (cons)
 - Loopholes that could be exploited (with the specific section number)
 - Suggested revisions with exact section references
 - A plain-language summary for ordinary Filipino citizens
@@ -419,7 +419,7 @@ Return exactly a JSON object conforming to this schema:
   "integrity_score": <number 0-100: how loophole-free and enforceable the law is>,
   "governance_score": <number 0-100: strength of oversight and accountability mechanisms>,
   "pros": [<strings: what the law does well for transparency and civic interest>],
-  "cons": [<strings: weaknesses, vague items, or failures — cite specific section numbers>],
+  "cons": [<strings: weaknesses, vague items, failures, or drafting/textual/reference anomalies — cite specific section numbers (e.g. 'Section 88: Textual Anomaly - Incorrectly cross-references RA 9285 as the Alternative Dispute Resolution Act of 2024 instead of 2004')>],
   "loopholes": [
     {{
       "section": "<exact section number, e.g. SEC. 17>",
@@ -498,6 +498,7 @@ Please audit the initial analysis and return a final, corrected JSON version by 
 2. Metadata Integrity: Check the authors, sponsors, and voting record. If they are generic committee names (e.g. Finance Committee) or seem unverified/hallucinated, replace them with accurate details or set them to null/unverified. Do not output generic or fake congressional statistics.
 3. Tone & Factuality: Ensure that weaknesses, loopholes, and suggested revisions are framed as "AI policy assessments" or analysis, not as established judicial facts.
 4. Refine the integrity_score and governance_score based on your audit. If you corrected section references or removed hallucinations, adjust the score to represent the true state.
+5. Textual/Drafting Auditing: Check for legislative reference inconsistencies, such as cross-referencing a law with an incorrect year (e.g. 'Alternative Dispute Resolution Act of 2024' when the actual law RA 9285 was signed in 2004). If any such anomaly exists in the law text, you MUST add it as a cons entry (e.g. 'Section 88: Textual Anomaly - Incorrectly cross-references RA 9285 as the Alternative Dispute Resolution Act of 2024 instead of 2004').
 
 FULL TEXT OF THE LAW:
 {law_context}

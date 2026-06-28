@@ -38,8 +38,6 @@ interface SupplierAwardItem {
   award_date?: string;
 }
 
-
-
 const RISK_COLORS: Record<string, string> = {
   Low: '#5E6776',      // Low-risk slate gray
   Medium: '#FF9838',   // Medium orange
@@ -54,17 +52,14 @@ const AGENCY_COLORS = [
   '#00E676', // Green
 ];
 
-export function RiskDistributionBarChart({ riskData }: { riskData: RiskData[] }) {
+export function RiskDistributionBarChart({ riskData = [] }: { riskData?: RiskData[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Ensure correct order Low -> Medium -> High
-  const orderedData = [...riskData].sort((a, b) => {
-    const order: Record<string, number> = { Low: 1, Medium: 2, High: 3 };
-    return (order[a.level] ?? 0) - (order[b.level] ?? 0);
-  });
+  const safeData = riskData || [];
+  const hasNoData = safeData.length === 0 || safeData.every(d => d.count === 0);
 
   if (!mounted) {
     return (
@@ -76,6 +71,26 @@ export function RiskDistributionBarChart({ riskData }: { riskData: RiskData[] })
       </div>
     );
   }
+
+  if (hasNoData) {
+    return (
+      <div style={chartWrapperStyle}>
+        <h3 style={chartTitleStyle} className="font-ui">Cases by Risk Level</h3>
+        <div style={{ height: 260, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink)' }}>No Risk Data Available</span>
+          <span style={{ fontSize: '11px', color: 'var(--color-ink-muted)', textAlign: 'center', maxWidth: '280px' }}>
+            The background crawler may still be populating projects, or the registry is empty.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure correct order Low -> Medium -> High
+  const orderedData = [...safeData].sort((a, b) => {
+    const order: Record<string, number> = { Low: 1, Medium: 2, High: 3 };
+    return (order[a.level] ?? 0) - (order[b.level] ?? 0);
+  });
 
   return (
     <div style={chartWrapperStyle}>
@@ -117,13 +132,16 @@ export function RiskDistributionBarChart({ riskData }: { riskData: RiskData[] })
   );
 }
 
-export function AgencyConcentrationPieChart({ agencyData }: { agencyData: AgencyData[] }) {
+export function AgencyConcentrationPieChart({ agencyData = [] }: { agencyData?: AgencyData[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Format Peso amount to compact currency
+  const safeData = agencyData || [];
+  const validData = safeData.filter((d) => d.total_awarded > 0);
+  const hasNoData = validData.length === 0;
+
   function formatPesoCompact(value: number) {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -132,17 +150,6 @@ export function AgencyConcentrationPieChart({ agencyData }: { agencyData: Agency
       maximumFractionDigits: 1,
     }).format(value);
   }
-
-  // Pre-process: take top 4 and aggregate the rest into Others
-  let formattedData = [...agencyData];
-  if (formattedData.length > 4) {
-    const top4 = formattedData.slice(0, 4);
-    const othersSum = formattedData.slice(4).reduce((sum, item) => sum + item.total_awarded, 0);
-    formattedData = [...top4, { agency_name: 'Others', total_awarded: othersSum }];
-  }
-
-  // Filter out any zero entries to prevent chart errors
-  formattedData = formattedData.filter((d) => d.total_awarded > 0);
 
   if (!mounted) {
     return (
@@ -153,6 +160,28 @@ export function AgencyConcentrationPieChart({ agencyData }: { agencyData: Agency
         </div>
       </div>
     );
+  }
+
+  if (hasNoData) {
+    return (
+      <div style={chartWrapperStyle}>
+        <h3 style={chartTitleStyle} className="font-ui">Spending Concentration by Agency</h3>
+        <div style={{ height: 260, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink)' }}>No Spending Data Available</span>
+          <span style={{ fontSize: '11px', color: 'var(--color-ink-muted)', textAlign: 'center', maxWidth: '280px' }}>
+            No procurement cases with valid awarded amounts have been indexed yet.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Pre-process: take top 4 and aggregate the rest into Others
+  let formattedData = [...validData];
+  if (formattedData.length > 4) {
+    const top4 = formattedData.slice(0, 4);
+    const othersSum = formattedData.slice(4).reduce((sum, item) => sum + item.total_awarded, 0);
+    formattedData = [...top4, { agency_name: 'Others', total_awarded: othersSum }];
   }
 
   return (
@@ -194,26 +223,14 @@ export function AgencyConcentrationPieChart({ agencyData }: { agencyData: Agency
   );
 }
 
-export function AgencyCasesRiskChart({ cases }: { cases: CaseSummaryItem[] }) {
+export function AgencyCasesRiskChart({ cases = [] }: { cases?: CaseSummaryItem[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Aggregate risk categories
-  const counts = { Low: 0, Medium: 0, High: 0 };
-  cases.forEach((c) => {
-    const score = c.risk_score ?? 0;
-    if (score < 0.35) counts.Low++;
-    else if (score < 0.70) counts.Medium++;
-    else counts.High++;
-  });
-
-  const chartData = [
-    { level: 'Low', count: counts.Low },
-    { level: 'Medium', count: counts.Medium },
-    { level: 'High', count: counts.High },
-  ];
+  const safeCases = cases || [];
+  const hasNoData = safeCases.length === 0;
 
   if (!mounted) {
     return (
@@ -225,6 +242,35 @@ export function AgencyCasesRiskChart({ cases }: { cases: CaseSummaryItem[] }) {
       </div>
     );
   }
+
+  if (hasNoData) {
+    return (
+      <div style={chartWrapperStyle}>
+        <h3 style={chartTitleStyle} className="font-ui">Case Risk Distribution</h3>
+        <div style={{ height: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>No Projects Indexed</span>
+          <span style={{ fontSize: '11px', color: 'var(--color-ink-muted)', textAlign: 'center' }}>
+            No cases were found for this procuring entity.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Aggregate risk categories
+  const counts = { Low: 0, Medium: 0, High: 0 };
+  safeCases.forEach((c) => {
+    const score = c.risk_score ?? 0;
+    if (score < 0.35) counts.Low++;
+    else if (score < 0.70) counts.Medium++;
+    else counts.High++;
+  });
+
+  const chartData = [
+    { level: 'Low', count: counts.Low },
+    { level: 'Medium', count: counts.Medium },
+    { level: 'High', count: counts.High },
+  ];
 
   return (
     <div style={chartWrapperStyle}>
@@ -247,33 +293,15 @@ export function AgencyCasesRiskChart({ cases }: { cases: CaseSummaryItem[] }) {
   );
 }
 
-export function AgencyMethodShareChart({ cases }: { cases: CaseSummaryItem[] }) {
+export function AgencyMethodShareChart({ cases = [] }: { cases?: CaseSummaryItem[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Aggregate total awarded value per procurement method
-  const aggregates: Record<string, number> = {};
-  cases.forEach((c) => {
-    const method = c.procurement_method ? c.procurement_method.replace(/_/g, ' ') : 'Other';
-    const amount = c.awarded_amount ?? 0;
-    aggregates[method] = (aggregates[method] ?? 0) + amount;
-  });
-
-  const chartData = Object.entries(aggregates)
-    .map(([method, value]) => ({ method, value }))
-    .sort((a, b) => b.value - a.value);
-
-  // Take top 3 and others
-  let displayData = [...chartData];
-  if (displayData.length > 3) {
-    const top3 = displayData.slice(0, 3);
-    const othersVal = displayData.slice(3).reduce((sum, item) => sum + item.value, 0);
-    displayData = [...top3, { method: 'Others', value: othersVal }];
-  }
-
-  displayData = displayData.filter((d) => d.value > 0);
+  const safeCases = cases || [];
+  const validCases = safeCases.filter(c => (c.awarded_amount ?? 0) > 0);
+  const hasNoData = validCases.length === 0;
 
   function formatPesoCompact(value: number) {
     return new Intl.NumberFormat('en-PH', {
@@ -293,6 +321,40 @@ export function AgencyMethodShareChart({ cases }: { cases: CaseSummaryItem[] }) 
         </div>
       </div>
     );
+  }
+
+  if (hasNoData) {
+    return (
+      <div style={chartWrapperStyle}>
+        <h3 style={chartTitleStyle} className="font-ui">Procurement Mode Value Share</h3>
+        <div style={{ height: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>No Award Value Share</span>
+          <span style={{ fontSize: '11px', color: 'var(--color-ink-muted)', textAlign: 'center' }}>
+            No project values are recorded for this entity.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Aggregate total awarded value per procurement method
+  const aggregates: Record<string, number> = {};
+  validCases.forEach((c) => {
+    const method = c.procurement_method ? c.procurement_method.replace(/_/g, ' ') : 'Other';
+    const amount = c.awarded_amount ?? 0;
+    aggregates[method] = (aggregates[method] ?? 0) + amount;
+  });
+
+  const chartData = Object.entries(aggregates)
+    .map(([method, value]) => ({ method, value }))
+    .sort((a, b) => b.value - a.value);
+
+  // Take top 3 and others
+  let displayData = [...chartData];
+  if (displayData.length > 3) {
+    const top3 = displayData.slice(0, 3);
+    const othersVal = displayData.slice(3).reduce((sum, item) => sum + item.value, 0);
+    displayData = [...top3, { method: 'Others', value: othersVal }];
   }
 
   return (
@@ -324,31 +386,15 @@ export function AgencyMethodShareChart({ cases }: { cases: CaseSummaryItem[] }) 
   );
 }
 
-export function SupplierAgencyConcentrationChart({ awards }: { awards: SupplierAwardItem[] }) {
+export function SupplierAgencyConcentrationChart({ awards = [] }: { awards?: SupplierAwardItem[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const aggregates: Record<string, number> = {};
-  awards.forEach((a) => {
-    const agency = a.agency_acronym ?? a.agency_name ?? 'Unknown';
-    const amount = a.amount ?? 0;
-    aggregates[agency] = (aggregates[agency] ?? 0) + amount;
-  });
-
-  const chartData = Object.entries(aggregates)
-    .map(([agency, value]) => ({ agency, value }))
-    .sort((a, b) => b.value - a.value);
-
-  let displayData = [...chartData];
-  if (displayData.length > 3) {
-    const top3 = displayData.slice(0, 3);
-    const othersVal = displayData.slice(3).reduce((sum, item) => sum + item.value, 0);
-    displayData = [...top3, { agency: 'Others', value: othersVal }];
-  }
-
-  displayData = displayData.filter((d) => d.value > 0);
+  const safeAwards = awards || [];
+  const validAwards = safeAwards.filter(a => (a.amount ?? 0) > 0);
+  const hasNoData = validAwards.length === 0;
 
   function formatPesoCompact(value: number) {
     return new Intl.NumberFormat('en-PH', {
@@ -368,6 +414,38 @@ export function SupplierAgencyConcentrationChart({ awards }: { awards: SupplierA
         </div>
       </div>
     );
+  }
+
+  if (hasNoData) {
+    return (
+      <div style={chartWrapperStyle}>
+        <h3 style={chartTitleStyle} className="font-ui">Awards by Procuring Agency</h3>
+        <div style={{ height: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>No Award History</span>
+          <span style={{ fontSize: '11px', color: 'var(--color-ink-muted)', textAlign: 'center' }}>
+            No awards have been indexed for this supplier yet.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  const aggregates: Record<string, number> = {};
+  validAwards.forEach((a) => {
+    const agency = a.agency_acronym ?? a.agency_name ?? 'Unknown';
+    const amount = a.amount ?? 0;
+    aggregates[agency] = (aggregates[agency] ?? 0) + amount;
+  });
+
+  const chartData = Object.entries(aggregates)
+    .map(([agency, value]) => ({ agency, value }))
+    .sort((a, b) => b.value - a.value);
+
+  let displayData = [...chartData];
+  if (displayData.length > 3) {
+    const top3 = displayData.slice(0, 3);
+    const othersVal = displayData.slice(3).reduce((sum, item) => sum + item.value, 0);
+    displayData = [...top3, { agency: 'Others', value: othersVal }];
   }
 
   return (
@@ -399,23 +477,15 @@ export function SupplierAgencyConcentrationChart({ awards }: { awards: SupplierA
   );
 }
 
-export function SupplierAwardTrendChart({ awards }: { awards: SupplierAwardItem[] }) {
+export function SupplierAwardTrendChart({ awards = [] }: { awards?: SupplierAwardItem[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const aggregates: Record<string, number> = {};
-  awards.forEach((a) => {
-    if (!a.award_date) return;
-    const year = a.award_date.split('-')[0] || 'Unknown';
-    const amount = a.amount ?? 0;
-    aggregates[year] = (aggregates[year] ?? 0) + amount;
-  });
-
-  const chartData = Object.entries(aggregates)
-    .map(([year, amount]) => ({ year, amount }))
-    .sort((a, b) => a.year.localeCompare(b.year));
+  const safeAwards = awards || [];
+  const validAwards = safeAwards.filter(a => (a.amount ?? 0) > 0 && a.award_date);
+  const hasNoData = validAwards.length === 0;
 
   function formatPesoCompact(value: number) {
     return new Intl.NumberFormat('en-PH', {
@@ -436,6 +506,32 @@ export function SupplierAwardTrendChart({ awards }: { awards: SupplierAwardItem[
       </div>
     );
   }
+
+  if (hasNoData) {
+    return (
+      <div style={chartWrapperStyle}>
+        <h3 style={chartTitleStyle} className="font-ui">Award Value Timeline</h3>
+        <div style={{ height: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>No Timeline Data</span>
+          <span style={{ fontSize: '11px', color: 'var(--color-ink-muted)', textAlign: 'center' }}>
+            No historical award timeline available.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  const aggregates: Record<string, number> = {};
+  validAwards.forEach((a) => {
+    if (!a.award_date) return;
+    const year = a.award_date.split('-')[0] || 'Unknown';
+    const amount = a.amount ?? 0;
+    aggregates[year] = (aggregates[year] ?? 0) + amount;
+  });
+
+  const chartData = Object.entries(aggregates)
+    .map(([year, amount]) => ({ year, amount }))
+    .sort((a, b) => a.year.localeCompare(b.year));
 
   return (
     <div style={chartWrapperStyle}>

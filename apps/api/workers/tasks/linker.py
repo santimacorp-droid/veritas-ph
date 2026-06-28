@@ -143,44 +143,47 @@ async def link_app_items():
 
 async def canonicalize_suppliers():
     """
-    Finds and merges duplicate suppliers using fuzzy name matching.
+    Finds potential duplicate suppliers and logs them in pending_supplier_merges for human confirmation.
     """
     from rapidfuzz import fuzz
+    from uuid import uuid4
     async with async_session_maker() as db:
         sql = text("SELECT supplier_id, canonical_name FROM suppliers")
         res = await db.execute(sql)
         suppliers = res.mappings().all()
         
         if len(suppliers) < 2:
-            return {"status": "success", "merged_count": 0}
+            return {"status": "success", "flagged_count": 0}
             
-        merged_count = 0
-        processed_ids = set()
+        flagged_count = 0
         
         for i, sup1 in enumerate(suppliers):
             id1 = str(sup1["supplier_id"])
-            if id1 in processed_ids:
-                continue
             name1 = str(sup1["canonical_name"]).upper()
             
             for j in range(i + 1, len(suppliers)):
                 sup2 = suppliers[j]
                 id2 = str(sup2["supplier_id"])
-                if id2 in processed_ids:
-                    continue
                 name2 = str(sup2["canonical_name"]).upper()
                 
-                if fuzz.token_sort_ratio(name1, name2) > 85:
-                    await db.execute(text("UPDATE awards SET supplier_id = :id1 WHERE supplier_id = :id2"), {"id1": id1, "id2": id2})
-                    await db.execute(text("UPDATE contracts SET supplier_id = :id1 WHERE supplier_id = :id2"), {"id1": id1, "id2": id2})
-                    await db.execute(text("DELETE FROM suppliers WHERE supplier_id = :id2"), {"id2": id2})
-                    processed_ids.add(id2)
-                    merged_count += 1
+                ratio = fuzz.token_sort_ratio(name1, name2)
+                if ratio > 85:
+                    await db.execute(text("""
+                        INSERT INTO pending_supplier_merges (merge_id, source_id, target_id, similarity_score, status)
+                        VALUES (:mid, :sid, :tid, :score, 'pending')
+                        ON CONFLICT (source_id, target_id) DO NOTHING
+                    """), {
+                        "mid": str(uuid4()),
+                        "sid": id2,  # Duplicate supplier to merge from
+                        "tid": id1,  # Target canonical supplier to keep
+                        "score": float(ratio) / 100.0
+                    })
+                    flagged_count += 1
                     
         await db.commit()
     
-    logger.info(f"Merged {merged_count} duplicate suppliers")
-    return {"status": "success", "merged_count": merged_count}
+    logger.info(f"Flagged {flagged_count} potential supplier merges for review")
+    return {"status": "success", "flagged_count": flagged_count}
 
 
 async def detect_duplicate_documents():

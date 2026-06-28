@@ -30,17 +30,18 @@ async def test_check_short_posting_window_violates():
         "case_id": "test-case-id",
         "title": "Supply of Vaccine",
         "document_id": "doc-id-123",
-        "event_date": "2026-06-26",
+        "event_date": "2024-06-26",
+        "procurement_method": "public_bidding",
         "fields": json.dumps(
             {
-                "date_published": "26/06/2026",
-                "closing_date": "01/07/2026",  # 5 days difference (< 7)
+                "date_published": "26/06/2024",
+                "closing_date": "01/07/2024",  # 5 days difference (< 7)
             }
         ),
         "source_url": "http://example.com/notice.pdf",
         "sha256_hash": "abc123hash",
         "agency_name": "Department of Health",
-            "fetch_timestamp": "2026-06-26T10:00:00Z",
+            "fetch_timestamp": "2024-06-26T10:00:00Z",
             "confidence": 1.0,
             "parser_version": "v1.0.0"
     }
@@ -255,8 +256,9 @@ async def test_check_late_ntp_issuance_fires():
     mock_query.mappings.return_value.first.return_value = {
         "case_id": "c1",
         "title": "Test Case",
-        "award_date": "2026-06-01",
-        "ntp_date": "2026-06-25", # 24 days > 15
+        "award_date": "2024-06-01",
+        "ntp_date": "2024-06-25", # 24 days > 15
+        "contract_start_date": None,
         "agency_name": "Test Agency",
         "awarded_amount": 1000000.0
     }
@@ -281,8 +283,9 @@ async def test_check_late_ntp_issuance_before_noa():
     mock_query.mappings.return_value.first.return_value = {
         "case_id": "c1",
         "title": "Test Case",
-        "award_date": "2026-06-20",
-        "ntp_date": "2026-06-01", # -19 days < 0
+        "award_date": "2024-06-20",
+        "ntp_date": "2024-06-01", # -19 days < 0
+        "contract_start_date": None,
         "agency_name": "Test Agency",
         "awarded_amount": 1000000.0
     }

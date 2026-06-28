@@ -23,7 +23,7 @@ export default function Footer() {
       </div>
       <div className={styles.disclaimerContainer}>
         <p className={`${styles.disclaimer} font-ui`}>
-          Disclaimer: All data is extracted directly from public Philippine government source documents (PhilGEPS, Judiciary E-Library, and Official Gazette). Audit scores are statistical risk markers calculated by automated rules and AI analyzers, and do not constitute legal accusations of malfeasance.
+          Disclaimer: All data is extracted directly from public Philippine government source documents (PhilGEPS, Judiciary E-Library, and Official Gazette). Audit scores are statistical risk markers calculated by automated rules and AI analyzers, and do not constitute legal accusations of malfeasance. The Veritas software, data, and risk classifications are provided "as-is" under the GNU AGPLv3 license. Veritas and its developers assume no liability for the accuracy, completeness, or suitability of calculations, nor any defamation or civil liability resulting from third-party deployments, modifications, or local audits.
         </p>
         <p className={`${styles.copyright} font-ui`}>
           &copy; {new Date().getFullYear()} Veritas Philippines. Open-Source under GNU AGPLv3.

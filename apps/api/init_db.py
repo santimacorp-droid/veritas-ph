@@ -168,7 +168,17 @@ CREATE TABLE IF NOT EXISTS supplier_aliases (
     UNIQUE (supplier_id, alias)
 );
 
-CREATE INDEX IF NOT EXISTS idx_supplier_aliases ON supplier_aliases (alias);
+CREATE TABLE IF NOT EXISTS pending_supplier_merges (
+    merge_id        TEXT PRIMARY KEY,
+    source_id       TEXT NOT NULL REFERENCES suppliers(supplier_id),
+    target_id       TEXT NOT NULL REFERENCES suppliers(supplier_id),
+    similarity_score NUMERIC NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (source_id, target_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pending_supplier_merges ON pending_supplier_merges (status);
 
 -- ─── Procurement Cases ──────────────────────────────────────────────────────
 
@@ -198,7 +208,8 @@ CREATE TABLE IF NOT EXISTS procurement_cases (
     ai_stage_confidence     NUMERIC,          -- 0-1, set when AI classifier is used
     stage_classified_at     TIMESTAMP,        -- when AI last classified stage
     completeness_score      NUMERIC,   -- 0-1
-    risk_score              NUMERIC,   -- 0-1
+    risk_score              NUMERIC,   -- 0-1 (raw internal risk score)
+    public_risk_score       NUMERIC DEFAULT 0.05, -- 0-1 (public-facing confirmed risk score)
     confidence_score        NUMERIC,   -- 0-1
     risk_components         JSONB,          -- JSON
     created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

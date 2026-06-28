@@ -1284,6 +1284,8 @@ async def submit_case_review(
                 "new_value": json.dumps({"review_status": outcome, "notes": notes}),
             },
         )
+        from workers.tasks.risk_engine import recalculate_case_scores
+        await recalculate_case_scores(db, str(case_id))
         await db.commit()
 
     return {"status": "review_submitted", "outcome": outcome, "case_id": str(case_id)}
@@ -1314,6 +1316,8 @@ async def publish_case(
             "cid": str(case_id)
         }
     )
+    from workers.tasks.risk_engine import recalculate_case_scores
+    await recalculate_case_scores(db, str(case_id))
     await db.commit()
     return {"status": "published", "case_id": str(case_id)}
 
@@ -1339,6 +1343,136 @@ async def get_audit_log(
     count_res = await db.execute(text("SELECT COUNT(*) FROM audit_log"))
     total = count_res.scalar_one()
     return {"total": total, "logs": rows}
+
+
+@app.get(f"{analyst_router_prefix}/supplier-merges", tags=["Analyst"])
+async def list_supplier_merges(
+    limit: int = Query(50, le=100),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(auth.require_role(["analyst", "editor", "admin"]))
+):
+    """Retrieve list of pending supplier merges for human confirmation."""
+    sql = text("""
+        SELECT m.merge_id, m.similarity_score, m.status, m.created_at,
+               s.supplier_id AS source_id, s.canonical_name AS source_name,
+               t.supplier_id AS target_id, t.canonical_name AS target_name
+          FROM pending_supplier_merges m
+          JOIN suppliers s ON s.supplier_id = m.source_id
+          JOIN suppliers t ON t.supplier_id = m.target_id
+         WHERE m.status = 'pending'
+         ORDER BY m.similarity_score DESC, m.created_at DESC
+         LIMIT :limit OFFSET :offset
+    """)
+    result = await db.execute(sql, {"limit": limit, "offset": offset})
+    rows = [dict(r) for r in result.mappings().all()]
+    count_res = await db.execute(text("SELECT COUNT(*) FROM pending_supplier_merges WHERE status = 'pending'"))
+    total = count_res.scalar_one()
+    return {"total": total, "merges": rows}
+
+
+@app.post(f"{analyst_router_prefix}/supplier-merges/{{merge_id}}/resolve", tags=["Analyst"])
+async def resolve_supplier_merge(
+    merge_id: UUID,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(auth.require_role(["editor", "admin"]))
+):
+    """
+    Resolve a pending supplier merge.
+    If outcome is 'approved':
+      1. Re-link all awards from source supplier to target supplier.
+      2. Re-link all contracts from source supplier to target supplier.
+      3. Delete source supplier from database.
+      4. Update merge status to 'approved'.
+    If outcome is 'rejected':
+      1. Update merge status to 'rejected'.
+    """
+    valid_outcomes = {"approved", "rejected"}
+    outcome = payload.get("outcome")
+    if outcome not in valid_outcomes:
+        raise HTTPException(status_code=400, detail=f"outcome must be one of {valid_outcomes}")
+        
+    actor_id = current_user["user_id"]
+    
+    # Check if merge request exists
+    res = await db.execute(
+        text("SELECT * FROM pending_supplier_merges WHERE merge_id = :mid"),
+        {"mid": str(merge_id)}
+    )
+    merge = res.mappings().first()
+    if not merge:
+        raise HTTPException(status_code=404, detail="Merge request not found")
+        
+    if merge["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Merge request is already resolved")
+        
+    if outcome == "approved":
+        source_id = merge["source_id"]
+        target_id = merge["target_id"]
+        
+        # 1. Update awards
+        await db.execute(
+            text("UPDATE awards SET supplier_id = :tid WHERE supplier_id = :sid"),
+            {"tid": target_id, "sid": source_id}
+        )
+        
+        # 2. Update contracts if they exist
+        await db.execute(
+            text("UPDATE contracts SET supplier_id = :tid WHERE supplier_id = :sid"),
+            {"tid": target_id, "sid": source_id}
+        )
+        
+        # 3. Delete duplicate supplier
+        await db.execute(
+            text("DELETE FROM suppliers WHERE supplier_id = :sid"),
+            {"sid": source_id}
+        )
+        
+        # 4. Set status in merge record
+        await db.execute(
+            text("UPDATE pending_supplier_merges SET status = 'approved' WHERE merge_id = :mid"),
+            {"mid": str(merge_id)}
+        )
+        
+        # 5. Audit log
+        await db.execute(
+            text("""
+                INSERT INTO audit_log (log_id, actor_id, actor_type, action, entity_type, entity_id, old_value, new_value)
+                VALUES (:lid, :actor, 'analyst', 'supplier_merge_approved', 'supplier', :tid, :old, :new)
+            """),
+            {
+                "lid": str(uuid4()),
+                "actor": str(actor_id),
+                "tid": target_id,
+                "old": json.dumps({"source_supplier_id": source_id}),
+                "new": json.dumps({"merged": True})
+            }
+        )
+    else:
+        # Rejected merge
+        await db.execute(
+            text("UPDATE pending_supplier_merges SET status = 'rejected' WHERE merge_id = :mid"),
+            {"mid": str(merge_id)}
+        )
+        
+        # Audit log
+        await db.execute(
+            text("""
+                INSERT INTO audit_log (log_id, actor_id, actor_type, action, entity_type, entity_id, old_value, new_value)
+                VALUES (:lid, :actor, 'analyst', 'supplier_merge_rejected', 'supplier', :sid, :old, :new)
+            """),
+            {
+                "lid": str(uuid4()),
+                "actor": str(actor_id),
+                "sid": merge["source_id"],
+                "old": json.dumps({"target_supplier_id": merge["target_id"]}),
+                "new": json.dumps({"merged": False})
+            }
+        )
+        
+    await db.commit()
+    return {"status": "resolved", "outcome": outcome, "merge_id": str(merge_id)}
 
 
 @app.post(f"{analyst_router_prefix}/laws", tags=["Analyst"])

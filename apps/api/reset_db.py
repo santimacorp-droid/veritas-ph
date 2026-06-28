@@ -103,6 +103,33 @@ async def reset():
             END $$;
         """))
 
+        # Add public_risk_score column (confirmed public-facing risk score)
+        await db.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='procurement_cases' AND column_name='public_risk_score'
+                ) THEN
+                    ALTER TABLE procurement_cases ADD COLUMN public_risk_score NUMERIC DEFAULT 0.05;
+                END IF;
+            END $$;
+        """))
+
+        # Add pending_supplier_merges table if not exists
+        await db.execute(text("""
+            CREATE TABLE IF NOT EXISTS pending_supplier_merges (
+                merge_id        TEXT PRIMARY KEY,
+                source_id       TEXT NOT NULL REFERENCES suppliers(supplier_id),
+                target_id       TEXT NOT NULL REFERENCES suppliers(supplier_id),
+                similarity_score NUMERIC NOT NULL,
+                status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+                created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (source_id, target_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_pending_supplier_merges ON pending_supplier_merges (status);
+        """))
+
         # Add 'incomplete' to laws.status (no CHECK constraint enforced via code)
         await db.commit()
         print("  ✅ Schema columns added/verified.")
