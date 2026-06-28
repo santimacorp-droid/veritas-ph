@@ -139,7 +139,7 @@ const RULES: Rule[] = [
     categoryLabel: "Compliance",
     description: "Flags infrastructure projects awarded to suppliers whose registered office address or PCAB license regional classification codes mismatch the actual geographic location of the project.",
     model: "Trigger = True  if  [ Project_Region_Code not in Supplier_PCAB_Allowed_Regions ]",
-    link: "RA 4566 (Contractors' License Law) & RA 12009 Section 23(c) (PhilGEPS database interconnectivity)."
+    link: "RA 4566 (Contractors' License Law) & RA 12009 Section 23(c) (PhilGEPS and Philippine Contractors' Assessment Board database interconnectivity)."
   }
 ];
 

@@ -132,6 +132,8 @@ async def reset():
                 created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE (source_id, target_id)
             );
+        """))
+        await db.execute(text("""
             CREATE INDEX IF NOT EXISTS idx_pending_supplier_merges ON pending_supplier_merges (status);
         """))
 

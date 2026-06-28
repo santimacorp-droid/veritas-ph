@@ -131,7 +131,7 @@ const RULE_GUIDES: Record<string, GuideEntry> = {
   },
   'RULE-014': {
     title: 'Geographic Mismatch',
-    statute: 'RA 4566 (Contractors\' License Law) and RA 12009 Section 23(c) mandate database connectivity between PhilGEPS and PCAB to verify contractor regional eligibility.',
+    statute: 'RA 4566 (Contractors\' License Law) and RA 12009 Section 23(c) mandate database connectivity between PhilGEPS and PCAB (Philippine Contractors\' Assessment Board) to verify contractor regional eligibility.',
     implication: 'Awarding local infrastructure projects to contractors based in remote regions without local branches raises costs and reduces monitoring capabilities. It may indicate favoritism toward specific contractors.',
     action: 'Cross-check the contractor\'s registered principal address with the project site location.'
   }
