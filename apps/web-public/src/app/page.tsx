@@ -177,7 +177,7 @@ export default async function Home() {
               <section key={discrepancy.discrepancy_id} className={styles.discrepancyBlock}>
                 <div className={`${styles.discrepancyMeta} font-ui`}>
                   <div className={styles.discrepancyMetaLeft}>
-                    <Link href={`/cases/${discrepancy.case_id}`} className={styles.metaLink}>
+                    <Link href={`/projects/${discrepancy.case_id}`} className={styles.metaLink}>
                       {discrepancy.case_title ?? 'Open case'}
                     </Link>
                     {discrepancy.agency_acronym && (

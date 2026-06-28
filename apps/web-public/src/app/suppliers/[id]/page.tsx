@@ -214,7 +214,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
                 awardsData.awards.map((award) => (
                   <tr key={award.award_id} className={styles.tr}>
                     <td className={styles.td}>
-                      <Link href={`/cases/${award.case_id}`} className={`${styles.caseLink} font-body`}>
+                      <Link href={`/projects/${award.case_id}`} className={`${styles.caseLink} font-body`}>
                         {award.title}
                       </Link>
                       <div className={`${styles.sectionCount} font-mono`}>

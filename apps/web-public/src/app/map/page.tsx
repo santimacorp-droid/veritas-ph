@@ -174,7 +174,7 @@ export default function MapPage() {
             <span style="font-size: 11px; font-weight: 600; padding: 2px 6px; background: ${score >= 0.7 ? 'var(--color-flag-light)' : score >= 0.4 ? 'var(--color-medium-light)' : 'var(--color-confirm-light)'}; color: ${score >= 0.7 ? 'var(--color-flag)' : score >= 0.4 ? 'var(--color-medium)' : 'var(--color-confirm)'}; border: 1px solid currentColor;">
               RISK: ${(score * 100).toFixed(0)}%
             </span>
-            <a href="/cases/${loc.case_id}" style="font-size: 11px; font-weight: 600; color: var(--color-data-blue); text-decoration: underline;">
+            <a href="/projects/${loc.case_id}" style="font-size: 11px; font-weight: 600; color: var(--color-data-blue); text-decoration: underline;">
               View Project &rarr;
             </a>
           </div>

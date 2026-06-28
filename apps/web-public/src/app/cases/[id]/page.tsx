@@ -188,6 +188,30 @@ export default async function CaseDetailPage({
           </span>
         </nav>
 
+        {/* Sandbox Notice */}
+        <div style={{
+          background: 'rgba(59, 130, 246, 0.05)',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          borderRadius: '4px',
+          padding: '12px 16px',
+          marginBottom: '20px',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'flex-start',
+          color: 'var(--color-ink-secondary)',
+          fontSize: '13px',
+          lineHeight: '1.5'
+        }} className="font-ui">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-data-blue)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          <div>
+            <strong>Simulated Audit Dossier:</strong> This profile is an audited historical case study (2010–2026) generated within the Veritas PH research sandbox to evaluate public procurement integrity.
+          </div>
+        </div>
+
         {/* Case Hero */}
         <div className={styles.caseHero}>
           <div className={styles.caseTitleRow}>

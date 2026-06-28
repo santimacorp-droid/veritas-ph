@@ -175,7 +175,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
                 casesData.cases.map((agencyCase) => (
                   <tr key={agencyCase.case_id} className={styles.tr}>
                     <td className={styles.td}>
-                      <Link href={`/cases/${agencyCase.case_id}`} className={`${styles.caseLink} font-body`}>
+                      <Link href={`/projects/${agencyCase.case_id}`} className={`${styles.caseLink} font-body`}>
                         {agencyCase.title}
                       </Link>
                     </td>

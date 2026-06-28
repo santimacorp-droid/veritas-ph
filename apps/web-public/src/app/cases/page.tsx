@@ -217,6 +217,30 @@ export default async function ProjectsPage({
           </p>
         </div>
 
+        {/* Sandbox Notice */}
+        <div style={{
+          background: 'rgba(59, 130, 246, 0.05)',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          borderRadius: '4px',
+          padding: '12px 16px',
+          marginBottom: '24px',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'flex-start',
+          color: 'var(--color-ink-secondary)',
+          fontSize: '13px',
+          lineHeight: '1.5'
+        }} className="font-ui">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-data-blue)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          <div>
+            <strong>Veritas PH Audit Sandbox:</strong> This page displays simulated project profiles and audited historical procurement records (2010–2026) compiled for civic watchdog oversight and system integrity testing.
+          </div>
+        </div>
+
         {/* Stage Summary Tabs */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
           <StageCount label="Accepting Bids"   count={byStage.active_bidding ?? 0}   stage="active_bidding"   activeStage={filters.stage} color="#16a34a" currentFilters={filters} />
@@ -342,7 +366,7 @@ export default async function ProjectsPage({
                   return (
                     <tr key={item.case_id} className={styles.tr}>
                       <td className={styles.td}>
-                        <Link href={`/cases/${item.case_id}`} className={styles.agencyLink}>
+                        <Link href={`/projects/${item.case_id}`} className={styles.agencyLink}>
                           <span className={`${styles.agencyName} font-body`}>{item.title}</span>
                           <span className={`${styles.agencyAcronym} font-mono`}>
                             {item.procurement_ref_no ?? item.case_id}

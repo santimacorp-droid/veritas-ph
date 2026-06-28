@@ -48,7 +48,7 @@ function RiskPip({ score }: { score?: number }) {
 
 function CaseCard({ c }: { c: CaseResult }) {
   return (
-    <Link href={`/cases/${c.case_id}`} className={styles.caseCard}>
+    <Link href={`/projects/${c.case_id}`} className={styles.caseCard}>
       <div className={styles.cardTop}>
         <h2 className={`${styles.cardTitle} font-body`}>{c.title}</h2>
         <RiskPip score={c.risk_score} />
