@@ -813,6 +813,10 @@ async def seed_cases():
             risk,
             status,
             geo_scope,
+            bid_deadline,
+            ntp_date,
+            contract_end_date,
+            procurement_stage,
         ) in cases:
             if adate:
                 from datetime import datetime, timedelta
