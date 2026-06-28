@@ -301,196 +301,10 @@ async def parse_bookshelf_provisions(html_text: str, ra_short: str, logger_ref) 
     return []
 
 
-async def fetch_laws() -> dict:
-    """
-    Main entry point for automated law crawling.
-
-    IMPORTANT: Only scrapes the SC Judiciary E-Library (full authenticated text).
-    Official Gazette and Lawphil are intentionally EXCLUDED — they produce
-    useless one-line stubs that cause the AI to generate inaccurate analyses.
-
-    Features:
-    - Full AJAX pagination (fetches ALL pages, not just the first 50)
-    - Two-pass section parser with printer-friendly URL fallback
-    - Stub detection: laws with < 2 sections stored as 'incomplete', no AI queued
-    - Respects existing backlog — pauses if pending analyses exist
-    """
-    # Guard: pause if there is an active backlog of pending/running audits
-    async with async_session_maker() as session:
-        backlog_count = (
-            await session.execute(
-                text("SELECT COUNT(*) FROM law_analyses WHERE analysis_status IN ('pending', 'running')")
-            )
-        ).scalar() or 0
-        if backlog_count > 0:
-            logger.info("Crawler paused: active backlog", backlog=backlog_count)
-            return {"status": "paused", "reason": f"backlog_of_{backlog_count}_pending_audits"}
-
-    logger.info("Law Crawler starting: SC E-Library full-text discovery phase")
-    scraped_laws = []
-    incomplete_count = 0
-
-    try:
-        headers = {"User-Agent": random.choice(USER_AGENTS)}
-        await asyncio.sleep(random.uniform(1.0, 2.0))
-
-        async with httpx.AsyncClient(timeout=25.0, verify=False) as client:
-            url_elib = "https://elibrary.judiciary.gov.ph/republic_acts"
-            elib_headers = {**headers, "Referer": url_elib}
-
-            # Step 1: Fetch landing page for CSRF token
-            logger.info("Fetching E-Library landing page for CSRF token...")
-            csrf_token = "911e9a80775d8254cef336694db85299"
-            try:
-                lp_resp = await client.get(url_elib, headers=elib_headers, follow_redirects=True)
-                if lp_resp.status_code == 200:
-                    m = re.search(r"'csrf_test_name'\s*:\s*'([a-f0-9]+)'", lp_resp.text)
-                    if m:
-                        csrf_token = m.group(1)
-            except Exception as e:
-                logger.warning(f"Failed to fetch E-Library landing page: {e}")
-
-            # Step 2: AJAX paginated fetch — get ALL laws
-            ajax_url = "https://elibrary.judiciary.gov.ph/republic_acts/fetch_ra"
-            page_size = 100
-            start = 0
-
-            while True:
-                await asyncio.sleep(random.uniform(0.5, 1.5))
-                ajax_data = {
-                    "csrf_test_name": csrf_token,
-                    "draw": str(start // page_size + 1),
-                    "start": str(start),
-                    "length": str(page_size),
-                    "search[value]": "",
-                    "search[regex]": "false"
-                }
-                logger.info(f"Fetching E-Library AJAX rows {start}–{start + page_size}...")
-
-                try:
-                    rp = await client.post(ajax_url, data=ajax_data, headers=elib_headers)
-                except Exception as e:
-                    logger.warning(f"E-Library AJAX request failed: {e}")
-                    break
-
-                if rp.status_code != 200:
-                    logger.warning(f"E-Library AJAX returned HTTP {rp.status_code}. Stopping pagination.")
-                    break
-
-                try:
-                    rows = rp.json().get("data", [])
-                except Exception:
-                    logger.warning("Failed to parse E-Library AJAX JSON response.")
-                    break
-
-                if not rows:
-                    logger.info("E-Library AJAX: no more rows. Pagination complete.")
-                    break
-
-                for row in rows:
-                    if len(row) < 3:
-                        continue
-
-                    raw_short_title = row[0]
-                    date_passed = row[1]
-                    link_html = row[2]
-
-                    a_tag = BeautifulSoup(link_html, "html.parser").find("a")
-                    if not a_tag:
-                        continue
-
-                    title_val = a_tag.get_text().strip()
-                    bookshelf_url = a_tag.get("href", "")
-
-                    # Normalize short title to canonical form "Republic Act No. XXXX"
-                    ra_short = (
-                        raw_short_title
-                        .replace("R.A.", "Republic Act")
-                        .replace("R.A ", "Republic Act ")
-                        .strip()
-                    )
-                    ra_short = re.sub(r"\s+", " ", ra_short)
-                    m2 = re.search(r"republic\s+act\s+no\.?\s*(\d+)", ra_short, re.IGNORECASE)
-                    if m2:
-                        ra_short = f"Republic Act No. {m2.group(1)}"
-                    ra_num_m = re.search(r"\d+", ra_short)
-                    ra_num = ra_num_m.group(0) if ra_num_m else "Unknown"
-
-                    # Skip duplicates within this batch
-                    if any(x["short_title"] == ra_short for x in scraped_laws):
-                        continue
-
-                    # Step 3: Fetch and parse full bookshelf text
-                    parsed_provisions = []
-                    law_status = "active"
-                    try:
-                        await asyncio.sleep(random.uniform(0.3, 0.8))
-                        doc_resp = await client.get(bookshelf_url, headers=headers)
-                        if doc_resp.status_code == 200:
-                            parsed_provisions = await parse_bookshelf_provisions(
-                                doc_resp.text, ra_short, logger
-                            )
-
-                        # Printer-friendly fallback if standard page failed
-                        if not parsed_provisions and "/showdocs/" in bookshelf_url:
-                            friendly_url = bookshelf_url.replace("/showdocs/", "/showdocsfriendly/")
-                            logger.info(f"Trying printer-friendly URL for {ra_short}...")
-                            await asyncio.sleep(random.uniform(0.3, 0.7))
-                            fd = await client.get(friendly_url, headers=headers)
-                            if fd.status_code == 200:
-                                parsed_provisions = await parse_bookshelf_provisions(
-                                    fd.text, ra_short, logger
-                                )
-                    except Exception as fe:
-                        logger.warning(f"Failed fetching bookshelf for {ra_short}: {fe}")
-
-                    if not parsed_provisions:
-                        law_status = "incomplete"
-                        incomplete_count += 1
-                        logger.warning(f"No parseable sections for {ra_short} — storing as incomplete.")
-
-                    scraped_laws.append({
-                        "title": title_val,
-                        "short_title": ra_short,
-                        "description": (
-                            f"Scraped from SC E-Library. Bookshelf URL: {bookshelf_url}. "
-                            f"Republic Act Number: {ra_num}."
-                        ),
-                        "date_passed": date_passed if date_passed else None,
-                        "status": law_status,
-                        "author": None,
-                        "sponsor": None,
-                        "approved_by": None,
-                        "provisions": parsed_provisions,
-                        "controversies": []
-                    })
-
-                # Stop if we got fewer rows than the page size (last page)
-                if len(rows) < page_size:
-                    logger.info("E-Library pagination complete (last page reached).")
-                    break
-                start += page_size
-
-            logger.info(
-                "E-Library crawl finished",
-                total_scraped=len(scraped_laws),
-                incomplete=incomplete_count,
-                complete=len(scraped_laws) - incomplete_count,
-            )
-
-    except Exception as e:
-        logger.warning(f"Law crawler outer error: {e}")
-
-    # Merge curated seed laws (always first, never skipped)
-    all_laws_to_ingest = list(REAL_LEGISLATION_DATA)
-    for sl in scraped_laws:
-        if not any(x["short_title"] == sl["short_title"] for x in all_laws_to_ingest):
-            all_laws_to_ingest.append(sl)
-
-    # Ingest into database
+async def ingest_laws_batch(laws_to_ingest: list) -> int:
     discovered_count = 0
     async with async_session_maker() as session:
-        for law_data in all_laws_to_ingest:
+        for law_data in laws_to_ingest:
             # Skip if already in DB
             res = await session.execute(
                 text("SELECT law_id FROM laws WHERE short_title = :st OR title = :t"),
@@ -566,12 +380,12 @@ async def fetch_laws() -> dict:
                                 "controversy_id": str(uuid.uuid4()),
                                 "provision_id": prov_id,
                                 "issue_description": cont["issue_description"],
-                                "impact": cont.get("impact"),
-                                "severity": cont.get("severity", "medium")
+                                "impact": cont["impact"],
+                                "severity": cont["severity"]
                             }
                         )
 
-            # Only queue AI analysis for laws with real, parseable content
+            # Ingest default pending analysis for active laws
             if law_status == "active":
                 await session.execute(
                     text("""
@@ -579,19 +393,201 @@ async def fetch_laws() -> dict:
                             analysis_id, law_id, model_used, pros, cons, loopholes,
                             suggested_revisions, citizen_summary, analysis_status, requested_by
                         ) VALUES (
-                            :aid, :lid, 'pending', '[]', '[]', '[]', '[]',
-                            'Analyzing new crawled legislation...', 'pending', 'crawler'
+                            :analysis_id, :law_id, 'pending', '[]', '[]', '[]', '[]',
+                            'Waiting in queue...', 'pending', 'law_crawler'
                         )
                     """),
-                    {"aid": str(uuid.uuid4()), "lid": law_id}
+                    {
+                        "analysis_id": str(uuid.uuid4()),
+                        "law_id": law_id
+                    }
                 )
-                logger.info(f"Queued AI analysis: {law_data['short_title']}")
-            else:
-                logger.info(f"Stored incomplete (no AI queued): {law_data['short_title']}")
 
             discovered_count += 1
-
         await session.commit()
+    return discovered_count
+
+
+async def fetch_laws() -> dict:
+    # Guard: pause if there is an active backlog of pending/running audits
+    async with async_session_maker() as session:
+        backlog_count = (
+            await session.execute(
+                text("SELECT COUNT(*) FROM law_analyses WHERE analysis_status IN ('pending', 'running')")
+            )
+        ).scalar() or 0
+        if backlog_count > 0:
+            logger.info("Crawler paused: active backlog", backlog=backlog_count)
+            return {"status": "paused", "reason": f"backlog_of_{backlog_count}_pending_audits"}
+
+    # 1. Ingest seed laws first thing on startup
+    logger.info("Ingesting curated seed laws on startup...")
+    seeds_count = await ingest_laws_batch(REAL_LEGISLATION_DATA)
+    logger.info(f"Curated seed laws ingestion complete: {seeds_count} new laws added.")
+
+    logger.info("Law Crawler starting: SC E-Library full-text discovery phase")
+    incomplete_count = 0
+    discovered_count = seeds_count
+
+    try:
+        headers = {"User-Agent": random.choice(USER_AGENTS)}
+        await asyncio.sleep(random.uniform(1.0, 2.0))
+
+        async with httpx.AsyncClient(timeout=25.0, verify=False) as client:
+            url_elib = "https://elibrary.judiciary.gov.ph/republic_acts"
+            elib_headers = {**headers, "Referer": url_elib}
+
+            # Step 1: Fetch landing page for CSRF token
+            logger.info("Fetching E-Library landing page for CSRF token...")
+            csrf_token = "911e9a80775d8254cef336694db85299"
+            try:
+                lp_resp = await client.get(url_elib, headers=elib_headers, follow_redirects=True)
+                if lp_resp.status_code == 200:
+                    m = re.search(r"'csrf_test_name'\s*:\s*'([a-f0-9]+)'", lp_resp.text)
+                    if m:
+                        csrf_token = m.group(1)
+            except Exception as e:
+                logger.warning(f"Failed to fetch E-Library landing page: {e}")
+
+            # Step 2: AJAX paginated fetch — get ALL laws
+            ajax_url = "https://elibrary.judiciary.gov.ph/republic_acts/fetch_ra"
+            page_size = 100
+            start = 0
+
+            while True:
+                await asyncio.sleep(random.uniform(0.5, 1.5))
+                ajax_data = {
+                    "csrf_test_name": csrf_token,
+                    "draw": str(start // page_size + 1),
+                    "start": str(start),
+                    "length": str(page_size),
+                    "search[value]": "",
+                    "search[regex]": "false"
+                }
+                logger.info(f"Fetching E-Library AJAX rows {start}–{start + page_size}...")
+
+                try:
+                    rp = await client.post(ajax_url, data=ajax_data, headers=elib_headers)
+                except Exception as e:
+                    logger.warning(f"E-Library AJAX request failed: {e}")
+                    break
+
+                if rp.status_code != 200:
+                    logger.warning(f"E-Library AJAX returned HTTP {rp.status_code}. Stopping pagination.")
+                    break
+
+                try:
+                    rows = rp.json().get("data", [])
+                except Exception:
+                    logger.warning("Failed to parse E-Library AJAX JSON response.")
+                    break
+
+                if not rows:
+                    logger.info("E-Library AJAX: no more rows. Pagination complete.")
+                    break
+
+                scraped_laws_page = []
+                for row in rows:
+                    if len(row) < 3:
+                        continue
+
+                    raw_short_title = row[0]
+                    date_passed = row[1]
+                    link_html = row[2]
+
+                    a_tag = BeautifulSoup(link_html, "html.parser").find("a")
+                    if not a_tag:
+                        continue
+
+                    title_val = a_tag.get_text().strip()
+                    bookshelf_url = a_tag.get("href", "")
+
+                    # Normalize short title to canonical form "Republic Act No. XXXX"
+                    ra_short = (
+                        raw_short_title
+                        .replace("R.A.", "Republic Act")
+                        .replace("R.A ", "Republic Act ")
+                        .strip()
+                        .strip('.')
+                    )
+                    ra_short = re.sub(r"\s+", " ", ra_short)
+                    m2 = re.search(r"republic\s+act\s+no\.?\s*(\d+)", ra_short, re.IGNORECASE)
+                    if m2:
+                        ra_short = f"Republic Act No. {m2.group(1)}"
+                    ra_num_m = re.search(r"\d+", ra_short)
+                    ra_num = ra_num_m.group(0) if ra_num_m else "Unknown"
+
+                    # Skip duplicates
+                    if any(x["short_title"] == ra_short for x in scraped_laws_page):
+                        continue
+
+                    # Step 3: Fetch and parse full bookshelf text
+                    parsed_provisions = []
+                    law_status = "active"
+                    try:
+                        await asyncio.sleep(random.uniform(0.3, 0.8))
+                        doc_resp = await client.get(bookshelf_url, headers=headers)
+                        if doc_resp.status_code == 200:
+                            parsed_provisions = await parse_bookshelf_provisions(
+                                doc_resp.text, ra_short, logger
+                            )
+
+                        # Printer-friendly fallback if standard page failed
+                        if not parsed_provisions and "/showdocs/" in bookshelf_url:
+                            friendly_url = bookshelf_url.replace("/showdocs/", "/showdocsfriendly/")
+                            logger.info(f"Trying printer-friendly URL for {ra_short}...")
+                            await asyncio.sleep(random.uniform(0.3, 0.7))
+                            fd = await client.get(friendly_url, headers=headers)
+                            if fd.status_code == 200:
+                                parsed_provisions = await parse_bookshelf_provisions(
+                                    fd.text, ra_short, logger
+                                )
+                    except Exception as fe:
+                        logger.warning(f"Failed fetching bookshelf for {ra_short}: {fe}")
+
+                    if not parsed_provisions:
+                        law_status = "incomplete"
+                        incomplete_count += 1
+                        logger.warning(f"No parseable sections for {ra_short} — storing as incomplete.")
+
+                    scraped_laws_page.append({
+                        "title": title_val,
+                        "short_title": ra_short,
+                        "description": (
+                            f"Scraped from SC E-Library. Bookshelf URL: {bookshelf_url}. "
+                            f"Republic Act Number: {ra_num}."
+                        ),
+                        "date_passed": date_passed if date_passed else None,
+                        "status": law_status,
+                        "author": None,
+                        "sponsor": None,
+                        "approved_by": None,
+                        "provisions": parsed_provisions,
+                        "controversies": [],
+                        "category": "republic_act"
+                    })
+
+                # Ingest current page laws into database immediately
+                if scraped_laws_page:
+                    logger.info(f"Ingesting batch of {len(scraped_laws_page)} laws from current page...")
+                    page_ingest_count = await ingest_laws_batch(scraped_laws_page)
+                    discovered_count += page_ingest_count
+                    logger.info(f"Batch ingestion complete: {page_ingest_count} new laws committed.")
+
+                # Stop if we got fewer rows than the page size (last page)
+                if len(rows) < page_size:
+                    logger.info("E-Library pagination complete (last page reached).")
+                    break
+                start += page_size
+
+            logger.info(
+                "E-Library crawl finished",
+                total_discovered=discovered_count,
+                incomplete=incomplete_count,
+            )
+
+    except Exception as e:
+        logger.warning(f"Law crawler outer error: {e}")
 
     return {
         "status": "success",
