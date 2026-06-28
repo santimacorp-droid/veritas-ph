@@ -60,12 +60,12 @@ async def retry_incomplete_laws() -> dict:
             description = law["description"] or ""
 
             # Extract bookshelf URL from the description field
-            url_match = re.search(r'Bookshelf URL:\s*(https?://[^\s\.]+)', description)
+            url_match = re.search(r'Bookshelf URL:\s*(https?://[^\s]+)', description)
             if not url_match:
                 logger.warning(f"No bookshelf URL found for {short_title}. Skipping.")
                 continue
 
-            bookshelf_url = url_match.group(1).strip()
+            bookshelf_url = url_match.group(1).strip().rstrip('.')
             retried += 1
 
             parsed_provisions = []

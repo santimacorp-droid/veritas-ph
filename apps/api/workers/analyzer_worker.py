@@ -36,6 +36,25 @@ async def run_analyzer_loop():
     is_sqlite = "sqlite" in DATABASE_URL
     loop_count = 0
 
+    # Startup cleanup: release any locked records from crashed runs
+    try:
+        logger.info("Releasing orphaned lock indicators from previous runs...")
+        async with async_session_maker() as db:
+            c_res = await db.execute(
+                text("UPDATE procurement_cases SET risk_score = NULL WHERE risk_score = -1.0")
+            )
+            l_res = await db.execute(
+                text("UPDATE law_analyses SET analysis_status = 'pending' WHERE analysis_status = 'running'")
+            )
+            await db.commit()
+            logger.info(
+                "Cleanup complete",
+                unlocked_cases=c_res.rowcount,
+                unlocked_laws=l_res.rowcount
+            )
+    except Exception as e:
+        logger.warning(f"Startup cleanup failed: {e}")
+
     while True:
         try:
             loop_count += 1
