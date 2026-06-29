@@ -59,6 +59,24 @@ async def run_analyzer_loop():
         try:
             loop_count += 1
 
+            # 0. Stale-row reaper: any law_analyses in 'running' for >10 minutes is marked as failed
+            try:
+                async with async_session_maker() as db:
+                    reaped_res = await db.execute(
+                        text("""
+                            UPDATE law_analyses
+                            SET analysis_status = 'failed',
+                                citizen_summary = 'Failed: analysis timed out/stuck in running state.'
+                            WHERE analysis_status = 'running'
+                              AND created_at < CURRENT_TIMESTAMP - INTERVAL '10 minutes'
+                        """)
+                    )
+                    await db.commit()
+                    if reaped_res.rowcount > 0:
+                        logger.info("Reaped stale law analyses", reaped_count=reaped_res.rowcount)
+            except Exception as re:
+                logger.warning(f"Stale-row reaper failed: {re}")
+
             # 1. Generate missing supplier embeddings and run entity deduplication
             logger.info("Analyzer checking: supplier embeddings...")
             emb_res = await update_supplier_embeddings()
@@ -143,12 +161,37 @@ async def run_analyzer_loop():
                 try:
                     await analyze_law(law_id, analysis_id=analysis_id)
                 except Exception as e:
-                    logger.error(f"Failed to analyze law {law_id}, resetting to pending: {e}")
+                    logger.error(f"Failed to analyze law {law_id}, checking retry count: {e}")
                     async with async_session_maker() as db:
-                        await db.execute(
-                            text("UPDATE law_analyses SET analysis_status = 'pending' WHERE analysis_id = :aid"),
+                        res = await db.execute(
+                            text("SELECT retry_count FROM law_analyses WHERE analysis_id = :aid"),
                             {"aid": analysis_id}
                         )
+                        row = res.mappings().first()
+                        retries = (row["retry_count"] if row else 0) or 0
+                        
+                        if retries >= 3:
+                            logger.error(f"Law analysis {analysis_id} failed 3 times. Marking permanently as 'failed'.")
+                            await db.execute(
+                                text("""
+                                    UPDATE law_analyses
+                                    SET analysis_status = 'failed',
+                                        citizen_summary = 'Failed: maximum analysis retries exceeded.'
+                                    WHERE analysis_id = :aid
+                                """),
+                                {"aid": analysis_id}
+                            )
+                        else:
+                            logger.info(f"Incrementing retry count for analysis {analysis_id} and resetting to 'pending'.")
+                            await db.execute(
+                                text("""
+                                    UPDATE law_analyses
+                                    SET analysis_status = 'pending',
+                                        retry_count = retry_count + 1
+                                    WHERE analysis_id = :aid
+                                """),
+                                {"aid": analysis_id}
+                            )
                         await db.commit()
 
             # 5. Retry incomplete laws (every 40 loops = ~10 minutes)

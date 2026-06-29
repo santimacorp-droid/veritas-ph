@@ -10,6 +10,20 @@ class BaseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# Analysis Statuses
+ANALYSIS_STATUS_PENDING = 'pending'
+ANALYSIS_STATUS_RUNNING = 'running'
+ANALYSIS_STATUS_COMPLETED = 'completed'
+ANALYSIS_STATUS_FAILED = 'failed'
+
+VALID_ANALYSIS_STATUSES = (
+    ANALYSIS_STATUS_PENDING,
+    ANALYSIS_STATUS_RUNNING,
+    ANALYSIS_STATUS_COMPLETED,
+    ANALYSIS_STATUS_FAILED
+)
+
+
 # ─── Agencies ────────────────────────────────────────────────────────────────
 
 

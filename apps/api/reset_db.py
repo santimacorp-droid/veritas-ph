@@ -121,6 +121,32 @@ async def reset():
             END $$;
         """))
 
+        # Add superseded_by_short_title column to laws
+        await db.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='laws' AND column_name='superseded_by_short_title'
+                ) THEN
+                    ALTER TABLE laws ADD COLUMN superseded_by_short_title TEXT;
+                END IF;
+            END $$;
+        """))
+
+        # Add retry_count column to law_analyses
+        await db.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='law_analyses' AND column_name='retry_count'
+                ) THEN
+                    ALTER TABLE law_analyses ADD COLUMN retry_count INTEGER DEFAULT 0;
+                END IF;
+            END $$;
+        """))
+
         # Add pending_supplier_merges table if not exists
         await db.execute(text("""
             CREATE TABLE IF NOT EXISTS pending_supplier_merges (

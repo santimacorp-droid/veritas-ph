@@ -27,6 +27,7 @@ import httpx
 import structlog
 from database import async_session_maker
 from sqlalchemy import text
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 logger = structlog.get_logger()
 
@@ -47,8 +48,14 @@ CATEGORY_DURATION_DAYS = {
 
 # ─── LLM Helper ────────────────────────────────────────────────────────────────
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type(Exception),
+    reraise=True
+)
 async def _call_llm(url: str, api_key: str, model: str, prompt: str) -> str | None:
-    """Low-level LLM call with 15s timeout."""
+    """Low-level LLM call with 15s timeout and automatic retries."""
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
     payload = {
         "model": model,
@@ -58,13 +65,10 @@ async def _call_llm(url: str, api_key: str, model: str, prompt: str) -> str | No
         "response_format": {"type": "json_object"},
     }
     async with httpx.AsyncClient(timeout=15.0) as client:
-        try:
-            r = await client.post(url, json=payload, headers=headers)
-            if r.status_code == 200:
-                return r.json()["choices"][0]["message"]["content"].strip()
-            logger.warning("LLM call failed", model=model, status=r.status_code)
-        except Exception as e:
-            logger.warning("LLM call exception", model=model, error=str(e))
+        r = await client.post(url, json=payload, headers=headers)
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"].strip()
+        r.raise_for_status()
     return None
 
 
@@ -84,7 +88,14 @@ async def _ai_classify_stage(doc_text: str, case_title: str, planned_amount: flo
     prompt = (
         "You are a Philippine government procurement analyst. "
         "Based on the following procurement document text and metadata, classify the CURRENT lifecycle stage "
-        "of this procurement project. Respond ONLY with a JSON object with keys:\n"
+        "of this procurement project. Use the following explicit guidelines:\n"
+        "  - 'completed' (Finished): The document mentions 'Certificate of Acceptance', 'project completion', 'final payment', 'turned over', or 'fully accomplished'.\n"
+        "  - 'ongoing' (In Construction): The document mentions a 'Notice to Proceed', 'NTP', 'contract agreement', 'contract signing', 'commencement of works', or indicates construction is underway.\n"
+        "  - 'awarded': The document mentions a 'Notice of Award', 'NOA', 'winning bidder', or 'award of contract'.\n"
+        "  - 'under_evaluation': The bid deadline has passed and the BAC is evaluating bids, but no award or contract has been executed yet.\n"
+        "  - 'active_bidding': The bid deadline is in the future, or the document is an active 'Invitation to Bid' or 'Bid Notice' accepting bids.\n"
+        "  - 'cancelled': Explicitly cancelled, terminated, or declared a failure of bidding.\n\n"
+        "Respond ONLY with a JSON object with keys:\n"
         "  'stage': one of [active_bidding, under_evaluation, awarded, ongoing, completed, cancelled]\n"
         "  'confidence': float 0.0-1.0 (how confident you are)\n"
         "  'reasoning': 1-2 sentences explaining why\n\n"
@@ -264,6 +275,51 @@ async def update_case_stages() -> dict:
                AND contract_end_date < CURRENT_DATE
         """))
         transitions["to_completed"] = res.rowcount
+
+        # 1e. Bulk promote to completed if a completion report document is linked
+        res_comp = await db.execute(text("""
+            UPDATE procurement_cases pc
+               SET procurement_stage = 'completed',
+                   updated_at = CURRENT_TIMESTAMP
+             WHERE pc.procurement_stage IN ('active_bidding', 'under_evaluation', 'awarded', 'ongoing')
+               AND EXISTS (
+                   SELECT 1 FROM procurement_events pe
+                   JOIN documents d ON d.document_id = pe.document_id
+                   WHERE pe.case_id = pc.case_id
+                     AND d.document_type = 'completion_report'
+               )
+        """))
+        transitions["to_completed"] += res_comp.rowcount
+
+        # 1f. Bulk promote to ongoing if a contract document is linked
+        res_ong = await db.execute(text("""
+            UPDATE procurement_cases pc
+               SET procurement_stage = 'ongoing',
+                   updated_at = CURRENT_TIMESTAMP
+             WHERE pc.procurement_stage IN ('active_bidding', 'under_evaluation', 'awarded')
+               AND EXISTS (
+                   SELECT 1 FROM procurement_events pe
+                   JOIN documents d ON d.document_id = pe.document_id
+                   WHERE pe.case_id = pc.case_id
+                     AND d.document_type = 'contract'
+               )
+        """))
+        transitions["to_ongoing"] += res_ong.rowcount
+
+        # 1g. Bulk promote to awarded if an award notice document is linked
+        res_awd = await db.execute(text("""
+            UPDATE procurement_cases pc
+               SET procurement_stage = 'awarded',
+                   updated_at = CURRENT_TIMESTAMP
+             WHERE pc.procurement_stage IN ('active_bidding', 'under_evaluation')
+               AND EXISTS (
+                   SELECT 1 FROM procurement_events pe
+                   JOIN documents d ON d.document_id = pe.document_id
+                   WHERE pe.case_id = pc.case_id
+                     AND d.document_type = 'award_notice'
+               )
+        """))
+        transitions["to_awarded"] += res_awd.rowcount
 
         # ── Step 2: Heuristic contract_end_date inference ─────────────────────
         # For awarded/ongoing cases that have contract_start_date but no contract_end_date,

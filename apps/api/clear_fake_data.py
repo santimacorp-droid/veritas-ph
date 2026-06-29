@@ -65,19 +65,20 @@ async def clear_data():
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as db:
         for tbl in TABLES_TO_WIPE:
+            # Try DELETE with commit per table to avoid aborting the entire transaction block
             try:
-                # Use CASCADE to handle any foreign key constraints automatically
-                await db.execute(text(f"TRUNCATE TABLE {tbl} CASCADE"))
+                await db.execute(text(f"DELETE FROM {tbl}"))
+                await db.commit()
                 print(f"  Wiped table: {tbl}")
             except Exception as e:
-                # Try DELETE if truncate is not supported/restricted on this table
+                await db.rollback()
                 try:
-                    await db.execute(text(f"DELETE FROM {tbl}"))
-                    print(f"  Cleared table: {tbl} (via DELETE)")
+                    await db.execute(text(f"TRUNCATE TABLE {tbl} CASCADE"))
+                    await db.commit()
+                    print(f"  Wiped table: {tbl} (via TRUNCATE)")
                 except Exception as ex:
+                    await db.rollback()
                     print(f"  [ERROR] Failed to clear {tbl}: {ex}")
-
-        await db.commit()
     await engine.dispose()
     print("\nWipe complete! Running services will now start with a clean state.")
     print("=" * 60)

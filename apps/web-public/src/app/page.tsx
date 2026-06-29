@@ -100,6 +100,22 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      
+      {/* Pipeline Status Banner */}
+      <section className={styles.statusBanner}>
+        <div className={styles.statusContent}>
+          <div className={styles.statusIcon}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <p className={`${styles.statusText} font-body`}>
+            <strong>System Status:</strong> Procurement case updates are currently paused due to server hosting and data storage funding limits. The Legislation Audits pipeline remains fully operational. For inquiries, suggestions, or collaboration proposals, please reach out to <a href="mailto:santima.corp@gmail.com" className={styles.statusEmail}>santima.corp@gmail.com</a>.
+          </p>
+        </div>
+      </section>
 
       <section className={styles.statsBar}>
         <div className={`${styles.stat} font-mono`}>

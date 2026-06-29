@@ -938,7 +938,7 @@ async def check_late_ntp_issuance(db, case_id: str):
                 INSERT INTO discrepancies (discrepancy_id, case_id, discrepancy_type, severity, explanation, rule_id, rule_version, why_fired, thresholds_applied, review_status)
                 VALUES (:did, :cid, 'timeline_risk', :sev, :exp, 'RULE_008', 'v1.0.0', :why, :thresholds, 'pending')
             """),
-            {"did": discrepancy_id, "cid": case_id, "exp": explanation, "why": json.dumps(why_fired), "sev": severity}
+            {"did": discrepancy_id, "cid": case_id, "exp": explanation, "why": json.dumps(why_fired), "sev": severity, "thresholds": json.dumps(why_fired)}
         )
         await insert_baseline_evidence(db, case_id, discrepancy_id)
         return discrepancy_id
@@ -1585,9 +1585,9 @@ async def generate_advanced_audit_report(db, case_id: str):
         lifecycle_stage, ("pre_bid_screening", False)
     )
 
-    p_amt = case.get("planned_amount") or 0.0
-    a_amt = case.get("awarded_amount") or 0.0
-    f_amt = case.get("final_contract_amount") or 0.0
+    p_amt = float(case.get("planned_amount") or 0.0)
+    a_amt = float(case.get("awarded_amount") or 0.0)
+    f_amt = float(case.get("final_contract_amount") or 0.0)
     supplier_name = case.get("supplier_name") or "Unknown Supplier"
     agency_name = case.get("agency_name") or "Unknown Agency"
 
@@ -1804,7 +1804,7 @@ async def generate_advanced_audit_report(db, case_id: str):
         {
             "rid": report_id,
             "cid": case_id,
-            "rtype": report_type,
+            "rtype": "post_mortem" if report_type == "post_mortem" else "predictive",
             "prob": risk_prob,
             "details": analysis_details,
         }

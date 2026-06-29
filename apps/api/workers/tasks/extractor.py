@@ -110,15 +110,17 @@ async def process_document(document_id: str):
     # 1. Fetch document record to get storage_path
     async with async_session_maker() as db:
         res = await db.execute(
-            text("SELECT storage_path, source_id FROM documents WHERE document_id = :did"),
+            text("SELECT storage_path, source_id, document_type FROM documents WHERE document_id = :did"),
             {"did": document_id},
         )
         row = res.mappings().first()
-        if row and row["storage_path"]:
+        doc_type = row.get("document_type") if row else None
+        storage_path = row.get("storage_path") if row else None
+        if storage_path:
             # Load document text from local storage
-            doc_bytes = get_api_store().get_bytes(row["storage_path"])
+            doc_bytes = get_api_store().get_bytes(storage_path)
             if doc_bytes:
-                if str(row["storage_path"]).lower().endswith(".pdf"):
+                if str(storage_path).lower().endswith(".pdf"):
                     try:
                         import io
                         import pdfplumber
@@ -146,9 +148,12 @@ async def process_document(document_id: str):
 
         # Regex patterns supporting colons, spaces, and non-breaking spaces
         ref_patterns = [
-            r"(?i)Reference\s+Number\s*(?::)?\s*([A-Za-z0-9-]+)",
-            r"(?i)ref\s*No\.?\s*:\s*([A-Za-z0-9-]+)",
-            r"(?i)solicitation\s+number\s*(?::)?\s*([A-Za-z0-9-]+)",
+            r"(?i)Reference\s+Number\s*(?::)?\s*([A-Za-z0-9\(\)-]+)",
+            r"(?i)ref\s*No\.?\s*(?::)?\s*([A-Za-z0-9\(\)-]+)",
+            r"(?i)Project\s+No\.?\s*(?::)?\s*([A-Za-z0-9\(\)-]+)",
+            r"(?i)Project\s+Number\s*(?::)?\s*([A-Za-z0-9\(\)-]+)",
+            r"(?i)solicitation\s+number\s*(?::)?\s*([A-Za-z0-9\(\)-]+)",
+            r"(?i)PhilGEPS\s+Reference\s+No\.?\s*(?::)?\s*([A-Za-z0-9-]+)",
         ]
         pe_patterns = [
             r"(?i)Procuring\s+Entity\s*(?::)?\s*([^\n\r]+)",
@@ -158,6 +163,7 @@ async def process_document(document_id: str):
             r"(?i)Title\s*(?::)?\s*([^\n\r]+)",
             r"(?i)project\s+title\s*(?::)?\s*([^\n\r]+)",
             r"(?i)project\s+name\s*(?::)?\s*([^\n\r]+)",
+            r"(?i)\bProject\b(?!\s+(?:No|Number|Code|Status|Duration|Location|Cost|Limit|Mode|Type|Category|Date))\s*(?::)?\s*([^\n\r]+)",
         ]
         abc_patterns = [
             r"(?i)Approved\s+Budget\s+for\s+the\s+Contract\s*(?::)?\s*(?:PHP|₱)?[\s\xa0]*([\d,]+(?:\.\d+)?\s*(?:M|Million|B|Billion)?)",
@@ -169,10 +175,14 @@ async def process_document(document_id: str):
             r"(?i)procurement\s+method\s*(?::)?\s*([^\n\r]+)",
         ]
         cat_patterns = [r"(?i)Category\s*(?::)?\s*([^\n\r]+)"]
-        pub_patterns = [r"(?i)Date\s+Published\s*(?::)?\s*([^\n\r]+)"]
+        pub_patterns = [
+            r"(?i)Date\s+Published\s*(?::)?\s*([^\n\r]+)",
+            r"(?i)\bDate\b(?!\s+Due)\s*(?::)?\s*([^\n\r]+)",
+        ]
         closing_patterns = [
             r"(?i)Closing\s+Date\s*(?:/\s*Time)?\s*(?::)?\s*([^\n\r]+(?:AM|PM)?)",
             r"(?i)Closing\s+Date\s*(?::)?\s*([^\n\r]+)",
+            r"(?i)Due\s+Date\s*(?::)?\s*([^\n\r]+)",
         ]
 
         # Reference Number
@@ -329,7 +339,7 @@ async def process_document(document_id: str):
         logger.info(f"Extraction failed for document: {document_id}")
         async with async_session_maker() as db:
             await db.execute(
-                text("UPDATE documents SET processing_status = 'extraction_failed' WHERE document_id = :did"),
+                text("UPDATE documents SET processing_status = 'error' WHERE document_id = :did"),
                 {"did": document_id},
             )
             await db.commit()
@@ -470,13 +480,20 @@ async def process_document(document_id: str):
             else None
         )
 
-        # Infer initial procurement_stage from extracted dates
+        # Infer initial procurement_stage from document type and extracted dates
         from datetime import date as _date
         _today = _date.today()
-        if deadline_val and deadline_val < _today:
-            inferred_stage = 'under_evaluation'
+        
+        if doc_type == "completion_report":
+            inferred_stage = "completed"
+        elif doc_type == "contract":
+            inferred_stage = "ongoing"
+        elif doc_type == "award_notice":
+            inferred_stage = "awarded"
+        elif deadline_val and deadline_val < _today:
+            inferred_stage = "under_evaluation"
         else:
-            inferred_stage = 'active_bidding'
+            inferred_stage = "active_bidding"
 
         if not case_exists:
             await db.execute(
@@ -506,6 +523,26 @@ async def process_document(document_id: str):
                 },
             )
         else:
+            # Enforce unidirectional progression
+            current_stage_res = await db.execute(
+                text("SELECT procurement_stage FROM procurement_cases WHERE case_id = :cid"),
+                {"cid": case_id}
+            )
+            current_stage_row = current_stage_res.mappings().first()
+            current_stage = current_stage_row["procurement_stage"] if current_stage_row else "active_bidding"
+            
+            stage_order = {
+                "active_bidding": 1,
+                "under_evaluation": 2,
+                "awarded": 3,
+                "ongoing": 4,
+                "completed": 5,
+                "cancelled": 6
+            }
+            
+            if stage_order.get(current_stage, 0) > stage_order.get(inferred_stage, 0):
+                inferred_stage = current_stage
+
             await db.execute(
                 text("""
                     UPDATE procurement_cases

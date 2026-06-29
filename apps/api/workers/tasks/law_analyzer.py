@@ -143,7 +143,7 @@ async def search_web_snippets(query: str) -> str:
 
 
 async def call_llm_json(url: str, api_key: str, model: str, prompt: str) -> str | None:
-    """Helper to perform standard LLM completions requesting JSON."""
+    """Helper to perform standard LLM completions requesting JSON with exponential retries."""
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
@@ -171,16 +171,34 @@ async def call_llm_json(url: str, api_key: str, model: str, prompt: str) -> str 
         "max_tokens": 8000,
         "response_format": {"type": "json_object"} if ("gpt" in model or "deepseek" in model) else None
     }
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    
+    max_retries = 3
+    base_delay = 2.0
+    
+    for attempt in range(1, max_retries + 1):
         try:
-            response = await client.post(url, json=payload, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                return data["choices"][0]["message"]["content"].strip()
-            else:
-                logger.warn(f"LLM API returned status {response.status_code}: {response.text}")
-        except Exception as e:
-            logger.error(f"Exception calling LLM API {model}: {e}")
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                if response.status_code == 200:
+                    data = response.json()
+                    return data["choices"][0]["message"]["content"].strip()
+                
+                # Check for transient status codes
+                if response.status_code in (429, 500, 502, 503, 504):
+                    logger.warning(
+                        f"LLM API returned transient status {response.status_code} (attempt {attempt}/{max_retries})."
+                    )
+                else:
+                    logger.error(f"LLM API returned non-transient status {response.status_code}: {response.text}")
+                    return None
+        except (httpx.RequestError, httpx.TimeoutException) as e:
+            logger.warning(f"Exception calling LLM API {model} (attempt {attempt}/{max_retries}): {e}")
+            
+        if attempt < max_retries:
+            delay = base_delay * (2 ** (attempt - 1))
+            logger.info(f"Retrying LLM call in {delay}s...")
+            await asyncio.sleep(delay)
+            
     return None
 
 
@@ -272,6 +290,14 @@ async def analyze_law(law_id: str, requested_by: str = "system", analysis_id: st
                     search_query_broad = f'"{law_row["short_title"] or law_row["title"]}" "Senate Bill" OR "House Bill" "signed by"'
                     logger.info("Running broader autonomous search query...", query=search_query_broad)
                     search_context = await search_web_snippets(search_query_broad)
+
+            if not search_context:
+                logger.warning("All E-Library and search context lookups failed. Metadata is UNVERIFIED.")
+                search_context = (
+                    "[UNVERIFIED: SC E-Library and DuckDuckGo search queries failed to return context. "
+                    "All metadata fields (author, sponsor, approved_by, submitted_by, voting_record) "
+                    "are unverified and must be returned as null unless explicitly confirmed in the law text.]"
+                )
 
             deepseek_key = os.getenv("DEEPSEEK_API_KEY")
             if deepseek_key and deepseek_key != "your_key_here":
@@ -610,14 +636,66 @@ Return the audited and corrected JSON conforming strictly to the original schema
                     except Exception:
                         raise repair_err from None
             
+            # Database-Driven Citation Validation
+            def normalize_section(sec_str):
+                if not sec_str:
+                    return ""
+                s = str(sec_str).lower().strip()
+                s = re.sub(r'^(?:sec|section|secciones)\.?\s*', '', s)
+                s = re.sub(r'[^a-z0-9]', '', s)
+                return s
+
+            valid_sections = {normalize_section(p["section_number"]) for p in provisions if p.get("section_number")}
+
+            def is_citation_valid(cited_str):
+                if not cited_str or not valid_sections:
+                    return False
+                norm_cited = normalize_section(cited_str)
+                if norm_cited in valid_sections:
+                    return True
+                # Check individual tokens
+                tokens = re.split(r'[^a-zA-Z0-9]+', str(cited_str).lower())
+                for token in tokens:
+                    norm_token = normalize_section(token)
+                    if norm_token in valid_sections:
+                        return True
+                return False
+
+            # Validate Loophole citations
+            loopholes_list = data.get("loopholes", [])
+            if isinstance(loopholes_list, list):
+                for item in loopholes_list:
+                    if isinstance(item, dict) and "section" in item:
+                        if not is_citation_valid(item["section"]):
+                            logger.warning("Unverified section citation found in loopholes", cited_section=item["section"])
+                            item["unverified_citation"] = True
+
+            # Validate Suggested Revision citations
+            revisions_list = data.get("suggested_revisions", [])
+            if isinstance(revisions_list, list):
+                for item in revisions_list:
+                    if isinstance(item, dict) and "section" in item:
+                        if not is_citation_valid(item["section"]):
+                            logger.warning("Unverified section citation found in suggested_revisions", cited_section=item["section"])
+                            item["unverified_citation"] = True
+
+            # Validate Violation Pattern citations
+            violations_list = data.get("violation_patterns", [])
+            if isinstance(violations_list, list):
+                for item in violations_list:
+                    if isinstance(item, dict) and "section_refs" in item:
+                        if not is_citation_valid(item["section_refs"]):
+                            logger.warning("Unverified section citation found in violation_patterns", cited_section=item["section_refs"])
+                            item["unverified_citation"] = True
+
             # Serialize items
             integrity_score = data.get("integrity_score", 70)
             governance_score = data.get("governance_score", 70)
             pros = json.dumps(data.get("pros", []))
             cons = json.dumps(data.get("cons", []))
-            loopholes = json.dumps(data.get("loopholes", []))
-            suggested_revisions = json.dumps(data.get("suggested_revisions", []))
-            violation_patterns = json.dumps(data.get("violation_patterns", []))
+            loopholes = json.dumps(loopholes_list)
+            suggested_revisions = json.dumps(revisions_list)
+            violation_patterns = json.dumps(violations_list)
             cross_law_conflicts = json.dumps(data.get("cross_law_conflicts", []))
             citizen_summary = data.get("citizen_summary", "Summary not provided.")
 

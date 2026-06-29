@@ -59,7 +59,7 @@ async def seed_departments():
                 "publisher_id": "pub_deped",
                 "source_type": "portal",
                 "publisher_name": "DepEd Procurement Opportunities",
-                "base_url": "https://www.deped.gov.ph/about-deped/procurement/",
+                "base_url": "https://www.deped.gov.ph/category/transparency/procurement/",
                 "parser_type": "deped_procurement_parser",
                 "robots_compliant": False
             }

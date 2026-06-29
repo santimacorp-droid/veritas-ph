@@ -59,7 +59,8 @@ REAL_LEGISLATION_DATA = [
         "short_title": "Republic Act No. 9184",
         "description": "The Government Procurement Reform Act (GPRA), passed in 2003, governs all procurement activities across national agencies, GOCCs, and local government units in the Philippines.",
         "date_passed": "2003-01-10",
-        "status": "active",
+        "status": "repealed",
+        "superseded_by_short_title": "Republic Act No. 12009",
         "author": "Committee on Appropriations / Committee on Good Government",
         "sponsor": "Sen. Aquilino Pimentel Jr. / Rep. Luis Villafuerte",
         "approved_by": "President Gloria Macapagal-Arroyo",
@@ -90,6 +91,14 @@ REAL_LEGISLATION_DATA = [
                 "impact": "Creates high vulnerability to favoritism and overpriced contracts.",
                 "severity": "critical"
             }
+        ],
+        "revisions": [
+            {
+                "proposed_bill": "House Bill No. 9648 (New Government Procurement Act / RA 12009)",
+                "proposed_changes": "A comprehensive overhaul of RA 9184 to mandate the digitization of bidder registries, introduce standard dynamic price reference indexes, enforce ultimate beneficial ownership disclosure, and streamline procurement modalities.",
+                "sponsor": "Rep. Miro Quimbo, et al.",
+                "status": "approved"
+            }
         ]
     },
     {
@@ -117,6 +126,14 @@ REAL_LEGISLATION_DATA = [
                 "impact": "Severe conflict of interest and potential bias in the evaluation and awarding of bids.",
                 "severity": "critical"
             }
+        ],
+        "revisions": [
+            {
+                "proposed_bill": "Senate Bill No. 2449 (Amending RA 6713 Code of Conduct)",
+                "proposed_changes": "Amends Section 11 of RA 6713 to increase administrative and criminal penalties for graft, corruption, conflicts of interest, and ethical violations committed by public officials.",
+                "sponsor": "Sen. Ramon Bong Revilla Jr.",
+                "status": "pending"
+            }
         ]
     },
     {
@@ -133,18 +150,28 @@ REAL_LEGISLATION_DATA = [
         "provisions": [
             {
                 "section_number": "Section 12",
+                "title": "Early Procurement Activities",
+                "content": "Procuring entities are authorized to undertake early procurement activities, short of award, from the time of the submission of the proposed budget to Congress or LGU local councils..."
+            },
+            {
+                "section_number": "Section 26",
                 "title": "Procurement Methods",
                 "content": "Competitive Bidding shall be the default mode of procurement. Alternative methods of procurement shall be allowed only in highly exceptional cases as provided for under this Act."
             },
             {
                 "section_number": "Section 28",
+                "title": "Limited Source Bidding",
+                "content": "Limited Source Bidding, otherwise known as selective bidding, is a method of procurement of Goods and Consulting Services that involves direct invitation to bid by the Procuring Entity from a list of pre-selected suppliers..."
+            },
+            {
+                "section_number": "Section 82",
                 "title": "Disclosure of Beneficial Ownership",
                 "content": "All bidders shall be required to disclose their ultimate beneficial ownership information in the bidder registry system."
             }
         ],
         "controversies": [
             {
-                "section_number": "Section 12",
+                "section_number": "Section 26",
                 "issue_description": "Vague rules regarding the justification criteria for emergency procurement exceptions in remote municipal jurisdictions.",
                 "impact": "Risk of local government units self-certifying emergencies to bypass bidding controls.",
                 "severity": "medium"
@@ -327,10 +354,12 @@ async def ingest_laws_batch(laws_to_ingest: list) -> int:
                 text("""
                     INSERT INTO laws (
                         law_id, title, short_title, description, date_passed, status,
-                        author, sponsor, approved_by, submitted_by, voting_record, category
+                        author, sponsor, approved_by, superseded_by_short_title, category,
+                        submitted_by, voting_record
                     ) VALUES (
                         :law_id, :title, :short_title, :description, :date_passed, :status,
-                        :author, :sponsor, :approved_by, :submitted_by, :voting_record, :category
+                        :author, :sponsor, :approved_by, :superseded, :category,
+                        :submitted, :voting
                     )
                 """),
                 {
@@ -343,9 +372,10 @@ async def ingest_laws_batch(laws_to_ingest: list) -> int:
                     "author": law_data.get("author"),
                     "sponsor": law_data.get("sponsor"),
                     "approved_by": law_data.get("approved_by"),
-                    "submitted_by": law_data.get("submitted_by"),
-                    "voting_record": law_data.get("voting_record"),
-                    "category": law_data.get("category", "republic_act")
+                    "superseded": law_data.get("superseded_by_short_title"),
+                    "category": law_data.get("category", "republic_act"),
+                    "submitted": law_data.get("submitted_by"),
+                    "voting": law_data.get("voting_record")
                 }
             )
 
@@ -386,7 +416,7 @@ async def ingest_laws_batch(laws_to_ingest: list) -> int:
                         )
 
             # Ingest default pending analysis for active laws
-            if law_status == "active":
+            if law_status in ("active", "repealed"):
                 await session.execute(
                     text("""
                         INSERT INTO law_analyses (
@@ -403,23 +433,29 @@ async def ingest_laws_batch(laws_to_ingest: list) -> int:
                     }
                 )
 
+            # Insert revisions
+            for rev in law_data.get("revisions", []):
+                await session.execute(
+                    text("""
+                        INSERT INTO law_revisions (revision_id, law_id, proposed_bill, proposed_changes, sponsor, status)
+                        VALUES (:revision_id, :law_id, :proposed_bill, :proposed_changes, :sponsor, :status)
+                    """),
+                    {
+                        "revision_id": str(uuid.uuid4()),
+                        "law_id": law_id,
+                        "proposed_bill": rev["proposed_bill"],
+                        "proposed_changes": rev["proposed_changes"],
+                        "sponsor": rev.get("sponsor"),
+                        "status": rev.get("status", "pending")
+                    }
+                )
+
             discovered_count += 1
         await session.commit()
     return discovered_count
 
 
 async def fetch_laws() -> dict:
-    # Guard: pause if there is an active backlog of pending/running audits
-    async with async_session_maker() as session:
-        backlog_count = (
-            await session.execute(
-                text("SELECT COUNT(*) FROM law_analyses WHERE analysis_status IN ('pending', 'running')")
-            )
-        ).scalar() or 0
-        if backlog_count > 0:
-            logger.info("Crawler paused: active backlog", backlog=backlog_count)
-            return {"status": "paused", "reason": f"backlog_of_{backlog_count}_pending_audits"}
-
     # 1. Ingest seed laws first thing on startup
     logger.info("Ingesting curated seed laws on startup...")
     seeds_count = await ingest_laws_batch(REAL_LEGISLATION_DATA)
@@ -439,7 +475,7 @@ async def fetch_laws() -> dict:
 
             # Step 1: Fetch landing page for CSRF token
             logger.info("Fetching E-Library landing page for CSRF token...")
-            csrf_token = "911e9a80775d8254cef336694db85299"
+            csrf_token = None
             try:
                 lp_resp = await client.get(url_elib, headers=elib_headers, follow_redirects=True)
                 if lp_resp.status_code == 200:
@@ -448,6 +484,16 @@ async def fetch_laws() -> dict:
                         csrf_token = m.group(1)
             except Exception as e:
                 logger.warning(f"Failed to fetch E-Library landing page: {e}")
+
+            if not csrf_token:
+                logger.error("Could not retrieve a valid CSRF token from E-Library. Aborting crawl cycle.")
+                return {
+                    "status": "failed",
+                    "reason": "missing_csrf_token",
+                    "discovered": discovered_count,
+                    "incomplete": 0,
+                    "queued_for_analysis": 0
+                }
 
             # Step 2: AJAX paginated fetch — get ALL laws
             ajax_url = "https://elibrary.judiciary.gov.ph/republic_acts/fetch_ra"

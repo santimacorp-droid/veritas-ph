@@ -508,6 +508,7 @@ CREATE TABLE IF NOT EXISTS laws (
     submitted_by    TEXT,
     voting_record   TEXT,
     category        TEXT DEFAULT 'republic_act',
+    superseded_by_short_title TEXT,
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -564,6 +565,7 @@ CREATE TABLE IF NOT EXISTS law_analyses (
     raw_ai_response     TEXT,
     analysis_status     TEXT NOT NULL DEFAULT 'pending' CHECK (analysis_status IN ('pending', 'running', 'completed', 'failed')),
     requested_by        TEXT,
+    retry_count         INTEGER NOT NULL DEFAULT 0,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at        TIMESTAMP
 );

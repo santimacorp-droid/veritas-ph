@@ -177,11 +177,13 @@ async def test_process_document_existing_case_updates(mock_session_maker, mock_g
     # 1. document lookup: returns storage path
     # 2. agency lookup: returns None (will create)
     # 3. case lookup: returns existing case (case_exists = True)
-    # 4. event lookup: returns None (event_exists = False, will insert event)
+    # 4. current stage lookup: returns active_bidding
+    # 5. event lookup: returns None (event_exists = False, will insert event)
     first_mock = MagicMock()
     first_mock.side_effect = [
         {"storage_path": "test_path.txt"},
         {"case_id": "existing-case-uuid"},
+        {"procurement_stage": "active_bidding"},
         None
     ]
     mock_result.mappings().first = first_mock
